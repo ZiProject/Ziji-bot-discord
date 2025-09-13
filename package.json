@@ -27,15 +27,15 @@
 	},
 	"homepage": "https://github.com/zijipia/Ziji-bot-discord#readme",
 	"dependencies": {
-		"@discord-player/extractor": "^7.1.0",
 		"@discordjs/voice": "^0.19.0",
 		"@google/generative-ai": "^0.24.0",
 		"@iamtraction/google-translate": "^2.0.1",
 		"@snazzah/davey": "^0.1.6",
 		"@zibot/db": "^0.0.2",
 		"@zibot/ziencryptor": "^0.0.1",
-		"@zibot/ziextractor": "^2.3.10",
 		"@zibot/zihooks": "^1.0.9",
+		"@ziplayer/extension": "^0.0.2",
+		"@ziplayer/plugin": "^0.0.4",
 		"axios": "^1.7.7",
 		"bgutils-js": "^3.2.0",
 		"canvacord": "^6.0.2",
@@ -43,9 +43,7 @@
 		"cors": "^2.8.5",
 		"discord-gamecord": "^4.4.2",
 		"discord-giveaways": "^6.0.1",
-		"discord-player": "^7.1.0",
-		"discord-player-youtubei": "^1.4.2",
-		"discord.js": "^14.18.0",
+		"discord.js": "^14.22.1",
 		"dotenv": "^17.0.0",
 		"express": "^5.1.0",
 		"ffmpeg-static": "^5.2.0",
@@ -64,7 +62,8 @@
 		"table": "^6.8.2",
 		"txtgen": "^3.0.7",
 		"winston": "^3.17.0",
-		"ws": "^8.18.0"
+		"ws": "^8.18.0",
+		"ziplayer": "^0.0.6"
 	},
 	"devDependencies": {
 		"cross-env": "^10.0.0",

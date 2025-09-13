@@ -1,9 +1,8 @@
-const { useLogger } = require("@zibot/zihooks");
 const simpleGit = require("simple-git");
 const git = simpleGit();
+const cron = require("node-cron");
 
-const checkUpdate = async () => {
-	const logger = useLogger();
+const check = async (logger) => {
 	await git.fetch();
 	const status = await git.status();
 	if (status.behind > 0) {
@@ -19,6 +18,17 @@ const checkUpdate = async () => {
 	}
 };
 
+function Update(logger) {
+	if (process.env.NODE_ENV == "development") {
+		logger.info("You are in development mode, skipping update check.");
+	} else {
+		check(logger);
+		cron.schedule("0 0,12 * * *", () => {
+			check();
+		});
+	}
+}
+
 module.exports = {
-	checkUpdate,
+	Update,
 };

@@ -1,3 +1,4 @@
+//Discord iOS
 module.exports = {
 	/**
 	 * Cho phép deploy command bot
@@ -28,36 +29,36 @@ module.exports = {
 	 * Default bot configuration
 	 */
 	botConfig: {
-		
+		prefix: "~~",
 		/**
 		 * Tên hoạt động của bot
 		 * Bot's activity name
 		 */
-		ActivityName: "/help",
+		ActivityName: "Hello, i'm Ziji",
 
 		/**
 		 * Loại hoạt động của bot
 		 * Bot's activity type (PLAYING, WATCHING, LISTENING, STREAMING)
 		 */
-		ActivityType: "PLAYING",
+		ActivityType: "Custom",
 
 		/**
 		 * Trạng thái mặc định của bot 'online', 'idle', 'dnd', 'invisible'
 		 * Default bot status: 'online', 'idle', 'dnd', 'invisible'
 		 */
-		Status: "idle",
+		Status: "online",
 
 		/**
 		 * ID của channel bot gửi lỗi
 		 * Bot's error log channel ID
 		 */
-		ErrorLog: "",
+		ErrorLog: "1015118615177076767",
 
 		/**
 		 * ID của channel feedback
 		 * Bot's feedback channel ID
 		 */
-		FeedBack: "",
+		FeedBack: "1345864371896713288",
 
 		/**
 		 * ID của server hỗ trợ
@@ -75,7 +76,7 @@ module.exports = {
 		 * Link ảnh banner
 		 * Banner image link
 		 */
-		Banner: "https://media.discordapp.net/attachments/1064851388221358153/1209448467077005332/image.png",
+		Banner: "https://cdn.discordapp.com/attachments/1064851388221358153/1298974004291567616/banner.gif",
 
 		/**
 		 * Link ảnh Background - Không sử dụng discordapp cdn
@@ -90,7 +91,6 @@ module.exports = {
 	 * Default player configuration
 	 */
 	PlayerConfig: {
-		
 		/**
 		 * Mặc định tắt nghe của bot
 		 * Default: bot doesn't listen (deaf mode)
@@ -134,7 +134,6 @@ module.exports = {
 		changeStatus: true,
 	},
 
-
 	/**
 	 * Cấu hình mặc định của web app
 	 * Default web app configuration
@@ -149,19 +148,18 @@ module.exports = {
 		 * Link điều khiển nhạc
 		 * Music controller link
 		 */
-		musicControllerUrl: 'https://garret-bot-web.vercel.app',
+		musicControllerUrl: "https://www.bot.ziji.world/",
 		/**
 		 * Link trạng thái bot
 		 * Bot status page
 		 */
-		statusUrl: 'https://garretapp.betteruptime.com/',
+		statusUrl: "https://ziji.betteruptime.com/",
 		/**
 		 * Link cài đặt người dùng cho bot
 		 * User-setting for bot link
 		 */
-		dashboardUrl: 'https://zibot-dashboard.vercel.app/'
+		dashboardUrl: "https://zibot-dashboard.vercel.app/",
 	},
-
 	/**
 	 * Ngôn ngữ mặc định của bot (vi, en, ...)
 	 * Default bot language (vi, en, ...)
@@ -172,7 +170,7 @@ module.exports = {
 	 * Danh sách ID của chủ sở hữu bot (người dùng có thể thực hiện lệnh owner) ["ID admin", "ID admin", ...]
 	 * List of bot owner IDs (users who can execute owner commands) ["admin ID", "admin ID", ...]
 	 */
-	OwnerID: [],
+	OwnerID: ["661968947327008768"],
 
 	/**
 	 * Danh sách ID của các server dành cho nhà phát triển ["ID server", "ID server", ...] or []

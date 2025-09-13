@@ -2,14 +2,15 @@ const express = require("express");
 const cors = require("cors");
 const WebSocket = require("ws");
 const { useClient, useLogger, useConfig, useFunctions } = require("@zibot/zihooks");
-const { useMainPlayer } = require("discord-player");
+const { getManager } = require("ziplayer");
 const http = require("http");
 const ngrok = require("ngrok");
 
 async function startServer() {
 	const logger = useLogger();
 	const client = useClient();
-	const player = useMainPlayer();
+	const manager = getManager();
+	const player = manager.create("webid");
 
 	const app = express();
 	const server = http.createServer(app);
@@ -58,7 +59,6 @@ async function startServer() {
 
 			const searchResults = await player.search(query, {
 				requestedBy: client.user,
-				searchEngine: useConfig().PlayerConfig.QueryType,
 			});
 
 			res.json(searchResults.tracks.slice(0, 10));
