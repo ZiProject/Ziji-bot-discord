@@ -1,13 +1,16 @@
-const { GuildQueueEvent } = require("discord-player");
 const { useFunctions } = require("@zibot/zihooks");
 
 module.exports = {
-	name: GuildQueueEvent.EmptyQueue,
+	name: "queueEnd",
 	type: "Player",
-	execute: async (queue) => {
+	/**
+	 *
+	 * @param {import('ziplayer').Player} player
+	 */
+	execute: async (player) => {
 		const player = useFunctions().get("player_func");
 		if (!player) return;
 		const res = await player.execute({ queue });
-		if (queue.metadata.mess) return queue.metadata.mess.edit(res);
+		if (player.userdata.mess) return player.userdata.mess.edit(res).catch((e) => {});
 	},
 };

@@ -1,13 +1,16 @@
 const { EmbedBuilder } = require("discord.js");
-const { GuildQueueEvent } = require("discord-player");
 
 module.exports = {
-	name: GuildQueueEvent.AudioTrackAdd,
+	name: "queueAdd",
 	type: "Player",
-	execute: async (queue, track) => {
-		if (track?.queryType === "tts") return;
+	/**
+	 *
+	 * @param {import('ziplayer').Player} player
+	 * @param {import('ziplayer').Track} track
+	 */
+	execute: async (player, track) => {
 		const embed = new EmbedBuilder()
-			.setDescription(`Đã thêm bài hát: [${track.author} - ${track?.title}](${track?.url}) \`[${track?.duration}]\``)
+			.setDescription(`Đã thêm bài hát: [${track?.title}](${track?.url}) \`[${track?.duration}]\``)
 			.setThumbnail(track?.thumbnail)
 			.setColor("Random")
 			.setTimestamp()
@@ -15,7 +18,7 @@ module.exports = {
 				text: `by: ${track?.requestedBy?.username}`,
 				iconURL: track?.requestedBy?.displayAvatarURL({ size: 1024 }) ?? null,
 			});
-		const replied = await queue.metadata?.channel?.send({ embeds: [embed], fetchReply: true }).catch((e) => {});
+		const replied = await player.userdata?.channel?.send({ embeds: [embed], fetchReply: true }).catch((e) => {});
 		setTimeout(function () {
 			replied?.delete().catch((e) => {});
 		}, 5000);
