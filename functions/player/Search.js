@@ -1,11 +1,10 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, BaseInteraction, AttachmentBuilder } = require("discord.js");
-const { useMainPlayer, useQueue, GuildQueueEvent, Track } = require("discord-player");
 const { useDB, useConfig, useLogger } = require("@zibot/zihooks");
 const { ButtonStyle, StringSelectMenuOptionBuilder, StringSelectMenuBuilder } = require("discord.js");
 const { Worker } = require("worker_threads");
 const langdef = require("./../../lang/vi");
-const player = useMainPlayer();
 const ZiIcons = require("./../../utility/icon");
+const { getPlayer, Player, getManager } = require("ziplayer");
 const config = useConfig();
 const logger = useLogger();
 //====================================================================//
@@ -75,7 +74,7 @@ async function buildImageInWorker(searchPlayer, query) {
 module.exports.execute = async (interaction, query, lang, options = {}) => {
 	logger.debug(`Executing command with query: ${JSON.stringify(query)}`);
 	const { client, guild, user } = interaction;
-	const voiceChannel = interaction.member.voice?.channel;
+	const voiceChannel = interaction?.member?.voice?.channel ?? options.voice;
 
 	if (!isUserInVoiceChannel(voiceChannel, interaction, lang)) return;
 	if (!isBotInSameVoiceChannel(guild, voiceChannel, interaction, lang)) return;
@@ -84,12 +83,11 @@ module.exports.execute = async (interaction, query, lang, options = {}) => {
 	await interaction.deferReply({ withResponse: true }).catch(() => {
 		logger.warn("Failed to defer reply");
 	});
-	const queue = useQueue(guild.id);
-	logger.debug(`Queue retrieved: ${queue?.tracks?.length || 0} tracks`);
+	const player = getPlayer(guild.id);
 
-	if (validURL(query) || options?.joinvoice) {
+	if (validURL(query) || query.includes("tts: ")) {
 		logger.debug("Handling play request");
-		return handlePlayRequest(interaction, query, lang, options, queue);
+		return handlePlayRequest(interaction, query, lang, options, player);
 	}
 
 	logger.debug("Handling search request");
@@ -138,24 +136,28 @@ function hasVoiceChannelPermissions(voiceChannel, client, interaction, lang) {
 }
 
 //#region Play Request
-async function handlePlayRequest(interaction, query, lang, options, queue) {
+/**
+ * @param { BaseInteraction } interaction
+ * @param { string } query
+ * @param { langdef } lang
+ * @param {object} options
+ * @param {Player} player
+ */
+async function handlePlayRequest(interaction, query, lang, options, player) {
 	try {
-		if (!queue?.metadata) await interaction.editReply({ content: "<a:loading:1151184304676819085> Loading..." });
+		if (!player?.userdata) await interaction.editReply({ content: "<a:loading:1151184304676819085> Loading..." });
 		const playerConfig = await getPlayerConfig(options, interaction);
 		logger.debug(`Player configuration retrieved:  ${JSON.stringify(playerConfig)}`);
-
-		if (!!options?.joinvoice) {
-			return joinVoiceChannel(interaction, queue, playerConfig, options, lang);
-		}
-
-		const res = await player.search(query, { requestedBy: interaction.user });
-		logger.debug("Search results obtained:", res);
-		await player.play(interaction.member.voice.channel, res, {
-			nodeOptions: { ...playerConfig, metadata: await getQueueMetadata(queue, interaction, options, lang) },
-			requestedBy: interaction.user,
+		const Player = getManager().create(interaction.guild.id, {
+			...playerConfig,
+			userdata: await getQueueMetadata(player, interaction, options, lang),
 		});
 
-		await cleanUpInteraction(interaction, queue);
+		if (!Player.connection) await Player.connect(interaction?.member?.voice?.channel ?? options?.voice);
+
+		Player.play(query, interaction.user);
+
+		await cleanUpInteraction(interaction, player);
 		logger.debug("Track played successfully");
 	} catch (e) {
 		logger.error(`Error in handlePlayRequest:  ${JSON.stringify(e)}`);
@@ -171,15 +173,17 @@ const DefaultPlayerConfig = {
 	leaveOnEnd: true,
 	leaveOnEndCooldown: 500_000,
 	pauseOnEmpty: true,
+	extensions: ["lyricsExt"],
 };
 
 async function getPlayerConfig(options, interaction) {
 	logger.debug("Starting getPlayerConfig");
 	const playerConfig = { ...DefaultPlayerConfig, ...config?.PlayerConfig };
 
-	if (options.assistant && config?.DevConfig?.VoiceExtractor) {
+	if (options.assistant) {
 		logger.debug("Disabling selfDeaf due to assistant option");
 		playerConfig.selfDeaf = false;
+		playerConfig.extensions.push("voiceExt");
 	}
 
 	if (playerConfig.volume === "auto") {
@@ -196,82 +200,23 @@ async function getPlayerConfig(options, interaction) {
 	return playerConfig;
 }
 
-async function joinVoiceChannel(interaction, queue, playerConfig, options, lang) {
-	logger.debug("Starting joinVoiceChannel function");
-	const queues = player.nodes.create(interaction.guild, {
-		...playerConfig,
-		metadata: await getQueueMetadata(queue, interaction, options, lang),
-	});
-	logger.debug("Queue created with metadata:", JSON.stringify(queues.metadata));
-
-	try {
-		if (!queues.connection) {
-			logger.debug("No existing connection, attempting to connect to voice channel");
-			await queues.connect(interaction.member.voice.channelId, { deaf: true });
-			logger.debug("Connected to voice channel successfully");
-		} else {
-			logger.debug("Already connected to a voice channel");
-		}
-	} catch (error) {
-		logger.debug(`Failed to connect to voice channel:  ${JSON.stringify(error)}`);
-		return await interaction
-			.editReply({
-				content: lang?.music?.NoPermission ?? "Bot không có quyền tham gia hoặc nói trong kênh thoại này",
-				ephemeral: true,
-			})
-			.catch(() => {
-				logger.debug("Failed to edit reply after connection error");
-			});
-	}
-
-	logger.debug("Acquiring task entry from task queue");
-	const entry = queues.tasksQueue.acquire();
-	logger.debug("Task entry acquired, waiting for task resolution");
-	await entry.getTask();
-	logger.debug("Task resolved, emitting PlayerStart event");
-
-	try {
-		player.events.emit(
-			GuildQueueEvent.PlayerStart,
-			queues,
-			new Track(player, {
-				title: "Join Voice",
-				url: config?.botConfig?.InviteBot,
-				thumbnail: config?.botConfig?.Banner,
-				duration: "0:00",
-				author: "EDM",
-				queryType: "ZiPlayer",
-			}),
-		);
-		logger.debug("PlayerStart event emitted successfully");
-		// if (!queues.isPlaying()) await queues.node.play();
-	} finally {
-		logger.debug("Releasing task entry");
-		queues.tasksQueue.release();
-	}
-	logger.debug("Exiting joinVoiceChannel function");
-	return;
-}
-
-async function getQueueMetadata(queue, interaction, options, lang) {
+async function getQueueMetadata(player, interaction, options, lang) {
 	return (
-		queue?.metadata ?? {
-			listeners: [interaction.user],
+		player?.userdata ?? {
 			channel: interaction.channel,
 			requestedBy: interaction.user,
 			LockStatus: false,
 			voiceAssistance: options.assistant && config?.DevConfig?.VoiceExtractor,
-			ZiLyrics: { Active: false },
 			lang: lang || langdef,
 			focus: options?.focus,
-			mess: interaction?.customId !== "S_player_Search" ? await interaction.fetchReply() : interaction.message,
+			mess: interaction?.customId !== "S_player_Search" ? await interaction.fetchReply() : interaction?.message,
 		}
 	);
 }
 
-async function cleanUpInteraction(interaction, queue) {
+async function cleanUpInteraction(interaction, player) {
 	logger.debug("Starting cleanUpInteraction");
-	if (queue?.metadata) {
+	if (player?.userdata) {
 		logger.debug("Queue metadata exists");
 		if (interaction?.customId === "S_player_Search") {
 			await interaction.message.delete().catch(() => {
@@ -321,7 +266,7 @@ async function handleError(interaction, lang) {
 //#endregion Play Request
 //#region Search Track
 async function handleSearchRequest(interaction, query, lang) {
-	const results = await player.search(query, { searchEngine: config.PlayerConfig.QueryType });
+	const results = await getPlayer("search").search(query, interaction.user);
 	logger.debug(`Search results:  ${results?.tracks?.length}`);
 	const tracks = filterTracks(results?.tracks);
 	logger.debug(`Filtered tracks:  ${tracks?.length}`);

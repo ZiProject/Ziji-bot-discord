@@ -1,7 +1,6 @@
-const { useMainPlayer, QueryType, GuildQueue } = require("discord-player");
 const { useFunctions } = require("@zibot/zihooks");
 const config = require("@zibot/zihooks").useConfig();
-const player = useMainPlayer();
+const { getPlayer, Player, Track } = require("ziplayer");
 const {
 	Client,
 	ButtonStyle,
@@ -20,72 +19,45 @@ const CreateButton = ({ id = null, style = ButtonStyle.Secondary, label = null, 
 	return button;
 };
 
-// Helper function to get related tracks
-const getRelatedTracks = async (track, history) => {
-	try {
-		let tracks = (await track?.extractor?.getRelatedTracks(track, history))?.tracks || [];
-
-		if (!tracks.length) {
-			tracks =
-				(
-					await player.extractors.run(async (ext) => {
-						const res = await ext.getRelatedTracks(track, history);
-						return res.tracks.length ? res.tracks : false;
-					})
-				)?.result || [];
-		}
-
-		return tracks.filter((tr) => !history.tracks.some((t) => t.url === tr.url));
-	} catch (e) {
-		console.log(e);
-		return [];
-	}
-};
-
 // Helper function to get query Type Icon
 const getQueryTypeIcon = (type, raw) => {
 	switch (type) {
-		case QueryType.YOUTUBE:
-		case QueryType.YOUTUBE_PLAYLIST:
-		case QueryType.YOUTUBE_SEARCH:
-		case QueryType.YOUTUBE_VIDEO:
-		case "ZiPlayer": //voice join
+		case "youtube":
 			return ZiIcons.youtubeIconURL;
-		case QueryType.SPOTIFY_ALBUM:
-		case QueryType.SPOTIFY_PLAYLIST:
-		case QueryType.SPOTIFY_SONG:
-		case QueryType.SPOTIFY_SEARCH:
+		case "spotify":
 			return ZiIcons.spotifyIconURL;
-		case QueryType.SOUNDCLOUD:
-		case QueryType.SOUNDCLOUD_TRACK:
-		case QueryType.SOUNDCLOUD_PLAYLIST:
-		case QueryType.SOUNDCLOUD_SEARCH:
+		case "soundcloud":
 			return ZiIcons.soundcloudIconURL;
 		default:
-			return raw?.favicon ?? ZiIcons.AttachmentIconURL;
+			return ZiIcons.AttachmentIconURL;
 	}
 };
 
-const repeatMode = ["OFF", `${ZiIcons.loop1} Track`, `${ZiIcons.loopQ} Queue`, `${ZiIcons.loopA} AutoPlay`];
+const repeatMode = (loop, auto) => {
+	if (loop == "track") return `${ZiIcons.loop1} Track`;
+	if (loop == "queue") return `${ZiIcons.loopQ} Queue`;
+	if (auto) return `${ZiIcons.loopA} AutoPlay`;
+	return "OFF";
+}; //["OFF", `${ZiIcons.loop1} Track`, `${ZiIcons.loopQ} Queue`, `${ZiIcons.loopA} AutoPlay`];
 
 module.exports = {
 	data: { name: "player_func", type: "player" },
 
 	/**
-	 * @param { Client } client
-	 * @param { GuildQueue } queue
+	 * @param { object } playerfucs
+	 * @param { Player } playerfucs.player
+	 * @param { Track } playerfucs.tracks
 	 * @returns
 	 */
 
-	execute: async ({ queue, tracks }) => {
-		const track = tracks ?? queue?.currentTrack ?? queue?.history?.previousTrack;
-		const requestedBy = track?.requestedBy ?? queue.metadata.requestedBy;
-		const langfunc = useFunctions().get("ZiRank");
-		const lang = await langfunc.execute({ user: requestedBy, XpADD: 0 });
-		const queryTypeIcon = getQueryTypeIcon(track?.queryType, track?.raw);
-		const timestamps = queue?.node.getTimestamp();
-		const trackDurationSymbol = timestamps?.progress === "Infinity" ? "" : "%";
-		const trackDuration = timestamps?.progress === "Infinity" ? "∞" : timestamps?.progress;
+	execute: async ({ player, tracks }) => {
+		const track = tracks ?? player?.currentTrack ?? player?.previousTrack;
+		let requestedBy =
+			(track?.requestedBy === "auto" ? player.userdata.requestedBy : track?.requestedBy) ?? player.userdata.requestedBy;
+
+		const lang = await useFunctions().get("ZiRank").execute({ user: requestedBy, XpADD: 0 });
+
+		const queryTypeIcon = getQueryTypeIcon(track?.source);
 
 		const embed = new EmbedBuilder()
 			.setAuthor({
@@ -94,7 +66,7 @@ module.exports = {
 				url: track?.url,
 			})
 			.setDescription(
-				`Volume: **${queue.node.volume}** % - Playing: **${trackDuration}${trackDurationSymbol}** - Host: ${queue.metadata.requestedBy} <a:_:${
+				`Volume: **${player.volume}** % - Host: ${player.userdata.requestedBy} <a:_:${
 					ZiIcons.animatedIcons[Math.floor(Math.random() * ZiIcons.animatedIcons.length)]
 				}>${config.webAppConfig?.musicControllerUrl ? `\n[Click to launch music controller](${config.webAppConfig.musicControllerUrl})` : ""}`,
 			)
@@ -110,13 +82,9 @@ module.exports = {
 			embed.setThumbnail(track?.thumbnail);
 		}
 
-		if (track?.queryType === "tts") {
-			embed.setDescription(`* ${player.client.user.username}:\n${track?.raw?.["full context"]}`);
-			return { content: "", embeds: [embed], components: [] };
-		}
 		const code = { content: "" };
-		const relatedTracks = await getRelatedTracks(track, queue.history);
-		const filteredTracks = relatedTracks.filter((t) => t.url.length < 100).slice(0, 20);
+
+		const filteredTracks = player.relatedTracks.filter((t) => t.url.length < 100).slice(0, 20);
 
 		const trackOptions = filteredTracks.map((track, i) => {
 			return new StringSelectMenuOptionBuilder()
@@ -144,10 +112,10 @@ module.exports = {
 				.setDisabled(!trackOptions.length),
 		);
 
-		if (queue.node.isPlaying() || queue.node.isPaused() || !queue.isEmpty()) {
+		if (player.isPlaying || player.isPaused || !player.queue.isEmpty) {
 			embed.addFields({
 				name: " ",
-				value: `${queue.node.createProgressBar({ leftChar: "﹏", rightChar: "﹏", indicator: "𓊝" })}`,
+				value: `${player.getProgressBar({ barChar: "﹏", progressChar: "𓊝" })}`,
 			});
 			const functions = [
 				{
@@ -158,13 +126,13 @@ module.exports = {
 				},
 				{
 					Label:
-						!queue.metadata.LockStatus ? lang?.playerFunc?.Fields?.Lock || "Lock" : lang?.playerFunc?.Fields?.UnLock || "UnLock",
+						!player.userdata.LockStatus ? lang?.playerFunc?.Fields?.Lock || "Lock" : lang?.playerFunc?.Fields?.UnLock || "UnLock",
 					Description:
-						!queue.metadata.LockStatus ?
+						!player.userdata.LockStatus ?
 							lang?.playerFunc?.Fields?.Lockdes || "Khoá truy cập player"
 						:	lang?.playerFunc?.Fields?.Unlockdes || "Mở khoá truy cập player",
 					Value: "Lock",
-					Emoji: !queue.metadata.LockStatus ? ZiIcons.Lock : ZiIcons.UnLock,
+					Emoji: !player.userdata.LockStatus ? ZiIcons.Lock : ZiIcons.UnLock,
 				},
 				{
 					Label: "Loop",
@@ -235,11 +203,11 @@ module.exports = {
 			];
 
 			const filteredFunctions = functions.filter((f) => {
-				if (queue.isEmpty() && (f.Label === "Shuffle" || f.Label === "Queue")) return false;
-				if (queue.node.volume > 99 && f.Value === "volinc") return false;
-				if (queue.node.volume < 1 && f.Value === "voldec") return false;
-				if (queue.node.volume === 0 && f.Value === "Mute") return false;
-				if (queue.node.volume !== 0 && f.Value === "Unmute") return false;
+				if (player.queue.isEmpty && (f.Label === "Shuffle" || f.Label === "Queue")) return false;
+				if (player.volume > 99 && f.Value === "volinc") return false;
+				if (player.volume < 1 && f.Value === "voldec") return false;
+				if (player.volume === 0 && f.Value === "Mute") return false;
+				if (player.volume !== 0 && f.Value === "Unmute") return false;
 				return true;
 			});
 
@@ -265,11 +233,11 @@ module.exports = {
 				CreateButton({
 					id: "previous",
 					emoji: `${ZiIcons.prev}`,
-					disable: !queue?.history?.previousTrack,
+					disable: !player?.previousTrack,
 				}),
 				CreateButton({
 					id: "pause",
-					emoji: `${queue.node.isPlaying() ? `${ZiIcons.pause}` : `${ZiIcons.play}`}`,
+					emoji: `${player.isPlaying ? `${ZiIcons.pause}` : `${ZiIcons.play}`}`,
 					disable: false,
 				}),
 				CreateButton({ id: "next", emoji: `${ZiIcons.next}`, disable: false }),
@@ -288,7 +256,7 @@ module.exports = {
 				CreateButton({
 					id: "previous",
 					emoji: `${ZiIcons.prev}`,
-					disable: !queue?.history?.previousTrack,
+					disable: !player?.previousTrack,
 				}),
 				CreateButton({ id: "search", emoji: `${ZiIcons.search}`, disable: false }),
 				CreateButton({ id: "autoPlay", emoji: `${ZiIcons.loopA}`, disable: false }),
@@ -296,30 +264,30 @@ module.exports = {
 			);
 			code.components = [relatedTracksRow, buttonRow];
 		}
-		if (!!queue.metadata.LockStatus) {
+		if (!!player.userdata.LockStatus) {
 			embed.addFields({
 				name: `${ZiIcons.Lock} **${lang?.playerFunc?.Fields?.Lockdes}**`,
 				value: " ",
 				inline: false,
 			});
 		}
-		if (queue.repeatMode !== 0) {
+		if (player.loop() !== "off") {
 			embed.addFields({
-				name: `${lang?.playerFunc?.Fields?.Loop || "Lặp lại"}: ${repeatMode[queue.repeatMode]}`,
+				name: `${lang?.playerFunc?.Fields?.Loop || "Lặp lại"}: ${repeatMode(player.loop(), player.autoPlay())}`,
 				value: " ",
 				inline: false,
 			});
 		}
-		if (!!queue?.filters?.ffmpeg?.toArray().length) {
-			embed.addFields({
-				name: ` `,
-				value: `**${lang?.playerFunc?.Fields?.Filter || "Filter"}: ${queue?.filters?.ffmpeg?.getFiltersEnabled()}**`.slice(
-					0,
-					1020,
-				),
-				inline: false,
-			});
-		}
+		// if (!!queue?.filters?.ffmpeg?.toArray().length) {
+		// 	embed.addFields({
+		// 		name: ` `,
+		// 		value: `**${lang?.playerFunc?.Fields?.Filter || "Filter"}: ${queue?.filters?.ffmpeg?.getFiltersEnabled()}**`.slice(
+		// 			0,
+		// 			1020,
+		// 		),
+		// 		inline: false,
+		// 	});
+		// }
 		code.embeds = [embed];
 		code.files = [];
 

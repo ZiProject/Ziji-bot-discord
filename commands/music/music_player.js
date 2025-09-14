@@ -1,5 +1,5 @@
-const { useQueue } = require("discord-player");
 const { useFunctions } = require("@zibot/zihooks");
+const { getPlayer } = require("ziplayer");
 
 module.exports.data = {
 	name: "player",
@@ -17,15 +17,15 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	await interaction.deferReply({ fetchReply: true });
-	const queue = useQueue(interaction.guild.id);
-	if (!queue) return interaction.editReply({ content: lang.music.NoPlaying }).catch((e) => {});
-	queue.metadata.mess.edit({ components: [] }).catch((e) => {});
+	await interaction.deferReply({ withResponse: true });
+	const player = getPlayer(interaction.guildId);
+	if (!player?.connection) return interaction.editReply({ content: lang.music.NoPlaying }).catch((e) => {});
+	player.userdata.mess.edit({ components: [] }).catch((e) => {});
 
-	queue.metadata.mess = await interaction.fetchReply();
+	player.userdata.mess = await interaction.fetchReply();
 
-	const player = useFunctions().get("player_func");
-	if (!player) return;
-	const res = await player.execute({ queue });
+	const player_func = useFunctions().get("player_func");
+	if (!player_func) return;
+	const res = await player_func.execute({ player });
 	await interaction.editReply(res);
 };

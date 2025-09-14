@@ -17,7 +17,7 @@ module.exports = {
 			.setTimestamp()
 			.setFooter({
 				text: `by: ${track?.requestedBy?.username}`,
-				iconURL: track?.requestedBy?.displayAvatarURL({ size: 1024 }) ?? null,
+				iconURL: track?.requestedBy?.displayAvatarURL?.({ size: 1024 }) ?? null,
 			});
 		const replied = await player.userdata?.channel?.send({ embeds: [embed], fetchReply: true }).catch((e) => {});
 		setTimeout(function () {

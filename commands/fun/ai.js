@@ -1,5 +1,5 @@
 const { useFunctions, useConfig } = require("@zibot/zihooks");
-const { useQueue } = require("discord-player");
+const { getPlayer } = require("ziplayer");
 const config = useConfig();
 
 module.exports.data = {
@@ -20,19 +20,18 @@ module.exports.data = {
 				},
 			],
 		},
-		//discord-player v7 chua ho tro voice rec
-		// {
-		// 	name: "assistant",
-		// 	description: "Kích hoạt AI trong phòng voice",
-		// 	type: 1,
-		// 	options: [
-		// 		{
-		// 			name: "focus",
-		// 			description: "Chỉ nghe lệnh người yêu cầu.",
-		// 			type: 5, //BOOLEAN
-		// 		},
-		// 	],
-		// },
+		{
+			name: "assistant",
+			description: "Kích hoạt AI trong phòng voice",
+			type: 1,
+			options: [
+				{
+					name: "focus",
+					description: "Chỉ nghe lệnh người yêu cầu.",
+					type: 5, //BOOLEAN
+				},
+			],
+		},
 	],
 	integration_types: [0, 1],
 	contexts: [0, 1],
@@ -50,10 +49,8 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const { client, guild, options, member } = interaction;
 	const subcommand = options.getSubcommand();
 	const prompt = options.getString("prompt") || "Hello";
-	const queue = guild?.id ? useQueue(guild.id) : null;
+	const player = guild?.id ? getPlayer(guild.id) : null;
 
-	//discord-player v7 chua ho tro voice rec
-	return this.ask(interaction, prompt, lang);
 	/**
 	 * Nếu có voice, ưu tiên vào voice trả lời.
 	 * Nếu Không có thì trả lời messenger
@@ -64,7 +61,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 		return this.assistant(interaction, lang, { query: prompt });
 	}
 
-	if (!queue) return this.ask(interaction, prompt, lang);
+	if (!player) return this.ask(interaction, prompt, lang);
 
 	const voiceChannel = member?.voice?.channel;
 	if (!voiceChannel) {

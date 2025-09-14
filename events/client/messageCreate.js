@@ -1,9 +1,9 @@
 const { Events, Message } = require("discord.js");
 const { useResponder, useConfig, useFunctions, useCommands, useLogger, modinteraction, useAI } = require("@zibot/zihooks");
 const config = useConfig();
-const { useQueue } = require("discord-player");
 const mentionRegex = /@(everyone|here|ping)/;
 const ziicon = require("./../../utility/icon");
+const { getPlayer } = require("ziplayer");
 
 const Commands = useCommands();
 const Functions = useFunctions();
@@ -110,11 +110,11 @@ const reqreponser = async (message) => {
  */
 
 const reqTTS = async (message, lang) => {
-	const queue = useQueue(message.guild.id);
+	const player = getPlayer(message.guild.id);
 	modinteraction(message);
 	const tts = await Functions.get("TextToSpeech");
-	if (queue?.metadata) await message.react(ziicon.yess);
+	if (player?.userdata) await message.react(ziicon.yess);
 	const context = message.content.replace(`<@${message.client.user.id}>`, "").trim();
 
-	await tts.execute(message, context, lang, { queue });
+	await tts.execute(message, context, lang, { player });
 };

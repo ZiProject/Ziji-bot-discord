@@ -25,7 +25,7 @@ module.exports = {
 		if (config.PlayerConfig?.changeStatus) {
 			const status = `💿 Now playing: ${track.title}`;
 			const { rest } = useClient();
-			rest.put(`/channels/${player?.channel?.id}/voice-status`, { body: { status } }).catch((e) => {
+			rest.put(`/channels/${player?.connection?.joinConfig.channelId}/voice-status`, { body: { status } }).catch((e) => {
 				console.log(e);
 			});
 		}

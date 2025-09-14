@@ -7,9 +7,11 @@ const checkUpdate = () => Update(logger);
 let config;
 try {
 	config = require("./../config.js");
+	useConfig(config);
 } catch {
 	console.log("Cannot find config file, use default");
 	config = require("./defaultconfig.js");
+	useConfig(config);
 }
 const finalconfig = useConfig(config);
 const logger = logf(finalconfig);

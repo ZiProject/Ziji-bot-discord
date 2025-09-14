@@ -101,6 +101,7 @@ module.exports.execute = async (interaction, options) => {
 module.exports.data = {
 	name: "Lyrics",
 	type: "player",
+	enable: false,
 };
 
 module.exports.search = async ({ query, queue }) => {

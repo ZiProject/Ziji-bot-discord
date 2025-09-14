@@ -1,9 +1,19 @@
 require("dotenv").config();
 const { startServer } = require("./web");
-const { useClient, useCooldowns, useCommands, useFunctions, useGiveaways, useResponder, useWelcome } = require("@zibot/zihooks");
+const {
+	useClient,
+	useCooldowns,
+	useCommands,
+	useFunctions,
+	useGiveaways,
+	useResponder,
+	useWelcome,
+	useConfig,
+} = require("@zibot/zihooks");
 const path = require("node:path");
 const { GiveawaysManager } = require("discord-giveaways");
-const { loadFiles, loadEvents, createfile, logger, config, checkUpdate } = require("./startup");
+const config = useConfig(require("./config"));
+const { loadFiles, loadEvents, createfile, logger, checkUpdate } = require("./startup");
 const { Client, Collection, GatewayIntentBits, Partials } = require("discord.js");
 const readline = require("readline");
 
@@ -42,10 +52,10 @@ createfile("./jsons");
 
 //create Player Manager
 const manager = new PlayerManager({
-	plugins: [new TTSPlugin(), new SoundCloudPlugin(), new YouTubePlugin(), new SpotifyPlugin()],
-	extensions: [new lyricsExt(), new voiceExt()],
+	plugins: [new TTSPlugin(), new YouTubePlugin(), new SoundCloudPlugin(), new SpotifyPlugin()],
+	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
 });
-
+manager.create("search");
 const rl = readline.createInterface({
 	input: process.stdin,
 	output: process.stdout,

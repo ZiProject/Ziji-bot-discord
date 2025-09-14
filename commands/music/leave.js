@@ -1,7 +1,7 @@
 const { getPlayer } = require("ziplayer");
 
 module.exports.data = {
-	name: "disconnect",
+	name: "leave",
 	description: "Tắt nhạc và rời khỏi kênh thoại",
 	type: 1, // slash commad
 	options: [],
@@ -16,7 +16,7 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	await interaction.deferReply({ withResponse: true });
+	await interaction.deferReply();
 	const player = getPlayer(interaction.guild.id);
 	if (!player.connection) {
 		await interaction?.guild?.members?.me?.voice?.disconnect();

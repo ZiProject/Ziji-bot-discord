@@ -1,24 +1,25 @@
 const { EmbedBuilder } = require("discord.js");
 
 module.exports = {
-	name: "queueAddList",
+	name: "lyricsCreate",
 	type: "Player",
 	/**
 	 *
 	 * @param {import('ziplayer').Player} player
-	 * @param {import('ziplayer').Track[]} tracks
+	 * @param {import('ziplayer').Track} track
+	 * @param {number} index
 	 */
-	execute: async (player, tracks) => {
+	execute: async (player, track, result) => {
+		return; // use lyricsChange
 		const embed = new EmbedBuilder()
-			.setDescription(
-				`Đã thêm danh sách phát: [${tracks[0]?.playlist?.title || "Không có tiêu đề"}](${tracks[0]?.playlist?.url || `https://soundcloud.com`})`,
-			)
+			.setTitle("lyrics")
+			.setDescription(`:wastebasket: | Đã xóa ${index}. **${track?.title}**!`)
 			.setThumbnail(track?.thumbnail)
 			.setColor("Random")
 			.setTimestamp()
 			.setFooter({
 				text: `by: ${track?.requestedBy?.username}`,
-				iconURL: track?.requestedBy?.displayAvatarURL?.({ size: 1024 }) ?? null,
+				iconURL: track?.requestedBy?.displayAvatarURL({ size: 1024 }) ?? null,
 			});
 		const replied = await player.userdata?.channel?.send({ embeds: [embed], fetchReply: true }).catch((e) => {});
 		setTimeout(function () {

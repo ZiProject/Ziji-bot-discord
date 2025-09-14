@@ -1,5 +1,5 @@
-const { useQueue } = require("discord-player");
 const { useFunctions, useDB } = require("@zibot/zihooks");
+const { getPlayer } = require("ziplayer");
 
 module.exports.data = {
 	name: "volume",
@@ -26,18 +26,18 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	await interaction.deferReply({ fetchReply: true });
+	await interaction.deferReply({ withResponse: true });
 	const volume = interaction.options.getInteger("vol");
-	const queue = useQueue(interaction.guild.id);
-	if (!queue) return interaction.editReply({ content: lang.music.NoPlaying });
-	queue.node.setVolume(Math.floor(volume));
+	const player = getPlayer(interaction.guildId);
+	if (!player?.connection) return interaction.editReply({ content: lang.music.NoPlaying });
+	player.setVolume(Math.floor(volume));
 	await interaction.deleteReply().catch((e) => {});
 	const DataBase = useDB();
 	if (DataBase) {
 		await DataBase.ZiUser.updateOne({ userID: interaction.user.id }, { $set: { volume: volume }, $upsert: true });
 	}
-	const player = useFunctions().get("player_func");
-	if (!player) return;
-	const res = await player.execute({ queue });
-	return queue.metadata.mess.edit(res);
+	const player_func = useFunctions().get("player_func");
+	if (!player_func) return;
+	const res = await player_func.execute({ player });
+	return player.userdata.mess.edit(res);
 };

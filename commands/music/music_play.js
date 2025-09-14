@@ -1,6 +1,5 @@
-const { useMainPlayer, useQueue, QueryType } = require("discord-player");
 const { useFunctions, useConfig } = require("@zibot/zihooks");
-const player = useMainPlayer();
+const { getPlayer } = require("ziplayer");
 const config = useConfig();
 
 module.exports.data = {
@@ -11,6 +10,20 @@ module.exports.data = {
 		{
 			name: "next",
 			description: "Thêm nhạc và tiếp theo",
+			type: 1, // sub command
+			options: [
+				{
+					name: "query",
+					description: "Tên bài hát",
+					required: true,
+					type: 3,
+					autocomplete: true,
+				},
+			],
+		},
+		{
+			name: "music",
+			description: "Phát nhạc",
 			type: 1, // sub command
 			options: [
 				{
@@ -41,20 +54,6 @@ module.exports.data = {
 				},
 			],
 		},
-		{
-			name: "music",
-			description: "Phát nhạc",
-			type: 1, // sub command
-			options: [
-				{
-					name: "query",
-					description: "Tên bài hát",
-					required: true,
-					type: 3,
-					autocomplete: true,
-				},
-			],
-		},
 	],
 	integration_types: [0],
 	contexts: [0],
@@ -70,15 +69,14 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const commandtype = interaction.options?.getSubcommand();
 	const query = interaction.options?.getString("query");
 	const command = useFunctions().get("Search");
+	const player = getPlayer(interaction.guildId);
 	if (commandtype === "next") {
-		const queue = useQueue(interaction.guild.id);
-
-		if (queue) {
-			const res = await player.search(query, { searchEngine: config.PlayerConfig.QueryType });
+		if (player.connection) {
+			const res = await player.search(query, interaction.user);
 			const track = res.tracks?.[0];
 
 			if (track) {
-				queue.insertTrack(track, 0);
+				player.insert(track, 0, interaction.user);
 				await interaction.reply({ content: lang.music.Next, ephemeral: true });
 			} else {
 				await interaction.reply({ content: lang.music.NOres, ephemeral: true });
@@ -106,10 +104,7 @@ module.exports.autocomplete = async ({ interaction, lang }) => {
 		const query = interaction.options.getString("query", true);
 		if (!query) return;
 
-		const results = await player.search(query, {
-			fallbackSearchEngine: QueryType.SOUNDCLOUD,
-			searchEngine: config.PlayerConfig.QueryType,
-		});
+		const results = await getPlayer("search").search(query);
 
 		const tracks = results.tracks
 			.filter((t) => t.title.length > 0 && t.title.length < 100 && t.url.length > 0 && t.url.length < 100)
