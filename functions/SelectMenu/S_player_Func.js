@@ -81,7 +81,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 		}
 		case "Loop": {
 			const repeatt = ["off" | "track" | "queue"];
-			const repeatMode = repeatt.findIndex(player.loop());
+			const repeatMode = repeatt.findIndex(player.loop);
 
 			player.loop(repeatt[(repeatMode + 1) % 2]);
 
