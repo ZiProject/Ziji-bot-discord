@@ -1,4 +1,4 @@
-const { useQueue } = require("discord-player");
+const { getPlayer } = require("ziplayer");
 const { useFunctions } = require("@zibot/zihooks");
 
 module.exports.data = {
@@ -14,10 +14,11 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	const queue = useQueue(interaction.guild.id);
-	if (!queue) return interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
+	const player = getPlayer(interaction.guild.id);
+	if (!player) return interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
+
 	// Kiểm tra xem có khóa player không
-	if (queue.metadata.LockStatus && queue.metadata.requestedBy?.id !== interaction.user?.id)
+	if (player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id)
 		return interaction.followUp({ content: lang.until.noPermission, ephemeral: true });
 
 	// Kiểm tra xem người dùng có ở cùng voice channel với bot không
@@ -26,8 +27,9 @@ module.exports.execute = async ({ interaction, lang }) => {
 	if (!botVoiceChannel || botVoiceChannel.id !== userVoiceChannel?.id)
 		return interaction.followUp({ content: lang.music.NOvoiceMe, ephemeral: true });
 
-	queue.tracks.shuffle();
+	player.shuffle();
+
 	const QueueTrack = useFunctions().get("Queue");
-	QueueTrack.execute(interaction, queue, true);
+	QueueTrack.execute(interaction, player, true);
 	return;
 };

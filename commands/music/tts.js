@@ -1,4 +1,3 @@
-const { useMainPlayer, useQueue, Track } = require("discord-player");
 const { useFunctions } = require("@zibot/zihooks");
 const Functions = useFunctions();
 

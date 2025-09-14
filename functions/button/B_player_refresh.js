@@ -1,5 +1,5 @@
-const { useQueue } = require("discord-player");
 const { useFunctions } = require("@zibot/zihooks");
+const { getPlayer } = require("ziplayer");
 
 module.exports.data = {
 	name: "B_player_refresh",
@@ -15,11 +15,11 @@ module.exports.data = {
 
 module.exports.execute = async ({ interaction, lang }) => {
 	await interaction.deferUpdate();
-	const queue = useQueue(interaction.guild.id);
-	if (!queue) return;
-	const player = useFunctions().get("player_func");
-
+	const player = getPlayer(interaction.guild.id);
 	if (!player) return;
-	const res = await player.execute({ queue });
-	queue.metadata.mess.edit(res);
+	const player_func = useFunctions().get("player_func");
+
+	if (!player_func) return;
+	const res = await player_func.execute({ player });
+	player.userdata.mess.edit(res);
 };

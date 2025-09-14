@@ -1,4 +1,4 @@
-const { useQueue } = require("discord-player");
+const { getPlayer } = require("ziplayer");
 
 module.exports.data = {
 	name: "B_queue_clear",
@@ -13,11 +13,12 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	const queue = useQueue(interaction.guild.id);
-	if (!queue) return interaction.reply({ content: lang.music.NoPlaying, ephemeral: true });
+	const player = getPlayer(interaction.guild.id);
+	if (!player) return interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
+
 	// Kiểm tra xem có khóa player không
-	if (queue.metadata.LockStatus && queue.metadata.requestedBy?.id !== interaction.user?.id)
-		return interaction.reply({ content: lang.until.noPermission, ephemeral: true });
+	if (player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id)
+		return interaction.followUp({ content: lang.until.noPermission, ephemeral: true });
 
 	// Kiểm tra xem người dùng có ở cùng voice channel với bot không
 	const botVoiceChannel = interaction.guild.members.me.voice.channel;
@@ -25,7 +26,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 	if (!botVoiceChannel || botVoiceChannel.id !== userVoiceChannel?.id)
 		return interaction.reply({ content: lang.music.NOvoiceMe, ephemeral: true });
 
-	queue.clear();
+	player.clearQueue();
 	interaction.message.delete().catch((e) => {});
 	return;
 };

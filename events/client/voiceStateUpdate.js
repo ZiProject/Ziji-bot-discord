@@ -1,7 +1,7 @@
 const { Events, EmbedBuilder } = require("discord.js");
-const { useQueue } = require("discord-player");
 const config = require("@zibot/zihooks").useConfig();
 const { useFunctions, useDB } = require("@zibot/zihooks");
+const { getPlayer } = require("ziplayer");
 
 module.exports = {
 	name: Events.VoiceStateUpdate,
@@ -56,21 +56,21 @@ const Voicelogmode = async (oldState, newState, guildSetting) => {
 const playerQueue = async (oldState) => {
 	const client = oldState.client;
 
-	const queue = useQueue(oldState?.guild?.id);
+	const player = getPlayer(oldState?.guild?.id);
 
-	if (!queue || !queue.metadata) return;
+	if (!player || !player.connection) return;
 
-	const botChannel = oldState?.guild?.channels?.cache?.get(queue.dispatcher?.voiceConnection?.joinConfig?.channelId);
+	const botChannel = oldState?.guild?.channels?.cache?.get(player.connection?.joinConfig?.channelId);
 	if (!botChannel || botChannel.id !== oldState.channelId) return;
 
-	const requestedMember = botChannel.members.get(queue.metadata?.requestedBy?.id);
+	const requestedMember = botChannel.members.get(player.userdata?.requestedBy?.id);
 	if (requestedMember) return;
 
 	const nonBotMembers = botChannel.members.filter((m) => !m.user.bot);
 	if (nonBotMembers.size < 1) return;
 
 	const randomMember = nonBotMembers.random();
-	const { channel, requestedBy, lang } = queue.metadata;
+	const { channel, requestedBy, lang } = player.userdata;
 	const mess = await channel.send({
 		embeds: [
 			new EmbedBuilder()
@@ -89,5 +89,5 @@ const playerQueue = async (oldState) => {
 		],
 	});
 	setTimeout(() => mess?.delete().catch(() => {}), 20_000);
-	queue.metadata.requestedBy = randomMember.user;
+	player.userdata.requestedBy = randomMember.user;
 };

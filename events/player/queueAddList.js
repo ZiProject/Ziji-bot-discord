@@ -13,12 +13,12 @@ module.exports = {
 			.setDescription(
 				`Đã thêm danh sách phát: [${tracks[0]?.playlist?.title || "Không có tiêu đề"}](${tracks[0]?.playlist?.url || `https://soundcloud.com`})`,
 			)
-			.setThumbnail(track?.thumbnail)
+			.setThumbnail(tracks?.thumbnail)
 			.setColor("Random")
 			.setTimestamp()
 			.setFooter({
-				text: `by: ${track?.requestedBy?.username}`,
-				iconURL: track?.requestedBy?.displayAvatarURL?.({ size: 1024 }) ?? null,
+				text: `by: ${tracks?.requestedBy?.username}`,
+				iconURL: tracks?.requestedBy?.displayAvatarURL?.({ size: 1024 }) ?? null,
 			});
 		const replied = await player.userdata?.channel?.send({ embeds: [embed], fetchReply: true }).catch((e) => {});
 		setTimeout(function () {

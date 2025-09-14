@@ -1,4 +1,4 @@
-const { useQueue } = require("discord-player");
+const { usePlayer } = require("@zibot/zihooks");
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require("discord.js");
 
 module.exports.data = {
@@ -14,9 +14,9 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	const queue = useQueue(interaction.guild.id);
+	const player = usePlayer(interaction.guild.id)
 
-	if (!queue) return interaction.reply({ content: lang.music.NoPlaying, ephemeral: true });
+	if (!player) return interaction.reply({ content: lang.music.NoPlaying, ephemeral: true });
 
 	// Kiểm tra xem người dùng có ở cùng voice channel với bot không
 	const botVoiceChannel = interaction.guild.members.me.voice.channel;

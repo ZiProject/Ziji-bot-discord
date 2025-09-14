@@ -1,4 +1,4 @@
-const { useQueue } = require("discord-player");
+const { getPlayer } = require("ziplayer");
 
 module.exports.data = {
 	name: "B_player_stop",
@@ -14,10 +14,11 @@ module.exports.data = {
 
 module.exports.execute = async ({ interaction, lang }) => {
 	await interaction.deferUpdate();
-	const queue = useQueue(interaction.guild.id);
-	if (!queue) return interaction.message.edit({ components: [] }).catch((e) => {});
+	const player = getPlayer(interaction.guild.id);
+	if (!player) return interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
+
 	// Kiểm tra xem có khóa player không
-	if (queue.metadata.LockStatus && queue.metadata.requestedBy?.id !== interaction.user?.id)
+	if (player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id)
 		return interaction.followUp({ content: lang.until.noPermission, ephemeral: true });
 
 	// Kiểm tra xem người dùng có ở cùng voice channel với bot không
@@ -27,5 +28,5 @@ module.exports.execute = async ({ interaction, lang }) => {
 		return interaction.followUp({ content: lang.music.NOvoiceMe, ephemeral: true });
 
 	interaction.message.edit({ components: [] }).catch((e) => {});
-	queue.delete();
+	player.destroy();
 };

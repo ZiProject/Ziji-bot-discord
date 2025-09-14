@@ -1,4 +1,3 @@
-const { useQueue } = require("discord-player");
 const ZiIcons = require("./../../utility/icon");
 const {
 	EmbedBuilder,

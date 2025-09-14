@@ -1,5 +1,4 @@
 const { useFunctions } = require("@zibot/zihooks");
-const { useQueue } = require("discord-player");
 
 module.exports.data = {
 	name: "M_Lyrics_input",
