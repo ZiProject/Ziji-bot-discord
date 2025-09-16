@@ -37,11 +37,11 @@ module.exports = {
 			if (player?.userdata?.lrcmess) {
 				player.userdata.lrcmess.edit({ embeds: [embed] });
 			} else {
-				const lrcmess = await player?.userdata?.mess?.followUp({ embeds: [embed] });
+				const lrcmess = await player.userdata.mess.reply({ embeds: [embed] });
 				player.userdata.lrcmess = lrcmess;
 			}
 		} catch {
-			const lrcmess = await player?.userdata?.mess?.followUp({ embeds: [embed] }).catch(async (e) => {
+			const lrcmess = await player?.userdata?.mess?.reply({ embeds: [embed] }).catch(async (e) => {
 				return await player?.userdata?.channel?.send({ embeds: [embed] });
 			});
 			player.userdata.lrcmess = lrcmess;

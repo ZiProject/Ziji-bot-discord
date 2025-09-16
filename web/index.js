@@ -183,12 +183,9 @@ async function startServer() {
 				ws.send(
 					JSON.stringify({
 						event: "statistics",
-						timestamp: {
-							current: queue.node.getTimestamp()?.current?.value ?? 0,
-							total: queue.currentTrack?.duration,
-						},
+						timestamp: queue.getTime(),
 						listeners: queue.userdata?.channel?.members.filter((mem) => !mem.user.bot).size ?? 0,
-						tracks: queue.tracks.size,
+						tracks: queue.queue.tracks?.length,
 						volume: queue.volume,
 						paused: queue.isPaused,
 						repeatMode: queue.loop(),
