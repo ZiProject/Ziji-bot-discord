@@ -2,11 +2,11 @@ const { useFunctions, useDB, useConfig } = require("@zibot/zihooks");
 const Functions = useFunctions();
 const config = useConfig();
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require("discord.js");
-const { getPlayer } = require("ziplayer");
 
 module.exports.data = {
 	name: "S_player_Func",
 	type: "SelectMenu",
+	category: "musix",
 };
 async function Update_Player(player) {
 	const player_func = Functions.get("player_func");
@@ -19,14 +19,14 @@ async function Update_Player(player) {
  * @param { object } selectmenu - object selectmenu
  * @param { import ("discord.js").StringSelectMenuInteraction } selectmenu.interaction - selectmenu interaction
  * @param { import('../../lang/vi.js') } selectmenu.lang - language
+ * @param {import("ziplayer").Player} selectmenu.player - player
  */
 
-module.exports.execute = async ({ interaction, lang }) => {
+module.exports.execute = async ({ interaction, lang, player }) => {
 	const { guild, client, values, user } = interaction;
 	const query = values?.at(0);
-	const player = getPlayer(guild.id);
 
-	switch (player) {
+	switch (query) {
 		case "Search": {
 			const modal = new ModalBuilder()
 				.setTitle("Search")
@@ -80,17 +80,18 @@ module.exports.execute = async ({ interaction, lang }) => {
 			return;
 		}
 		case "Loop": {
-			const repeatt = ["off" | "track" | "queue"];
-			const repeatMode = repeatt.findIndex(player.loop);
+			const repeatt = ["off", "track", "queue"];
+			const repeatMode = repeatt.indexOf(player.loop());
+			player.autoPlay(false);
 
-			player.loop(repeatt[(repeatMode + 1) % 2]);
+			player.loop(repeatt[(repeatMode + 1) % 3]);
 
 			await Update_Player(player);
 			return;
 		}
 		case "AutoPlay": {
 			player.loop("off");
-			player.autoPlay(true);
+			player.autoPlay(!player.autoPlay());
 			await Update_Player(player);
 			return;
 		}
@@ -129,30 +130,19 @@ module.exports.execute = async ({ interaction, lang }) => {
 			await Update_Player(player);
 			return;
 		}
-		// case "Lyrics": {
-		// 	const ZiLyrics = queue.metadata.ZiLyrics;
-		// 	if (!ZiLyrics?.Active) {
-		// 		ZiLyrics.Active = true;
-		// 		ZiLyrics.mess = await interaction.followUp({
-		// 			content: "<a:loading:1151184304676819085> Loading...",
-		// 		});
-		// 		ZiLyrics.channel = interaction.channel;
-		// 		const Lyrics = Functions.get("Lyrics");
-		// 		if (!Lyrics) return;
-		// 		await Lyrics.execute(null, { type: "syncedLyrics", player });
-		// 		return;
-		// 	}
-		// 	ZiLyrics.mess.delete().catch(() => {});
-		// 	ZiLyrics.Active = false;
-		// 	try {
-		// 		if (ZiLyrics?.unsubscribe && typeof ZiLyrics.unsubscribe === "function") {
-		// 			ZiLyrics.unsubscribe();
-		// 		}
-		// 	} catch (error) {
-		// 		console.error("Error unsubscribing from lyrics:", error);
-		// 	}
-		// 	return;
-		// }
+		case "Lyrics": {
+			if (!player.userdata?.lyrcsActive) {
+				player.userdata.lyrcsActive = true;
+				player.userdata.lrcmess = await interaction.followUp({
+					content: "<a:loading:1151184304676819085> Loading...",
+				});
+				return;
+			}
+			player.userdata.lyrcsActive = false;
+			player.userdata?.lrcmess?.delete?.().catch(() => {});
+			await Update_Player(player);
+			return;
+		}
 		case "Shuffle": {
 			player.shuffle();
 			await Update_Player(player);

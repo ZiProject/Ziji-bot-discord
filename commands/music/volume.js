@@ -1,9 +1,9 @@
 const { useFunctions, useDB } = require("@zibot/zihooks");
-const { getPlayer } = require("ziplayer");
 
 module.exports.data = {
 	name: "volume",
 	description: "Chỉnh sửa âm lượng nhạc",
+	category: "musix",
 	type: 1, // slash commad
 	options: [
 		{
@@ -22,13 +22,13 @@ module.exports.data = {
 /**
  * @param { object } command - object command
  * @param { import ("discord.js").CommandInteraction } command.interaction - interaction
- * @param { import ('../../lang/vi.js') } lang
+ * @param { import ('../../lang/vi.js') } command.lang
+ * @param {import("ziplayer").Player} command.player - player
  */
 
-module.exports.execute = async ({ interaction, lang }) => {
+module.exports.execute = async ({ interaction, lang, player }) => {
 	await interaction.deferReply({ withResponse: true });
 	const volume = interaction.options.getInteger("vol");
-	const player = getPlayer(interaction.guildId);
 	if (!player?.connection) return interaction.editReply({ content: lang.music.NoPlaying });
 	player.setVolume(Math.floor(volume));
 	await interaction.deleteReply().catch((e) => {});

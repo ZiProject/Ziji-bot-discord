@@ -1,8 +1,7 @@
-const { getPlayer } = require("ziplayer");
-
 module.exports.data = {
 	name: "disconnect",
 	description: "Tắt nhạc và rời khỏi kênh thoại",
+	category: "musix",
 	type: 1, // slash commad
 	options: [],
 	integration_types: [0],
@@ -12,12 +11,12 @@ module.exports.data = {
 /**
  * @param { object } command - object command
  * @param { import ("discord.js").CommandInteraction } command.interaction - interaction
- * @param { import('../../lang/vi.js') } lang
+ * @param { import('../../lang/vi.js') } command.lang
+ * @param {import("ziplayer").Player} command.player - player
  */
 
-module.exports.execute = async ({ interaction, lang }) => {
+module.exports.execute = async ({ interaction, lang, player }) => {
 	await interaction.deferReply({ withResponse: true });
-	const player = getPlayer(interaction.guild.id);
 	if (!player.connection) {
 		await interaction?.guild?.members?.me?.voice?.disconnect();
 		await interaction.editReply(lang.music.Disconnect);

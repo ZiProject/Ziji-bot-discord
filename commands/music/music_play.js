@@ -43,7 +43,6 @@ module.exports.data = {
 				{
 					name: "query",
 					description: "Tên bài hát",
-					required: true,
 					type: 3,
 					autocomplete: true,
 				},

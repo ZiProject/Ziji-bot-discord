@@ -271,13 +271,17 @@ module.exports = {
 				inline: false,
 			});
 		}
-		if (player.loop() !== "off") {
-			embed.addFields({
-				name: `${lang?.playerFunc?.Fields?.Loop || "Lặp lại"}: ${repeatMode(player.loop(), player.autoPlay())}`,
-				value: " ",
-				inline: false,
-			});
-		}
+
+		embed.addFields({
+			name: `${lang?.playerFunc?.Fields?.Loop || "Lặp lại"}: ${repeatMode(player.loop(), player.autoPlay())}`,
+			value: " ",
+			inline: true,
+		});
+		embed.addFields({
+			name: `Lyrics: ${player.userdata?.lyrcsActive ? "ON" : "OFF"}`,
+			value: " ",
+			inline: true,
+		});
 		// if (!!queue?.filters?.ffmpeg?.toArray().length) {
 		// 	embed.addFields({
 		// 		name: ` `,

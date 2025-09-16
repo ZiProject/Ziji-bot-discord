@@ -1,4 +1,4 @@
-const { Events, CommandInteraction, PermissionsBitField, MessageFlags } = require("discord.js");
+const { Events, CommandInteraction, PermissionsBitField, MessageFlags, EmbedBuilder } = require("discord.js");
 const { useCooldowns, useCommands, useFunctions, useConfig, useLogger } = require("@zibot/zihooks");
 const config = useConfig();
 const fs = require("fs");
@@ -6,6 +6,7 @@ const path = require("path");
 const Cooldowns = useCooldowns();
 const Commands = useCommands();
 const Functions = useFunctions();
+const { getPlayer } = require("ziplayer");
 
 /**
  * @param { CommandInteraction } interaction
@@ -68,6 +69,44 @@ async function checkStatus(interaction, client, lang) {
 	setTimeout(() => Cooldowns.delete(interaction.user.id), cooldownDuration);
 	return false;
 }
+/**
+ * @param { object } fns
+ * @param { CommandInteraction } fns.interaction
+ * @param { object } fns.command
+ * @param { import("./../../lang/vi.js") } fns.lang
+ */
+async function checkMusicstat({ interaction, command, lang }) {
+	let ops = {
+		status: false,
+	};
+	if (!interaction?.guild) {
+		await interaction.reply({ embeds: [new EmbedBuilder().setColor("Red").setDescription(`${lang.until.noGuild} `)] });
+		return ops;
+	}
+	const player = getPlayer(interaction.guild.id);
+	ops.player = player;
+	if (command?.lock) {
+		if (!player?.connection) {
+			await interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
+			return ops;
+		}
+		// Kiểm tra xem có khóa player không
+		if (player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id) {
+			await interaction.followUp({ content: lang.until.noPermission, ephemeral: true });
+			return ops;
+		}
+	}
+	if (command?.ckeckVoice) {
+		const botVoiceChannel = interaction.guild.members.me.voice.channel;
+		const userVoiceChannel = interaction.member.voice.channel;
+		if (!botVoiceChannel || botVoiceChannel.id !== userVoiceChannel?.id) {
+			await interaction.followUp({ content: lang.music.NOvoiceMe, ephemeral: true });
+			return ops;
+		}
+	}
+	ops.status = true;
+	return ops;
+}
 
 module.exports = {
 	name: Events.InteractionCreate,
@@ -83,7 +122,7 @@ module.exports.execute = async (interaction) => {
 
 	let command;
 	let commandType;
-
+	let cmdops = null;
 	// Determine the interaction type and set the command
 	if (interaction.isChatInputCommand() || interaction.isAutocomplete() || interaction.isMessageContextMenuCommand()) {
 		command = Commands.get(interaction.commandName);
@@ -115,7 +154,12 @@ module.exports.execute = async (interaction) => {
 			const status = await checkStatus(interaction, client, lang);
 			if (status) return;
 
-			await command.execute({ interaction, lang });
+			if (command?.data.category == "musix") {
+				const sts = await checkMusicstat({ interaction, command, lang });
+				if (!sts.status) return;
+				cmdops = sts;
+			}
+			await command.execute({ interaction, lang, ...cmdops });
 		}
 	} catch (error) {
 		client.errorLog(`**${error.message}**`);
