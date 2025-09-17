@@ -160,6 +160,7 @@ async function handlePlayRequest(interaction, query, lang, options, player) {
 		await cleanUpInteraction(interaction, player);
 		logger.debug("Track played successfully");
 	} catch (e) {
+		console.log(e);
 		logger.error(`Error in handlePlayRequest:  ${JSON.stringify(e)}`);
 		await handleError(interaction, lang);
 	}
@@ -225,13 +226,13 @@ async function cleanUpInteraction(interaction, player) {
 				logger.debug("Failed to delete interaction message");
 			});
 		}
-		await interaction.deleteReply().catch(() => {
+		await interaction?.deleteReply?.().catch(() => {
 			logger.debug("Failed to delete interaction reply");
 		});
 	} else {
 		logger.debug("No queue metadata");
 		if (interaction?.customId === "S_player_Search") {
-			await interaction.deleteReply().catch(() => {
+			await interaction?.deleteReply?.().catch(() => {
 				logger.debug("Failed to delete interaction reply");
 			});
 		}

@@ -1,5 +1,4 @@
 const { useFunctions } = require("@zibot/zihooks");
-const { getPlayer } = require("ziplayer");
 
 const DefaultPlayerConfig = {
 	selfDeaf: false,
@@ -19,8 +18,7 @@ const DefaultPlayerConfig = {
  */
 module.exports.execute = async (interaction, context, lang, options = { assistant: true }) => {
 	try {
-		const player = getPlayer(interaction.guild.id);
-		const query = `tts: ${context}`;
+		const query = `tts:${lang?.name ?? "vi"}: ${context}`;
 		useFunctions().get("Search").execute(interaction, query, lang, options);
 		return;
 	} catch (e) {

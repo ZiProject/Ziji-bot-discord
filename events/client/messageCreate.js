@@ -112,6 +112,9 @@ const reqreponser = async (message) => {
 const reqTTS = async (message, lang) => {
 	const player = getPlayer(message.guild.id);
 	modinteraction(message);
+	message.fetchReply = () => {
+		return null;
+	};
 	const tts = await Functions.get("TextToSpeech");
 	if (player?.userdata) await message.react(ziicon.yess);
 	const context = message.content.replace(`<@${message.client.user.id}>`, "").trim();
