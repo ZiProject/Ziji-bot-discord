@@ -2,7 +2,7 @@ const { lyricsExt } = require("@ziplayer/extension");
 const { EmbedBuilder } = require("discord.js");
 
 module.exports.data = {
-	name: "lyricsRes",
+	name: "lyrics",
 	description: "Lời bài hát",
 	type: 1, // slash commad
 	options: [
