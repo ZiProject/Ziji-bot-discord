@@ -9,7 +9,7 @@ class StartupManager {
 		this.logger = LoggerFactory.create(this.config);
 		this.loader = new StartupLoader(this.config, this.logger);
 		this.updateChecker = new UpdateChecker();
-		this.createFile("./../jsons");
+		this.createFile("./jsons");
 	}
 
 	getLogger() {
