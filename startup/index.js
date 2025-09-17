@@ -1,25 +1,36 @@
-const { loadFiles, loadEvents, createfile } = require("./loader.js");
-const { Update } = require("./checkForUpdate");
-const { logf } = require("./logger.js");
+const { StartupLoader } = require("./loader.js");
+const { UpdateChecker } = require("./checkForUpdate");
+const { LoggerFactory } = require("./logger.js");
 const { useConfig } = require("@zibot/zihooks");
-const checkUpdate = () => Update(logger);
 
-let config;
-try {
-	config = require("./../config.js");
-	useConfig(config);
-} catch {
-	console.log("Cannot find config file, use default");
-	config = require("./defaultconfig.js");
-	useConfig(config);
+class StartupManager {
+	constructor(config) {
+		this.config = config ?? useConfig();
+		this.logger = LoggerFactory.create(this.config);
+		this.loader = new StartupLoader(this.config, this.logger);
+		this.updateChecker = new UpdateChecker();
+		this.createFile("./../jsons");
+	}
+
+	getLogger() {
+		return this.logger;
+	}
+
+	loadFiles(directory, collection) {
+		return this.loader.loadFiles(directory, collection);
+	}
+
+	loadEvents(directory, target) {
+		return this.loader.loadEvents(directory, target);
+	}
+
+	createFile(directory) {
+		return this.loader.createDirectory(directory);
+	}
+
+	checkForUpdates() {
+		return this.updateChecker.start(this.logger);
+	}
 }
-const finalconfig = useConfig(config);
-const logger = logf(finalconfig);
-module.exports = {
-	loadFiles,
-	loadEvents,
-	createfile,
-	logger,
-	config: finalconfig,
-	checkUpdate,
-};
+
+module.exports = { StartupManager };

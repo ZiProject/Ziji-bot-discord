@@ -32,7 +32,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const query = await options.getString("query");
 	const lyrics = await lyric.fetch({ title: query });
 
-	if (!lyric.text)
+	if (!lyric?.text)
 		return interaction.editReply({
 			embeds: [new EmbedBuilder().setColor("Red").setDescription(`${lang?.Lyrics?.no_res ?? "❌ | No Lyrics Found!"}`)],
 		});

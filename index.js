@@ -13,7 +13,7 @@ const {
 const path = require("node:path");
 const { GiveawaysManager } = require("discord-giveaways");
 const config = useConfig(require("./config"));
-const { loadFiles, loadEvents, createfile, logger, checkUpdate } = require("./startup");
+const { StartupManager } = require("./startup");
 const { Client, Collection, GatewayIntentBits, Partials } = require("discord.js");
 const readline = require("readline");
 
@@ -21,6 +21,9 @@ const readline = require("readline");
 const { default: PlayerManager } = require("ziplayer");
 const { TTSPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin } = require("@ziplayer/plugin");
 const { lyricsExt, voiceExt } = require("@ziplayer/extension");
+
+const startup = new StartupManager(config);
+const logger = startup.getLogger();
 
 const client = new Client({
 	rest: [{ timeout: 60_000 }],
@@ -47,8 +50,6 @@ const client = new Client({
 		repliedUser: false,
 	},
 });
-
-createfile("./jsons");
 
 //create Player Manager
 const manager = new PlayerManager({
@@ -77,18 +78,18 @@ useGiveaways(
 
 const initialize = async () => {
 	logger.info("Initializing Ziji Bot...");
-	checkUpdate();
+	startup.checkForUpdates();
 	useClient(client);
 	useWelcome(new Collection());
 	useCooldowns(new Collection());
 	useResponder(new Collection());
 	await Promise.all([
-		loadEvents(path.join(__dirname, "events/client"), client),
-		loadEvents(path.join(__dirname, "events/process"), process),
-		loadEvents(path.join(__dirname, "events/console"), rl),
-		loadEvents(path.join(__dirname, "events/player"), manager),
-		loadFiles(path.join(__dirname, "commands"), useCommands(new Collection())),
-		loadFiles(path.join(__dirname, "functions"), useFunctions(new Collection())),
+		startup.loadEvents(path.join(__dirname, "events/client"), client),
+		startup.loadEvents(path.join(__dirname, "events/process"), process),
+		startup.loadEvents(path.join(__dirname, "events/console"), rl),
+		startup.loadEvents(path.join(__dirname, "events/player"), manager),
+		startup.loadFiles(path.join(__dirname, "commands"), useCommands(new Collection())),
+		startup.loadFiles(path.join(__dirname, "functions"), useFunctions(new Collection())),
 		startServer().catch((error) => logger.error("Error start Server:", error)),
 	]);
 	client.login(process.env.TOKEN).catch((error) => {

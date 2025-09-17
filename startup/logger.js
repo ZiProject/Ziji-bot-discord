@@ -1,29 +1,39 @@
-// Configure logger
 const winston = require("winston");
 const util = require("util");
 const { useLogger } = require("@zibot/zihooks");
 
-function logf(config) {
-	return useLogger(
-		winston.createLogger({
-			level: config?.DevConfig?.logger || "",
-			format: winston.format.combine(
-				winston.format.timestamp(),
-				winston.format.printf(
-					({ level, message, timestamp }) =>
-						`[${timestamp}] [${level.toUpperCase()}]:` + util.inspect(message, { showHidden: false, depth: 2, colors: true }),
+class LoggerFactory {
+	constructor(config) {
+		this.config = config;
+	}
+
+	create() {
+		return useLogger(
+			winston.createLogger({
+				level: this.config?.DevConfig?.logger || "",
+				format: winston.format.combine(
+					winston.format.timestamp(),
+					winston.format.printf(({ level, message, timestamp }) => {
+						const prefix = `[${timestamp}] [${level.toUpperCase()}]:`;
+						return prefix + util.inspect(message, { showHidden: false, depth: 2, colors: true });
+					}),
 				),
-			),
-			transports: [
-				new winston.transports.Console({
-					format: winston.format.printf(
-						({ level, message }) =>
-							`[${level.toUpperCase()}]:` + util.inspect(message, { showHidden: false, depth: 2, colors: true }),
-					),
-				}),
-				new winston.transports.File({ filename: "./jsons/bot.log", level: "error" }),
-			],
-		}),
-	);
+				transports: [
+					new winston.transports.Console({
+						format: winston.format.printf(({ level, message }) => {
+							const prefix = `[${level.toUpperCase()}]:`;
+							return prefix + util.inspect(message, { showHidden: false, depth: 2, colors: true });
+						}),
+					}),
+					new winston.transports.File({ filename: "./jsons/bot.log", level: "error" }),
+				],
+			}),
+		);
+	}
+
+	static create(config) {
+		return new LoggerFactory(config).create();
+	}
 }
-module.exports = { logf };
+
+module.exports = { LoggerFactory };
