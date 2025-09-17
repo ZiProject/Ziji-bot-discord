@@ -2,7 +2,7 @@ const { lyricsExt } = require("@ziplayer/extension");
 const { EmbedBuilder } = require("discord.js");
 
 module.exports.data = {
-	name: "lyrics",
+	name: "lyricsRes",
 	description: "Lời bài hát",
 	type: 1, // slash commad
 	options: [
@@ -30,9 +30,9 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 	await interaction.deferReply();
 	const query = await options.getString("query");
-	const lyrics = await lyric.fetch({ title: query });
+	const lyricsRes = await lyric.fetch({ title: query });
 
-	if (!lyric?.text)
+	if (!lyricsRes?.text)
 		return interaction.editReply({
 			embeds: [new EmbedBuilder().setColor("Red").setDescription(`${lang?.Lyrics?.no_res ?? "❌ | No Lyrics Found!"}`)],
 		});
@@ -44,8 +44,8 @@ module.exports.execute = async ({ interaction, lang }) => {
 			text: `by: ${user?.username}`,
 			iconURL: user?.displayAvatarURL?.({ size: 1024 }) ?? null,
 		})
-		.setDescription(lyrics.text.slice(0, 1990) + (lyrics.text.length > 1990 ? "..." : ""))
-		.setTitle("Lyrics:" + lyrics?.trackName);
+		.setDescription(lyricsRes.text.slice(0, 1990) + (lyricsRes.text.length > 1990 ? "..." : ""))
+		.setTitle("Lyrics:" + lyricsRes?.trackName);
 
 	await interaction.editReply({ embeds: [embed] });
 	return;
