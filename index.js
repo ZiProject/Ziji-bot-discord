@@ -96,8 +96,8 @@ const initialize = async () => {
 	} else {
 		await startup.loadEvents(path.join(__dirname, "events/console"), rl);
 		await startup.loadEvents(path.join(__dirname, "events/process"), process);
-		await startup.loadFiles(path.join(__dirname, "commands"), useCommands(new Collection()));
 		await startup.loadFiles(path.join(__dirname, "functions"), useFunctions(new Collection()));
+		await startup.loadFiles(path.join(__dirname, "commands"), useCommands(new Collection()));
 		await startup.loadEvents(path.join(__dirname, "events/client"), client);
 		await startup.loadEvents(path.join(__dirname, "events/player"), manager);
 		await startServer().catch((error) => logger.error("Error start Server:", error));
