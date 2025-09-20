@@ -1,4 +1,3 @@
-const { QueryType } = require("discord-player");
 module.exports = {
 	/**
 	 * Cho phép deploy command bot
@@ -91,12 +90,6 @@ module.exports = {
 	 * Default player configuration
 	 */
 	PlayerConfig: {
-		
-		/**
-		 * Mặc định chế độ tìm kiếm của bot
-		 * Default: bot search track engine
-		 */
-		QueryType: QueryType.SOUNDCLOUD,
 		
 		/**
 		 * Mặc định tắt nghe của bot
@@ -197,22 +190,13 @@ module.exports = {
 		/** ============ DEBUG ============ */
 		//discordjs debug
 		DJS_DEBUG: false,
-		//discord-player debug
-		DP_DEBUG: false,
-		//discord-player events debug
-		DPe_DEBUG: false,
-		//voiceExtractor events debug
+		//player debug
+		Player_DEBUG: false,
+
+		//voiceExtension events debug
 		voiceExt_DEBUG: false,
 
-		/** ============ Extractor ============ */
-		//enable YoutubeiExtractor
-		YoutubeiExtractor: true,
-		//enable Ziext (beta)
-		ZiExtractor: true,
-
 		/** ============ Else ============ */
-		//enable VoiceExtractor (beta)
-		VoiceExtractor: true,
 		//enable Giveaway
 		Giveaway: true,
 		//enable AutoResponder

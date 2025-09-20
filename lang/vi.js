@@ -9,6 +9,7 @@ module.exports = {
 		langChange: "Ngôn ngữ của bạn đã được đổi thành:",
 		requestBy: "Yêu cầu bởi:",
 		noDB: "❌ | Database chưa được bật, vui lòng liên hệ với dev bot",
+		noGuild: "❌ | Lệnh này chỉ có thể thực hiện ở trong guild",
 		success: "Đã thực hiện lệnh này thành công!",
 		notHavePremission: "Bạn không có quyền để thực hiện lệnh này!",
 		botNOPermission: "❌ | Bot không có quyền: {Permission} để thực hiện lệnh này!",

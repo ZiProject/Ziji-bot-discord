@@ -1,19 +1,19 @@
-const { GuildQueueEvent } = require("discord-player");
+const { useClient, useLogger } = require("@zibot/zihooks");
 
 module.exports = {
-	name: GuildQueueEvent.PlayerError,
+	name: "playerError",
 	type: "Player",
-
 	/**
-	 * @param { import('discord-player').GuildQueue } queue
-	 * @param { Error } error
-	 * @param { import('discord-player').Track } track
+	 *
+	 * @param {import('ziplayer').Player} player
+	 * @param {Error} error
+	 * @param {import('ziplayer').Track} track
 	 */
-
-	execute: async (queue, error, track) => {
-		queue.player.client?.errorLog("**Player playerError**");
-		queue.player.client?.errorLog(error.message);
-		queue.player.client?.errorLog(track.url);
-		console.log(error.stack);
+	execute: async (player, error, track) => {
+		const client = useClient();
+		client.errorLog("**Player playerError**");
+		client?.errorLog(error.message);
+		client?.errorLog(track.url);
+		useLogger().error(error);
 	},
 };

@@ -1,6 +1,4 @@
-const { useMainPlayer } = require("discord-player");
-const player = useMainPlayer();
-const { useZiVoiceExtractor } = require("@zibot/ziextractor");
+
 const { useFunctions, useAI } = require("@zibot/zihooks");
 
 module.exports.data = {

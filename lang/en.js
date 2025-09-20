@@ -11,6 +11,7 @@ module.exports = {
 		langChange: "Your language has been changed to:",
 		requestBy: "Requested by:",
 		noDB: "❌ | Database is not currently enabled, please contact dev bot",
+		noGuild: "❌ | This command can only be executed on the guild.",
 		botNOPermission: "❌ | Bot does not have permission: {Permission} to execute this command!",
 		NOPermission: "❌ | Bot does not have permission to chat and execute command in this channel",
 		noPermission: "❌ | You do not have permission to execute this command!",

@@ -21,6 +21,8 @@ module.exports = {
 				logger.info(`Bot đang ${client.isReady() ? "hoạt động" : "tắt"}`);
 				break;
 			case "stop":
+			case "exit":
+			case "quit":
 				logger.info("Đang tắt bot...");
 				client.destroy();
 				process.exit(0);

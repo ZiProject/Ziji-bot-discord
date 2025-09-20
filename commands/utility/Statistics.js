@@ -1,7 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const os = require("os");
 const { version: DjsVersion } = require("discord.js");
-const { version: DplVersion } = require("discord-player");
 const { execSync } = require("child_process");
 const { useCommands, useConfig } = require("@zibot/zihooks");
 
@@ -62,7 +61,6 @@ module.exports.execute = async ({ interaction, lang }) => {
 		.addFields(
 			{ name: lang?.BotStats?.OS, value: osInfo, inline: true },
 			{ name: lang?.BotStats?.djsVersion, value: `${DjsVersion}`, inline: true },
-			{ name: lang?.BotStats?.dplVersion, value: `${DplVersion}`, inline: true },
 			{ name: "GitHub Commit ID", value: githubCommitId, inline: true },
 		)
 		.setImage(lang?.botConfig?.Banner ?? null)

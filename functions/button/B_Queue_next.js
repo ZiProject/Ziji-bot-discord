@@ -1,5 +1,5 @@
-const { useQueue } = require("discord-player");
 const { useFunctions } = require("@zibot/zihooks");
+const { getPlayer } = require("ziplayer");
 
 module.exports.data = {
 	name: "B_queue_next",
@@ -14,8 +14,10 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	const queue = useQueue(interaction.guild.id);
+	const player = getPlayer(interaction.guild.id);
+	if (!player) return interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
+
 	const QueueTrack = useFunctions().get("Queue");
-	QueueTrack.execute(interaction, queue, true);
+	QueueTrack.execute(interaction, player, true);
 	return;
 };
