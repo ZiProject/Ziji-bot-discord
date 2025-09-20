@@ -7,6 +7,7 @@ const ZiIcons = require("./../../utility/icon");
 const { getPlayer, Player, getManager } = require("ziplayer");
 const config = useConfig();
 const logger = useLogger();
+let tempmess = null;
 //====================================================================//
 
 module.exports.data = {
@@ -145,7 +146,7 @@ function hasVoiceChannelPermissions(voiceChannel, client, interaction, lang) {
  */
 async function handlePlayRequest(interaction, query, lang, options, player) {
 	try {
-		if (!player?.userdata) await interaction.editReply({ content: "<a:loading:1151184304676819085> Loading..." });
+		if (!player?.userdata) tempmess = await interaction.editReply({ content: "<a:loading:1151184304676819085> Loading..." });
 		const playerConfig = await getPlayerConfig(options, interaction);
 		logger.debug(`Player configuration retrieved:  ${JSON.stringify(playerConfig)}`);
 		const Player = getManager().create(interaction.guild.id, {
@@ -212,7 +213,7 @@ async function getQueueMetadata(player, interaction, options, lang) {
 			listeners: [interaction?.user],
 			lyrcsActive: true,
 			focus: options?.focus,
-			mess: interaction?.customId !== "S_player_Search" ? await interaction.fetchReply() : interaction?.message,
+			mess: interaction?.customId !== "S_player_Search" ? tempmess : interaction?.message,
 		}
 	);
 }

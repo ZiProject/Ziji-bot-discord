@@ -29,9 +29,9 @@ module.exports.execute = async (message) => {
 	}
 	// Auto Responder
 	if (config?.DevConfig?.AutoResponder && message?.guild && (await reqreponser(message))) return; // Auto Responder
-
-	// DM channel auto reply = AI
 	if (!message.guild || message.mentions.has(message.client.user)) {
+		// DM channel auto reply = AI
+		if (!config.DevConfig.ai || !process.env?.GEMINI_API_KEY?.length) return;
 		await reqai(message, lang);
 	}
 };
@@ -60,10 +60,6 @@ const reqai = async (message, lang) => {
 		await message.reply(result);
 	} catch (err) {
 		useLogger().error(`Error in generating content: ${err}`);
-		const replies = await message.reply("❌ | Không thể tạo nội dung! Xin hãy chờ ít phút");
-		setTimeout(() => {
-			replies.delete();
-		}, 5000);
 	}
 };
 

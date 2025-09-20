@@ -83,15 +83,25 @@ const initialize = async () => {
 	useWelcome(new Collection());
 	useCooldowns(new Collection());
 	useResponder(new Collection());
-	await Promise.all([
-		startup.loadEvents(path.join(__dirname, "events/client"), client),
-		startup.loadEvents(path.join(__dirname, "events/process"), process),
-		startup.loadEvents(path.join(__dirname, "events/console"), rl),
-		startup.loadEvents(path.join(__dirname, "events/player"), manager),
-		startup.loadFiles(path.join(__dirname, "commands"), useCommands(new Collection())),
-		startup.loadFiles(path.join(__dirname, "functions"), useFunctions(new Collection())),
-		startServer().catch((error) => logger.error("Error start Server:", error)),
-	]);
+	if (!process.env.lazyLoad) {
+		await Promise.all([
+			startup.loadEvents(path.join(__dirname, "events/client"), client),
+			startup.loadEvents(path.join(__dirname, "events/process"), process),
+			startup.loadEvents(path.join(__dirname, "events/console"), rl),
+			startup.loadEvents(path.join(__dirname, "events/player"), manager),
+			startup.loadFiles(path.join(__dirname, "commands"), useCommands(new Collection())),
+			startup.loadFiles(path.join(__dirname, "functions"), useFunctions(new Collection())),
+			startServer().catch((error) => logger.error("Error start Server:", error)),
+		]);
+	} else {
+		await startup.loadEvents(path.join(__dirname, "events/client"), client);
+		await startup.loadEvents(path.join(__dirname, "events/process"), process);
+		await startup.loadEvents(path.join(__dirname, "events/console"), rl);
+		await startup.loadEvents(path.join(__dirname, "events/player"), manager);
+		await startup.loadFiles(path.join(__dirname, "commands"), useCommands(new Collection()));
+		await startup.loadFiles(path.join(__dirname, "functions"), useFunctions(new Collection()));
+		await startServer().catch((error) => logger.error("Error start Server:", error));
+	}
 	client.login(process.env.TOKEN).catch((error) => {
 		logger.error("Error logging in:", error);
 		logger.error("The Bot Token You Entered Into Your Project Is Incorrect Or Your Bot's INTENTS Are OFF!");
