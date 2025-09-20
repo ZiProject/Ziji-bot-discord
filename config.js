@@ -1,4 +1,3 @@
-const { QueryType } = require("discord-player");
 //Discord iOS
 module.exports = {
 	/**
@@ -92,11 +91,6 @@ module.exports = {
 	 * Default player configuration
 	 */
 	PlayerConfig: {
-		/**
-		 * Mặc định chế độ tìm kiếm của bot
-		 * Default: bot search track engine
-		 */
-		QueryType: QueryType.SOUNDCLOUD,
 		/**
 		 * Mặc định tắt nghe của bot
 		 * Default: bot doesn't listen (deaf mode)
@@ -194,33 +188,23 @@ module.exports = {
 		/** ============ DEBUG ============ */
 		//discordjs debug
 		DJS_DEBUG: false,
-		//discord-player debug
-		DP_DEBUG: true,
-		//discord-player events debug
-		DPe_DEBUG: false,
-		//voiceExtractor events debug
+		//player debug
+		Player_DEBUG: true,
+
+		//voiceExtension events debug
 		voiceExt_DEBUG: false,
 
-		/** ============ Extractor ============ */
-		//enable YoutubeiExtractor (sometime err terminated)
-		YoutubeiExtractor: true,
-		//enable Ziext (beta)
-		ZiExtractor: true,
-
 		/** ============ Else ============ */
-		//enable VoiceExtractor (beta)
-		VoiceExtractor: true,
 		//enable Giveaway
-		Giveaway: false,
+		Giveaway: true,
 		//enable AutoResponder
 		AutoResponder: true,
 		//enable welcomer
 		welcomer: true,
 		//enable AI
 		ai: true,
-
 		/** ============ Else ============ */
-		//enable logger (info | debug | warn | error)
+		//enable logger (info | debug | warn | error | leave blank to enable all type)
 		logger: "debug",
 	},
 };
