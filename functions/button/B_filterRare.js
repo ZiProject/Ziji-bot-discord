@@ -1,8 +1,8 @@
 const { useCommands } = require("@zibot/zihooks");
 
 module.exports.data = {
-        name: "B_filterRare",
-        type: "button",
+	name: "B_filterRare",
+	type: "button",
 };
 
 /**
@@ -13,15 +13,15 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-        // Tạo một đối tượng tương tác mới với bộ lọc rare
-        const newInteraction = {
-                ...interaction,
-                options: {
-                        getUser: () => null,
-                        getString: (key) => key === "rarity" ? "rare" : null
-                }
-        };
-        
-        const Command = useCommands();
-        return Command.get("zoo").execute({ interaction: newInteraction, lang });
+	// Tạo một đối tượng tương tác mới với bộ lọc rare
+	const newInteraction = {
+		...interaction,
+		options: {
+			getUser: () => null,
+			getString: (key) => (key === "rarity" ? "rare" : null),
+		},
+	};
+
+	const Command = useCommands();
+	return Command.get("zoo").execute({ interaction: newInteraction, lang });
 };

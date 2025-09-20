@@ -1,8 +1,8 @@
 const { EmbedBuilder } = require("discord.js");
 
 module.exports.data = {
-        name: "B_sellAnimals",
-        type: "button",
+	name: "B_sellAnimals",
+	type: "button",
 };
 
 /**
@@ -13,12 +13,14 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-        const embed = new EmbedBuilder()
-                .setTitle("💰 Sell Animals")
-                .setColor("#4CAF50")
-                .setDescription("🎯 **Sử dụng lệnh `/sell` để bán animals!**\n\n💡 **Features:**\n🦁 Bán theo từng loại rarity\n💰 Tính giá tự động\n✨ Nhận XP bonus\n🎯 Menu interactive dễ sử dụng\n\n**Lệnh:** `/sell` hoặc `/sell [rarity] [amount]`")
-                .setFooter({ text: "ZiBot • Sell System Ready!", iconURL: interaction.client.user.displayAvatarURL() })
-                .setTimestamp();
+	const embed = new EmbedBuilder()
+		.setTitle("💰 Sell Animals")
+		.setColor("#4CAF50")
+		.setDescription(
+			"🎯 **Sử dụng lệnh `/sell` để bán animals!**\n\n💡 **Features:**\n🦁 Bán theo từng loại rarity\n💰 Tính giá tự động\n✨ Nhận XP bonus\n🎯 Menu interactive dễ sử dụng\n\n**Lệnh:** `/sell` hoặc `/sell [rarity] [amount]`",
+		)
+		.setFooter({ text: "ZiBot • Sell System Ready!", iconURL: interaction.client.user.displayAvatarURL() })
+		.setTimestamp();
 
-        return await interaction.reply({ embeds: [embed], ephemeral: true });
+	return await interaction.reply({ embeds: [embed], ephemeral: true });
 };

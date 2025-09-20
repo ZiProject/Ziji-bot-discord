@@ -1,8 +1,8 @@
 const { useCommands } = require("@zibot/zihooks");
 
 module.exports.data = {
-        name: "B_filterAll",
-        type: "button",
+	name: "B_filterAll",
+	type: "button",
 };
 
 /**
@@ -13,15 +13,15 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-        // Tạo một đối tượng tương tác mới không có bộ lọc độ hiếm
-        const newInteraction = {
-                ...interaction,
-                options: {
-                        getUser: () => null,
-                        getString: () => null
-                }
-        };
-        
-        const Command = useCommands();
-        return Command.get("zoo").execute({ interaction: newInteraction, lang });
+	// Tạo một đối tượng tương tác mới không có bộ lọc độ hiếm
+	const newInteraction = {
+		...interaction,
+		options: {
+			getUser: () => null,
+			getString: () => null,
+		},
+	};
+
+	const Command = useCommands();
+	return Command.get("zoo").execute({ interaction: newInteraction, lang });
 };

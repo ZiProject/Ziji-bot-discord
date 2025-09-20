@@ -1,8 +1,8 @@
 const { useCommands } = require("@zibot/zihooks");
 
 module.exports.data = {
-        name: "B_startHunt",
-        type: "button",
+	name: "B_startHunt",
+	type: "button",
 };
 
 /**
@@ -13,6 +13,6 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-        const Command = useCommands();
-        return Command.get("hunt").execute({ interaction, lang });
+	const Command = useCommands();
+	return Command.get("hunt").execute({ interaction, lang });
 };
