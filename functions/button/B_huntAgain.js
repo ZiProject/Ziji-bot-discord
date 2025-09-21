@@ -1,10 +1,8 @@
-const { getPlayer } = require("ziplayer");
+const { useCommands } = require("@zibot/zihooks");
 
 module.exports.data = {
-	name: "B_player_stop",
+	name: "B_huntAgain",
 	type: "button",
-	category: "musix-s",
-	lock: true,
 };
 
 /**
@@ -15,8 +13,6 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	await interaction.deferUpdate().catch(() => {});
-	interaction.message.edit({ components: [] }).catch((e) => {});
-	const player = getPlayer(interaction.guild.id);
-	player.destroy?.().catch((e) => {});
+	const Command = useCommands();
+	return Command.get("hunt").execute({ interaction, lang });
 };

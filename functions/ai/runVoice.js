@@ -1,4 +1,3 @@
-
 const { useFunctions, useAI } = require("@zibot/zihooks");
 
 module.exports.data = {

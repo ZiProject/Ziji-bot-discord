@@ -34,8 +34,8 @@
 		"@zibot/db": "^0.0.2",
 		"@zibot/ziencryptor": "^0.0.1",
 		"@zibot/zihooks": "^1.0.9",
-		"@ziplayer/extension": "^0.0.4",
-		"@ziplayer/plugin": "^0.0.5",
+		"@ziplayer/extension": "^0.1.0",
+		"@ziplayer/plugin": "^0.1.0",
 		"axios": "^1.7.7",
 		"bgutils-js": "^3.2.0",
 		"canvacord": "^6.0.2",
@@ -63,7 +63,7 @@
 		"txtgen": "^3.0.7",
 		"winston": "^3.17.0",
 		"ws": "^8.18.0",
-		"ziplayer": "^0.0.9"
+		"ziplayer": "^0.1.0"
 	},
 	"devDependencies": {
 		"cross-env": "^10.0.0",

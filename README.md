@@ -30,13 +30,11 @@ functionalities, using [discord.js](https://discord.js.org/) and [ziplayer](http
 ![image](https://github.com/user-attachments/assets/b2ee308e-2f46-4c20-86a6-c7f95108a86b)
 
 - **Lyrics**: Using Lrclib
-
   - synced Lyrics
 
   - plain Lyrics
 
 - **Voice command**:
-
   - Voice control for music: play, pause, skip, adjust volume, and more.
 
   - Multi-language support: Recognizes and responds in Vietnamese/ English.

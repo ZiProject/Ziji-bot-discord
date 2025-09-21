@@ -5,11 +5,36 @@ const ZiUser = Schema({
 	name: { type: String },
 	xp: { type: Number },
 	level: { type: Number, default: 1 },
-	coin: { type: Number, default: 1 },
+	coin: { type: Number, default: 0 },
 	lang: { type: String },
 	volume: { type: Number, default: 100 },
 	color: { type: String, default: "Random" },
 	lastDaily: { type: Date },
+	dailyStreak: { type: Number, default: 0 },
+	lastHunt: { type: Date },
+	totalAnimals: { type: Number, default: 0 },
+	huntStats: { type: Schema.Types.Mixed, default: {} },
+	lootboxes: { type: Number, default: 0 },
+	fabledLootboxes: { type: Number, default: 0 },
+	cookiesGiven: { type: Number, default: 0 },
+	cookiesReceived: { type: Number, default: 0 },
+	lastCookie: { type: Date },
+	thankedCookies: { type: [String], default: [] },
+	// Pet care system
+	petCare: {
+		lastFeed: { type: Date },
+		lastPlay: { type: Date },
+		happiness: { type: Number, default: 100 },
+		totalFeedings: { type: Number, default: 0 },
+		totalPlays: { type: Number, default: 0 },
+		favoriteAnimal: { type: String, default: null },
+	},
+	// Animal trading system
+	lastGive: { type: Date },
+	dailyGives: { type: Number, default: 0 },
+	// Quest system
+	dailyQuests: { type: Array, default: [] },
+	lastQuestReset: { type: Date },
 });
 
 const ZiAutoresponder = Schema(
