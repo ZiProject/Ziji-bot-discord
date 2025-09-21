@@ -1,31 +1,29 @@
 require("dotenv").config();
 const { startServer } = require("./web");
-const { checkUpdate } = require("./startup/checkForUpdate");
-const cron = require("node-cron");
 const {
-	useAI,
 	useClient,
 	useCooldowns,
 	useCommands,
 	useFunctions,
 	useGiveaways,
-	useConfig,
 	useResponder,
 	useWelcome,
-	useLogger,
+	useConfig,
 } = require("@zibot/zihooks");
 const path = require("node:path");
-const winston = require("winston");
-const util = require("util");
-const { Player } = require("discord-player");
-const config = useConfig(require("./config"));
 const { GiveawaysManager } = require("discord-giveaways");
-const { YoutubeiExtractor } = require("discord-player-youtubei");
-const { loadFiles, loadEvents, createfile } = require("./startup/loader.js");
+const config = useConfig(require("./config"));
+const { StartupManager } = require("./startup");
 const { Client, Collection, GatewayIntentBits, Partials } = require("discord.js");
-const { ZiExtractor, useZiVoiceExtractor, TextToSpeech } = require("@zibot/ziextractor");
-const { DefaultExtractors } = require("@discord-player/extractor");
 const readline = require("readline");
+
+//music player
+const { default: PlayerManager } = require("ziplayer");
+const { TTSPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin } = require("@ziplayer/plugin");
+const { lyricsExt, voiceExt } = require("@ziplayer/extension");
+
+const startup = new StartupManager(config);
+const logger = startup.getLogger();
 
 const client = new Client({
 	rest: [{ timeout: 60_000 }],
@@ -53,52 +51,12 @@ const client = new Client({
 	},
 });
 
-createfile("./jsons");
-// Configure logger
-const logger = useLogger(
-	winston.createLogger({
-		level: config.DevConfig?.logger || "", // leave blank to enable all
-		format: winston.format.combine(
-			winston.format.timestamp(),
-			winston.format.printf(
-				({ level, message, timestamp }) =>
-					`[${timestamp}] [${level.toUpperCase()}]:` + util.inspect(message, { showHidden: false, depth: 2, colors: true }),
-			),
-		),
-		transports: [
-			new winston.transports.Console({
-				format: winston.format.printf(
-					({ level, message }) =>
-						`[${level.toUpperCase()}]:` + util.inspect(message, { showHidden: false, depth: 2, colors: true }),
-				),
-			}),
-			new winston.transports.File({ filename: "./jsons/bot.log", level: "error" }),
-		],
-	}),
-);
-
-const player = new Player(client, {
-	skipFFmpeg: false,
+//create Player Manager
+const manager = new PlayerManager({
+	plugins: [new TTSPlugin(), new YouTubePlugin(), new SoundCloudPlugin(), new SpotifyPlugin()],
+	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
 });
-
-player.setMaxListeners(100);
-if (config.DevConfig.YoutubeiExtractor) {
-	player.extractors.register(YoutubeiExtractor, {});
-	require("youtubei.js").Log.setLevel(0);
-}
-
-if (config.DevConfig.ZiExtractor) player.extractors.register(ZiExtractor, {});
-
-player.extractors.register(TextToSpeech, {});
-player.extractors.loadMulti(DefaultExtractors);
-
-// Debug
-if (config.DevConfig.DJS_DEBUG) client.on("debug", (m) => logger.debug(m));
-if (config.DevConfig.DPe_DEBUG) player.events.on("debug", (m) => logger.debug(m));
-if (config.DevConfig.DP_DEBUG) {
-	logger.debug(player.scanDeps());
-	player.on("debug", (m) => logger.debug(m));
-}
+manager.create("search");
 const rl = readline.createInterface({
 	input: process.stdin,
 	output: process.stdout,
@@ -117,34 +75,21 @@ useGiveaways(
 		})
 	:	() => false,
 );
-if (process.env.NODE_ENV == "development") {
-	logger.info("You are in development mode, skipping update check.");
-} else {
-	checkUpdate();
-	cron.schedule("0 0,12 * * *", () => {
-		checkUpdate();
-	});
-}
-const ziVoice = useZiVoiceExtractor({
-	ignoreBots: true,
-	minimalVoiceMessageDuration: 1,
-	lang: "vi-VN",
-});
 
 const initialize = async () => {
 	logger.info("Initializing Ziji Bot...");
+	startup.checkForUpdates();
 	useClient(client);
 	useWelcome(new Collection());
 	useCooldowns(new Collection());
 	useResponder(new Collection());
 	await Promise.all([
-		loadEvents(path.join(__dirname, "events/client"), client),
-		loadEvents(path.join(__dirname, "events/voice"), ziVoice),
-		loadEvents(path.join(__dirname, "events/process"), process),
-		loadEvents(path.join(__dirname, "events/console"), rl),
-		loadEvents(path.join(__dirname, "events/player"), player.events),
-		loadFiles(path.join(__dirname, "commands"), useCommands(new Collection())),
-		loadFiles(path.join(__dirname, "functions"), useFunctions(new Collection())),
+		startup.loadEvents(path.join(__dirname, "events/client"), client),
+		startup.loadEvents(path.join(__dirname, "events/process"), process),
+		startup.loadEvents(path.join(__dirname, "events/console"), rl),
+		startup.loadEvents(path.join(__dirname, "events/player"), manager),
+		startup.loadFiles(path.join(__dirname, "commands"), useCommands(new Collection())),
+		startup.loadFiles(path.join(__dirname, "functions"), useFunctions(new Collection())),
 		startServer().catch((error) => logger.error("Error start Server:", error)),
 	]);
 	client.login(process.env.TOKEN).catch((error) => {

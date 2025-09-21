@@ -2,14 +2,16 @@ const express = require("express");
 const cors = require("cors");
 const WebSocket = require("ws");
 const { useClient, useLogger, useConfig, useFunctions } = require("@zibot/zihooks");
-const { useMainPlayer } = require("discord-player");
+const { getManager, Player } = require("ziplayer");
 const http = require("http");
 const ngrok = require("ngrok");
+const { lyricsExt } = require("@ziplayer/extension");
 
 async function startServer() {
 	const logger = useLogger();
 	const client = useClient();
-	const player = useMainPlayer();
+	const manager = getManager();
+	const player = manager.create("webid");
 
 	const app = express();
 	const server = http.createServer(app);
@@ -58,7 +60,6 @@ async function startServer() {
 
 			const searchResults = await player.search(query, {
 				requestedBy: client.user,
-				searchEngine: useConfig().PlayerConfig.QueryType,
 			});
 
 			res.json(searchResults.tracks.slice(0, 10));
@@ -69,8 +70,11 @@ async function startServer() {
 	});
 
 	app.get("/api/lyrics", async (req, res) => {
-		const LyricsFunc = useFunctions().get("Lyrics");
-		const lyrics = await LyricsFunc.search({ query: req.query?.query || req.query?.q });
+		const lyricsext = new lyricsExt();
+
+		const lyrics = await lyricsext.fetch({
+			title: req.query?.query || req.query?.q,
+		}); // await LyricsFunc.search({ query: req.query?.query || req.query?.q });
 		res.json(lyrics);
 	});
 
@@ -81,7 +85,7 @@ async function startServer() {
 
 		let user = null;
 		/**
-		 * @type {import("discord-player").GuildQueue}
+		 * @type {Player}
 		 * @description The queue of the user
 		 */
 		let queue = null;
@@ -93,59 +97,60 @@ async function startServer() {
 
 				if (data.event == "GetVoice") {
 					user = await client.users.fetch(data.userID);
-					const userQueue = player.queues.cache.find((node) => node.metadata?.listeners.includes(user));
-					if (userQueue?.connection) {
-						queue = userQueue;
+
+					const userData = manager.getall().find((node) => node?.userdata?.listeners?.includes(user));
+
+					if (userData?.connection) {
+						queue = userData;
 						ws.send(
-							JSON.stringify({ event: "ReplyVoice", channel: queue.metadata.channel, guild: queue.metadata.channel.guild }),
+							JSON.stringify({ event: "ReplyVoice", channel: userData.userdata.channel, guild: queue.userdata.channel.guild }),
 						);
 					}
 				}
-				if (!queue || (queue.metadata.LockStatus && queue.metadata.requestedBy?.id !== (user?.id || data.userID))) return;
+				if (!queue || (queue.userdata.LockStatus && queue.userdata.requestedBy?.id !== (user?.id || data.userID))) return;
 
 				switch (data.event) {
 					case "pause":
-						await queue.node.setPaused(!queue.node.isPaused());
+						if (queue.isPaused) {
+							queue.resume();
+						} else {
+							queue.pause();
+						}
 						break;
 					case "play":
 						await queue.play(data.trackUrl);
 						break;
 					case "skip":
-						await queue.node.skip();
+						queue.skip();
 						break;
 					case "back":
-						if (queue?.history && queue.history?.previousTrack) queue.history.previous();
+						if (queue.previousTrack) queue.previous();
 						break;
 					case "volume":
-						await queue.node.setVolume(Number(data.volume));
+						await queue.setVolume(Number(data.volume));
 						break;
 					case "loop":
-						await queue.setRepeatMode(Number(data.mode));
+						queue.loop(["off", "track", "queue"](Number(data.mode)));
 						break;
 					case "shuffle":
-						await queue.tracks.shuffle();
-						break;
-					case "filter":
-						await queue.filters.ffmpeg.toggle(data.filter);
+						await queue.shuffle();
 						break;
 					case "Playnext":
-						if (queue.isEmpty() || !data.trackUrl || !data.TrackPosition) break;
-						const res = await player.search(data.trackUrl, {
-							requestedBy: user,
-						});
+						if (queue.queue.isEmpty || !data.trackUrl || !data.TrackPosition) break;
+						const res = await player.search(data.trackUrl, user);
 						if (res) {
-							await queue.removeTrack(data.TrackPosition - 1);
-							await queue.insertTrack(res.tracks?.at(0), 0);
-							await queue.node.skip();
+							await queue.remove(data.TrackPosition - 1);
+							await queue.insert(res.tracks?.at(0), 0);
+							await queue.skip();
 						}
 						break;
 					case "DelTrack":
-						if (queue.isEmpty() || !data.TrackPosition) break;
-						queue.removeTrack(data.TrackPosition - 1);
+						if (queue.queue.isEmpty || !data.TrackPosition) break;
+						queue.remove(data.TrackPosition - 1);
 						break;
 					case "seek":
-						if (!queue.isPlaying() || !data.position) break;
-						await queue.node.seek(data.position);
+						// if (!queue.isPlaying() || !data.position) break;
+						// await queue.node.seek(data.position);
 						break;
 				}
 			} catch (error) {
@@ -156,12 +161,12 @@ async function startServer() {
 		const sendStatistics = async () => {
 			if (!queue?.connection) return;
 			try {
-				const queueTracks = queue.tracks.map((track) => ({
+				const queueTracks = queue.queue.tracks.map((track) => ({
 					title: track.title,
 					url: track.url,
 					duration: track.duration,
 					thumbnail: track.thumbnail,
-					author: track.author,
+					author: track?.author,
 				}));
 
 				const currentTrack =
@@ -171,26 +176,23 @@ async function startServer() {
 							url: queue.currentTrack.url,
 							duration: queue.currentTrack.duration,
 							thumbnail: queue.currentTrack.thumbnail,
-							author: queue.currentTrack.author,
+							author: queue.currentTrack?.author,
 						}
 					:	null;
 
 				ws.send(
 					JSON.stringify({
 						event: "statistics",
-						timestamp: {
-							current: queue.node.getTimestamp()?.current?.value ?? 0,
-							total: queue.currentTrack?.durationMS,
-						},
-						listeners: queue.metadata?.channel?.members.filter((mem) => !mem.user.bot).size ?? 0,
-						tracks: queue.tracks.size,
-						volume: queue.node.volume,
-						paused: queue.node.isPaused(),
-						repeatMode: queue.repeatMode,
+						timestamp: queue.getTime(),
+						listeners: queue.userdata?.channel?.members.filter((mem) => !mem.user.bot).size ?? 0,
+						tracks: queue.queue.tracks?.length,
+						volume: queue.volume,
+						paused: queue.isPaused,
+						repeatMode: queue.loop(),
 						track: currentTrack,
 						queue: queueTracks,
-						filters: queue.filters.ffmpeg.getFiltersEnabled(),
-						shuffle: queue.tracks.shuffled,
+						filters: null,
+						shuffle: null,
 					}),
 				);
 			} catch (error) {

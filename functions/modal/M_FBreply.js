@@ -1,5 +1,4 @@
 const { useFunctions } = require("@zibot/zihooks");
-const { useQueue } = require("discord-player");
 const { EmbedBuilder } = require("discord.js");
 
 module.exports.data = {

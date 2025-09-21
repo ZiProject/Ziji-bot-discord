@@ -1,9 +1,10 @@
-const { useQueue } = require("discord-player");
 const { useFunctions } = require("@zibot/zihooks");
+const { getPlayer } = require("ziplayer");
 
 module.exports.data = {
 	name: "player",
 	description: "Gọi Player",
+	category: "musix",
 	type: 1, // slash commad
 	options: [],
 	integration_types: [0],
@@ -13,19 +14,19 @@ module.exports.data = {
 /**
  * @param { object } command - object command
  * @param { import ("discord.js").CommandInteraction } command.interaction - interaction
- * @param { import('../../lang/vi.js') } lang
+ * @param { import('../../lang/vi.js') } command.lang
+ * @param {import("ziplayer").Player} command.player - player
  */
 
-module.exports.execute = async ({ interaction, lang }) => {
-	await interaction.deferReply({ fetchReply: true });
-	const queue = useQueue(interaction.guild.id);
-	if (!queue) return interaction.editReply({ content: lang.music.NoPlaying }).catch((e) => {});
-	queue.metadata.mess.edit({ components: [] }).catch((e) => {});
+module.exports.execute = async ({ interaction, lang, player }) => {
+	await interaction.deferReply({ withResponse: true });
+	if (!player?.connection) return interaction.editReply({ content: lang.music.NoPlaying }).catch((e) => {});
+	player.userdata.mess.edit({ components: [] }).catch((e) => {});
 
-	queue.metadata.mess = await interaction.fetchReply();
+	player.userdata.mess = await interaction.fetchReply();
 
-	const player = useFunctions().get("player_func");
-	if (!player) return;
-	const res = await player.execute({ queue });
+	const player_func = useFunctions().get("player_func");
+	if (!player_func) return;
+	const res = await player_func.execute({ player });
 	await interaction.editReply(res);
 };

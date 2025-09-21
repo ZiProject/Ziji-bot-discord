@@ -1,5 +1,5 @@
-const { useQueue } = require("discord-player");
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { getPlayer } = require("ziplayer");
 
 function isNumber(str) {
 	return /^[0-9]+$/.test(str);
@@ -27,15 +27,15 @@ module.exports.data = {
 
 module.exports.execute = async ({ interaction, lang }) => {
 	const { guild, client, fields } = interaction;
-	const queue = useQueue(guild.id);
+	const player = getPlayer(guild.id);
 	const input = fields.getTextInputValue("del-input");
 	const trackIndices = removeDuplicates(input.split(/[\s,;.+-]+/));
 
 	if (
 		!trackIndices.length ||
-		!queue ||
-		queue.isEmpty() ||
-		(queue.metadata.LockStatus && queue.metadata.requestedBy?.id !== interaction.user?.id)
+		!player ||
+		player.isEmpty ||
+		(player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id)
 	) {
 		await interaction.reply({
 			content: "❌ | Không thể xóa bài hát:\n" + `${trackIndices.join("\n")}`,
@@ -49,8 +49,8 @@ module.exports.execute = async ({ interaction, lang }) => {
 	validIndices
 		.sort((a, b) => b - a)
 		.forEach((index) => {
-			tracldel.push(queue.tracks.toArray()?.[index]?.title);
-			queue.removeTrack(index);
+			tracldel.push(player.queue.tracks.toArray()?.[index]?.title);
+			player.queue.remove(index);
 		});
 	await interaction.editReply({
 		content: "",

@@ -1,9 +1,9 @@
 const { Events, Message } = require("discord.js");
 const { useResponder, useConfig, useFunctions, useCommands, useLogger, modinteraction, useAI } = require("@zibot/zihooks");
 const config = useConfig();
-const { useQueue } = require("discord-player");
 const mentionRegex = /@(everyone|here|ping)/;
 const ziicon = require("./../../utility/icon");
+const { getPlayer } = require("ziplayer");
 
 const Commands = useCommands();
 const Functions = useFunctions();
@@ -29,9 +29,9 @@ module.exports.execute = async (message) => {
 	}
 	// Auto Responder
 	if (config?.DevConfig?.AutoResponder && message?.guild && (await reqreponser(message))) return; // Auto Responder
-
-	// DM channel auto reply = AI
 	if (!message.guild || message.mentions.has(message.client.user)) {
+		// DM channel auto reply = AI
+		if (!config.DevConfig.ai || !process.env?.GEMINI_API_KEY?.length) return;
 		await reqai(message, lang);
 	}
 };
@@ -60,10 +60,6 @@ const reqai = async (message, lang) => {
 		await message.reply(result);
 	} catch (err) {
 		useLogger().error(`Error in generating content: ${err}`);
-		const replies = await message.reply("❌ | Không thể tạo nội dung! Xin hãy chờ ít phút");
-		setTimeout(() => {
-			replies.delete();
-		}, 5000);
 	}
 };
 
@@ -110,11 +106,14 @@ const reqreponser = async (message) => {
  */
 
 const reqTTS = async (message, lang) => {
-	const queue = useQueue(message.guild.id);
+	const player = getPlayer(message.guild.id);
 	modinteraction(message);
+	message.fetchReply = () => {
+		return null;
+	};
 	const tts = await Functions.get("TextToSpeech");
-	if (queue?.metadata) await message.react(ziicon.yess);
+	if (player?.userdata) await message.react(ziicon.yess);
 	const context = message.content.replace(`<@${message.client.user.id}>`, "").trim();
 
-	await tts.execute(message, context, lang, { queue });
+	await tts.execute(message, context, lang, { player });
 };

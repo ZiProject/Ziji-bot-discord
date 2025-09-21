@@ -1,4 +1,3 @@
-const { useQueue } = require("discord-player");
 const ZiIcons = require("./../../utility/icon");
 const {
 	EmbedBuilder,
@@ -115,4 +114,5 @@ module.exports.execute = async (interaction, fillterr) => {
 module.exports.data = {
 	name: "Fillter",
 	type: "player",
+	enable: false,
 };
