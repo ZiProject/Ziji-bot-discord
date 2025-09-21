@@ -1,4 +1,3 @@
-
 module.exports = {
 	name: "playerDestroy",
 	type: "Player",
