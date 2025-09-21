@@ -149,7 +149,7 @@ async function handlePlayRequest(interaction, query, lang, options, player) {
 		if (!player?.userdata) tempmess = await interaction.editReply({ content: "<a:loading:1151184304676819085> Loading..." });
 		const playerConfig = await getPlayerConfig(options, interaction);
 		logger.debug(`Player configuration retrieved:  ${JSON.stringify(playerConfig)}`);
-		const Player = getManager().create(interaction.guild.id, {
+		const Player = await getManager().create(interaction.guild.id, {
 			...playerConfig,
 			userdata: await getQueueMetadata(player, interaction, options, lang),
 		});
