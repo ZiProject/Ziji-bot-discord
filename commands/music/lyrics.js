@@ -45,7 +45,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 			iconURL: user?.displayAvatarURL?.({ size: 1024 }) ?? null,
 		})
 		.setDescription(lyricsRes.text.slice(0, 1990) + (lyricsRes.text.length > 1990 ? "..." : ""))
-		.setTitle("Lyrics:" + lyricsRes?.trackName);
+		.setTitle("Lyrics: " + lyricsRes?.trackName);
 
 	await interaction.editReply({ embeds: [embed] });
 	return;

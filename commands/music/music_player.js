@@ -21,7 +21,7 @@ module.exports.data = {
 module.exports.execute = async ({ interaction, lang, player }) => {
 	await interaction.deferReply({ withResponse: true });
 	if (!player?.connection) return interaction.editReply({ content: lang.music.NoPlaying }).catch((e) => {});
-	player.userdata.mess.edit({ components: [] }).catch((e) => {});
+	player?.userdata?.mess?.edit({ components: [] }).catch((e) => {});
 
 	player.userdata.mess = await interaction.fetchReply();
 
