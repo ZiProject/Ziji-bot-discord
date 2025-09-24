@@ -12,7 +12,7 @@ module.exports = {
 	execute: async (player, track, result) => {
 		if (!player?.userdata?.lyrcsActive) return;
 		const embed = new EmbedBuilder()
-			.setTitle("Lyrics:" + track?.title)
+			.setTitle("Lyrics: " + track?.title)
 			.setThumbnail(track?.thumbnail)
 			.setColor("Random")
 			.setTimestamp()
