@@ -354,7 +354,7 @@ async function sendSearchResults(interaction, query, tracks, lang) {
 		.setColor(lang?.color || "Random")
 		.addFields(
 			tracks.map((track, i) => ({
-				name: `${i + 1}: ${track.author} - ${track.title.slice(0, 50 - track.author.length)} \`[${track.duration}]\``.slice(
+				name: `${i + 1}: ${track?.metadata?.author} - ${track.title.slice(0, 50 - track?.metadata?.author.length)} \`[${track.duration}]\``.slice(
 					0,
 					99,
 				),

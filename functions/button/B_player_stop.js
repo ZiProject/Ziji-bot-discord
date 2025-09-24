@@ -18,5 +18,5 @@ module.exports.execute = async ({ interaction, lang }) => {
 	await interaction.deferUpdate().catch(() => {});
 	interaction.message.edit({ components: [] }).catch((e) => {});
 	const player = getPlayer(interaction.guild.id);
-	player.destroy?.().catch((e) => {});
+	player?.destroy?.();
 };

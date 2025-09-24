@@ -61,7 +61,7 @@ module.exports = {
 
 		const embed = new EmbedBuilder()
 			.setAuthor({
-				name: `${track?.author} - ${track?.title}`.slice(0, 256),
+				name: `${track?.metadata?.author} - ${track?.title}`.slice(0, 256),
 				iconURL: `${queryTypeIcon}`,
 				url: track?.url,
 			})
@@ -187,18 +187,6 @@ module.exports = {
 					Description: lang?.playerFunc?.Fields?.Shuffle || "Trộn bài",
 					Value: "Shuffle",
 					Emoji: ZiIcons.shuffle,
-				},
-				{
-					Label: "Filter",
-					Description: lang?.playerFunc?.Fields?.Filter || "Hiệu Ứng",
-					Value: "Fillter",
-					Emoji: ZiIcons.fillter,
-				},
-				{
-					Label: "Save",
-					Description: lang?.playerFunc?.Fields?.Save || "Save current queue",
-					Value: "Save",
-					Emoji: ZiIcons.save,
 				},
 			];
 
