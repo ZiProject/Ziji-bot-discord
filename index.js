@@ -19,7 +19,7 @@ const readline = require("readline");
 
 //music player
 const { default: PlayerManager } = require("ziplayer");
-const { TTSPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin } = require("@ziplayer/plugin");
+const { TTSPlugin, YTSRPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin } = require("@ziplayer/plugin");
 const { lyricsExt, voiceExt } = require("@ziplayer/extension");
 
 const startup = new StartupManager(config);
@@ -53,7 +53,7 @@ const client = new Client({
 
 //create Player Manager
 const manager = new PlayerManager({
-	plugins: [new TTSPlugin(), new YouTubePlugin(), new SoundCloudPlugin(), new SpotifyPlugin()],
+	plugins: [new TTSPlugin(), new YTSRPlugin(), new YouTubePlugin(), new SoundCloudPlugin(), new SpotifyPlugin()],
 	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
 });
 manager.create("search");
