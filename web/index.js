@@ -166,7 +166,7 @@ async function startServer() {
 					url: track.url,
 					duration: track.duration,
 					thumbnail: track.thumbnail,
-					author: track?.author,
+					author: track?.metadata?.author,
 				}));
 
 				const currentTrack =
@@ -176,7 +176,7 @@ async function startServer() {
 							url: queue.currentTrack.url,
 							duration: queue.currentTrack.duration,
 							thumbnail: queue.currentTrack.thumbnail,
-							author: queue.currentTrack?.author,
+							author: queue.currentTrack?.metadata?.author,
 						}
 					:	null;
 
