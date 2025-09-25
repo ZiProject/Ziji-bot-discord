@@ -23,6 +23,7 @@ const CreateButton = ({ id = null, style = ButtonStyle.Secondary, label = null, 
 const getQueryTypeIcon = (type, raw) => {
 	switch (type) {
 		case "youtube":
+		case "ytsr":
 			return ZiIcons.youtubeIconURL;
 		case "spotify":
 			return ZiIcons.spotifyIconURL;
