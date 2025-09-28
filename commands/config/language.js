@@ -1,4 +1,20 @@
-const { useFunctions, useDB } = require("@zibot/zihooks");
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
 
 module.exports.data = {
 	name: "language",
@@ -29,7 +45,7 @@ module.exports.data = {
 module.exports.execute = async ({ interaction, lang }) => {
 	await interaction.deferReply();
 	const langcode = interaction.options.getString("lang");
-	const DataBase = useDB();
+	const DataBase = this.db;
 	if (!DataBase)
 		return interaction.editReply({
 			content: lang?.until?.noDB || "Database hiện không được bật, xin vui lòng liên hệ dev bot",
@@ -43,7 +59,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 		},
 		{ upsert: true },
 	);
-	const langfunc = useFunctions().get("ZiRank");
+	const langfunc = this.functions?.get("ZiRank");
 	const lang2 = await langfunc.execute({ user: interaction.user, XpADD: 0 });
 	interaction.editReply({ content: `${lang2.until.langChange} ${lang2.until.name}` });
 };

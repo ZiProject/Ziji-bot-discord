@@ -1,15 +1,32 @@
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
+
 const express = require("express");
 const cors = require("cors");
 const WebSocket = require("ws");
-const { useClient, useLogger, useConfig, useFunctions } = require("@zibot/zihooks");
 const { getManager, Player } = require("ziplayer");
 const http = require("http");
 const ngrok = require("ngrok");
 const { lyricsExt } = require("@ziplayer/extension");
 
 async function startServer() {
-	const logger = useLogger();
-	const client = useClient();
+	const logger = this.logger;
+	const client = this.client;
 	const manager = getManager();
 	const player = manager.create("webid");
 

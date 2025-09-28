@@ -1,17 +1,34 @@
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
+
 const { table } = require("table");
 const fsPromises = require("fs").promises;
 const fs = require("fs");
 const chalk = require("chalk");
 const path = require("node:path");
-const { useConfig } = require("@zibot/zihooks");
 
 class StartupLoader {
-	constructor(config = useConfig(), logger = console) {
+	constructor(config = {}, logger = console) {
 		this.config = config;
 		this.logger = logger;
 	}
 
-	async loadFiles(directory, collection) {
+	async loadFiles(directory, collection, app = null) {
 		try {
 			const folders = await fsPromises.readdir(directory);
 			const clientCommands = [];
@@ -37,6 +54,10 @@ class StartupLoader {
 									]);
 
 									if (!isDisabled && collection) {
+										// Bind app instance to module if provided
+										if (app) {
+											module = app.bindToModule(module);
+										}
 										collection.set(module.data.name, module);
 									}
 								} else {
@@ -58,7 +79,7 @@ class StartupLoader {
 		}
 	}
 
-	async loadEvents(directory, target) {
+	async loadEvents(directory, target, app = null) {
 		const clientEvents = [];
 		const traverse = async (dir) => {
 			const files = await fsPromises.readdir(dir, { withFileTypes: true });
@@ -87,6 +108,11 @@ class StartupLoader {
 
 						if (isDisabled) {
 							return;
+						}
+
+						// Bind app instance to event if provided
+						if (app) {
+							event = app.bindToModule(event);
 						}
 
 						const handler = async (...args) => {
@@ -131,11 +157,6 @@ class StartupLoader {
 	}
 
 	log(level, ...args) {
-		// if (this.logger && typeof this.logger[level] === "function") {
-		// 	this.logger[level](...args);
-		// 	return;
-		// }
-
 		if (typeof console[level] === "function") {
 			console[level](...args);
 			return;

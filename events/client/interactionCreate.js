@@ -1,11 +1,24 @@
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
+
 const { Events, CommandInteraction, PermissionsBitField, MessageFlags, EmbedBuilder } = require("discord.js");
-const { useCooldowns, useCommands, useFunctions, useConfig, useLogger } = require("@zibot/zihooks");
-const config = useConfig();
 const fs = require("fs");
 const path = require("path");
-const Cooldowns = useCooldowns();
-const Commands = useCommands();
-const Functions = useFunctions();
 const { getPlayer } = require("ziplayer");
 
 /**
@@ -43,16 +56,16 @@ async function checkStatus(interaction, client, lang) {
 	}
 
 	// Check owner
-	if (config.OwnerID.includes(interaction.user.id)) return false;
+	if (this.config?.OwnerID?.includes(interaction.user.id)) return false;
 
 	// Check modal
 	if (interaction.isModalSubmit()) return false;
 	// Check cooldown
 	const now = Date.now();
-	const cooldownDuration = config.defaultCooldownDuration ?? 3000;
-	const expirationTime = Cooldowns.get(interaction.user.id) + cooldownDuration;
+	const cooldownDuration = this.config?.defaultCooldownDuration ?? 3000;
+	const expirationTime = this.cooldowns?.get(interaction.user.id) + cooldownDuration;
 
-	if (Cooldowns.has(interaction.user.id) && now < expirationTime) {
+	if (this.cooldowns?.has(interaction.user.id) && now < expirationTime) {
 		const expiredTimestamp = Math.round(expirationTime / 1_000);
 		await interaction
 			.reply({
@@ -65,8 +78,8 @@ async function checkStatus(interaction, client, lang) {
 		return true;
 	}
 	// Set cooldown
-	Cooldowns.set(interaction.user.id, now);
-	setTimeout(() => Cooldowns.delete(interaction.user.id), cooldownDuration);
+	this.cooldowns?.set(interaction.user.id, now);
+	setTimeout(() => this.cooldowns?.delete(interaction.user.id), cooldownDuration);
 	return false;
 }
 /**
@@ -125,10 +138,10 @@ module.exports.execute = async (interaction) => {
 	let cmdops = null;
 	// Determine the interaction type and set the command
 	if (interaction.isChatInputCommand() || interaction.isAutocomplete() || interaction.isMessageContextMenuCommand()) {
-		command = Commands.get(interaction.commandName);
+		command = this.commands?.get(interaction.commandName);
 		commandType = "command";
 	} else if (interaction.isMessageComponent() || interaction.isModalSubmit()) {
-		command = Functions.get(interaction.customId);
+		command = this.functions?.get(interaction.customId);
 		commandType = "function";
 	}
 
@@ -139,7 +152,7 @@ module.exports.execute = async (interaction) => {
 	}
 
 	// Get the user's language preference
-	const langfunc = Functions.get("ZiRank");
+	const langfunc = this.functions?.get("ZiRank");
 	const lang = await langfunc.execute({ user, XpADD: interaction.isAutocomplete() ? 0 : 1 });
 
 	// Try to execute the command and handle errors
@@ -147,7 +160,7 @@ module.exports.execute = async (interaction) => {
 		if (interaction.isAutocomplete()) {
 			await command.autocomplete({ interaction, lang });
 		} else {
-			useLogger().debug(
+			this.logger?.debug(
 				`Interaction received: ${interaction?.commandName || interaction?.customId} >> User: ${interaction?.user?.username} >> Guild: ${interaction?.guild?.name} (${interaction?.guildId})`,
 			);
 

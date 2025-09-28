@@ -1,6 +1,23 @@
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
+
 const { PermissionsBitField } = require("discord.js");
-const { useDB, useResponder, useConfig } = require("@zibot/zihooks");
-const config = useConfig();
+const config = this.config;
 
 module.exports.data = {
 	name: "autoresponder",
@@ -62,9 +79,9 @@ module.exports.execute = async ({ interaction, lang }) => {
 	if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 		return interaction.reply({ content: lang.until.noPermission, ephemeral: true });
 	}
-	const db = useDB();
+	const db = this.db;
 	if (!db) return interaction.reply({ content: lang?.until?.noDB });
-	const autoRes = useResponder();
+	const autoRes = this.responder;
 	const commandtype = interaction.options?.getSubcommand();
 	const trigger = interaction.options.getString("trigger");
 	const response = interaction.options.getString("response");

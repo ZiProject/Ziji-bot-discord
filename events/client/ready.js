@@ -1,8 +1,25 @@
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
+
 const { Events, Client, ActivityType } = require("discord.js");
 const config = require("../../config");
 const deploy = require("../../startup/deploy");
 const mongoose = require("mongoose");
-const { useDB, useLogger } = require("@zibot/zihooks");
 const { Database, createModel } = require("@zibot/db");
 
 module.exports = {
@@ -27,7 +44,7 @@ module.exports = {
 					}
 				}
 			} catch (error) {
-				useLogger().error("Lỗi khi gửi tin nhắn lỗi:", error);
+				this.logger?.error("Lỗi khi gửi tin nhắn lỗi:", error);
 			}
 		};
 
@@ -38,26 +55,26 @@ module.exports = {
 		]);
 
 		if (mongoConnected) {
-			useDB(require("../../startup/mongoDB"));
+			this.db = require("../../startup/mongoDB");
 			await require("../../startup/loadResponder")();
 			await require("../../startup/loadWelcome")();
 			await require("../../startup/initAI")();
 
-			useLogger().info("Connected to MongoDB!");
+			this.logger?.info("Connected to MongoDB!");
 			client.errorLog("Connected to MongoDB!");
 		} else {
-			useLogger().error("Failed to connect to MongoDB!");
+			this.logger?.error("Failed to connect to MongoDB!");
 			const db = new Database("./jsons/ziDB.json");
-			useDB({
+			this.db = {
 				ZiUser: createModel(db, "ZiUser"),
 				ZiAutoresponder: createModel(db, "ZiAutoresponder"),
 				ZiWelcome: createModel(db, "ZiWelcome"),
 				ZiGuild: createModel(db, "ZiGuild"),
-			});
+			};
 			await require("../../startup/loadResponder")();
 			await require("../../startup/loadWelcome")();
 			await require("../../startup/initAI")();
-			useLogger().info("Connected to LocalDB!");
+			this.logger?.info("Connected to LocalDB!");
 			client.errorLog("Connected to LocalDB!");
 		}
 
@@ -71,7 +88,7 @@ module.exports = {
 			},
 		});
 
-		useLogger().info(`Ready! Logged in as ${client.user.tag}`);
+		this.logger?.info(`Ready! Logged in as ${client.user.tag}`);
 		client.errorLog(`Ready! Logged in as ${client.user.tag}`);
 	},
 };

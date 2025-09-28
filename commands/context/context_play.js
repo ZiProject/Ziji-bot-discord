@@ -1,5 +1,22 @@
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
+
 const Encryptor = require("@zibot/ziencryptor");
-const { useFunctions } = require("@zibot/zihooks");
 const fetch = require("node-fetch");
 
 module.exports.data = {
@@ -30,7 +47,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 			return;
 		}
 
-		const searchCommand = useFunctions().get("Search");
+		const searchCommand = this.functions?.get("Search");
 		await searchCommand.execute(interaction, query, lang);
 	} catch (error) {
 		console.error("Error executing command:", error);
@@ -76,7 +93,7 @@ async function handleSaveQueue(interaction, lang) {
 		const decryptor = new Encryptor("Z");
 		const decryptedData = decryptor.decrypt(encryptedData);
 
-		const restoreCommand = useFunctions().get("Restored_tracks");
+		const restoreCommand = this.functions?.get("Restored_tracks");
 		await restoreCommand.execute(interaction, decryptedData, lang);
 
 		return "ZibotZibotZibotZibot";

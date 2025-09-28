@@ -1,4 +1,20 @@
-const { useFunctions, useDB } = require("@zibot/zihooks");
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
 
 module.exports.data = {
 	name: "volume",
@@ -32,11 +48,11 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 	if (!player?.connection) return interaction.editReply({ content: lang.music.NoPlaying });
 	player.setVolume(Math.floor(volume));
 	await interaction.deleteReply().catch((e) => {});
-	const DataBase = useDB();
+	const DataBase = this.db;
 	if (DataBase) {
 		await DataBase.ZiUser.updateOne({ userID: interaction.user.id }, { $set: { volume: volume }, $upsert: true });
 	}
-	const player_func = useFunctions().get("player_func");
+	const player_func = this.functions?.get("player_func");
 	if (!player_func) return;
 	const res = await player_func.execute({ player });
 	return player.userdata.mess.edit(res);

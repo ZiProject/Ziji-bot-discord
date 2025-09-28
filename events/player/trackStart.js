@@ -1,5 +1,22 @@
-const { useClient, useFunctions, useConfig } = require("@zibot/zihooks");
-const config = useConfig();
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
+
+const config = this.config;
 
 module.exports = {
 	name: "trackStart",
@@ -10,7 +27,7 @@ module.exports = {
 	 * @param {import('ziplayer').Track} track
 	 */
 	execute: async (player, track) => {
-		const player_func = useFunctions().get("player_func");
+		const player_func = this.functions?.get("player_func");
 		if (!player_func) return;
 
 		const playerGui = await player_func.execute({ player, tracks: track });
@@ -24,7 +41,7 @@ module.exports = {
 		// Status of voice channel
 		if (config.PlayerConfig?.changeStatus) {
 			const status = `💿 Now playing: ${track.title}`;
-			const { rest } = useClient();
+			const { rest } = this.client;
 			rest.put(`/channels/${player?.connection?.joinConfig.channelId}/voice-status`, { body: { status } }).catch((e) => {
 				console.log(e);
 			});

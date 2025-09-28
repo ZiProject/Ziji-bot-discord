@@ -1,11 +1,28 @@
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
+
 const { Events, Message } = require("discord.js");
-const { useResponder, useConfig, useFunctions, useCommands, useLogger, modinteraction, useAI } = require("@zibot/zihooks");
-const config = useConfig();
+const config = this.config;
 const mentionRegex = /@(everyone|here|ping)/;
 const ziicon = require("./../../utility/icon");
 const { getPlayer } = require("ziplayer");
 
-const Commands = useCommands();
+const Commands = this.commands;
 const Functions = useFunctions();
 
 module.exports = {
@@ -59,7 +76,7 @@ const reqai = async (message, lang) => {
 		const result = await useAI().run(prompt, message.author, lang);
 		await message.reply(result);
 	} catch (err) {
-		useLogger().error(`Error in generating content: ${err}`);
+		this.logger.error(`Error in generating content: ${err}`);
 	}
 };
 
@@ -68,8 +85,8 @@ const reqai = async (message, lang) => {
  */
 
 const reqreponser = async (message) => {
-	const parseVar = useFunctions().get("getVariable");
-	const guildResponders = useResponder().get(message.guild.id) ?? [];
+	const parseVar = this.functions?.get("getVariable");
+	const guildResponders = this.responder.get(message.guild.id) ?? [];
 
 	const trigger = guildResponders.find((responder) => {
 		const msgContent = message.content.toLowerCase();

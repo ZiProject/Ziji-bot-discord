@@ -1,7 +1,24 @@
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
+
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { useDB, useAI, useLogger, useClient, useConfig } = require("@zibot/zihooks");
-const config = useConfig();
-const client = useClient();
+const config = this.config;
+const client = this.client;
 
 const promptBuilder = async ({ content, user, lang, DataBase }) => {
 	const { promptHistory, CurrentAI, CurrentUser } = (await DataBase.ZiUser.findOne({ userID: user?.id })) || {};
@@ -30,7 +47,7 @@ module.exports = async () => {
 		if (!config.DevConfig.ai || !process.env?.GEMINI_API_KEY?.length) return;
 
 		const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-		const DataBase = useDB();
+		const DataBase = this.db;
 
 		useAI({
 			client,
@@ -68,8 +85,8 @@ module.exports = async () => {
 			},
 		});
 
-		useLogger().info(`Successfully loaded Ai model.`);
+		this.logger.info(`Successfully loaded Ai model.`);
 	} catch (error) {
-		useLogger().error("Lỗi khi tải Ai model:", error);
+		this.logger.error("Lỗi khi tải Ai model:", error);
 	}
 };

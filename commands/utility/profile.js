@@ -1,6 +1,23 @@
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
+
 const { ButtonBuilder, ActionRowBuilder, ButtonStyle, AttachmentBuilder } = require("discord.js");
 const { Font, RankCardBuilder } = require("canvacord");
-const { useDB, useConfig } = require("@zibot/zihooks");
 const { Worker } = require("worker_threads");
 
 async function buildImageInWorker(workerData) {
@@ -74,7 +91,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 	const member = (await interaction?.guild?.members.fetch(targetUser)) || interaction.user;
 
-	const db = useDB();
+	const db = this.db;
 	if (!db) return interaction.editReply({ content: lang?.until?.noDB, ephemeral: true }).catch(() => {});
 
 	const [userDB, UserI] = await Promise.all([db.ZiUser.findOne({ userID: member.id }), db.ZiUser.find()]);
@@ -88,7 +105,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 	const sss = usersort.findIndex((user) => user.userID === member.id);
 
-	const strimg = useConfig().botConfig?.rankBackground || "https://i.imgur.com/sVzFJ8W.jpeg";
+	const strimg = this.config.botConfig?.rankBackground || "https://i.imgur.com/sVzFJ8W.jpeg";
 
 	const editProf = new ActionRowBuilder().addComponents(
 		new ButtonBuilder().setLabel("Edit ✎").setCustomId("B_editProfile").setStyle(ButtonStyle.Secondary),

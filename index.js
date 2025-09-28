@@ -1,28 +1,40 @@
+/**
+ * @fileoverview Ziji Bot Discord - App Class System
+ * @global
+ * @typedef {Object} ModuleContext
+ * @property {import("../../core/App").App} app - App instance
+ * @property {import("discord.js").Client} client - Discord client instance
+ * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
+ * @property {import("discord.js").Collection} commands - Commands collection
+ * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} responder - Responder collection
+ * @property {import("discord.js").Collection} welcome - Welcome collection
+ * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
+ * @property {import("ziplayer").PlayerManager} manager - Player manager
+ * @property {Object} config - Configuration object
+ * @property {Object} logger - Logger instance
+ * @property {Object} db - Database instance
+ */
+
 require("dotenv").config();
 const { startServer } = require("./web");
-const {
-	useClient,
-	useCooldowns,
-	useCommands,
-	useFunctions,
-	useGiveaways,
-	useResponder,
-	useWelcome,
-	useConfig,
-} = require("@zibot/zihooks");
+const { appManager } = require("./core/AppManager");
 const path = require("node:path");
-const { GiveawaysManager } = require("discord-giveaways");
-const config = useConfig(require("./config"));
-const { StartupManager } = require("./startup");
 const { Client, Collection, GatewayIntentBits, Partials } = require("discord.js");
 const readline = require("readline");
 
-//music player
-const { default: PlayerManager } = require("ziplayer");
-const { TTSPlugin, YTSRPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin } = require("@ziplayer/plugin");
-const { lyricsExt, voiceExt } = require("@ziplayer/extension");
+// Import configuration
+const config = require("./config");
 
-const startup = new StartupManager(config);
+// Initialize app
+const app = appManager.initialize({
+	config,
+	logger: console,
+	enableGiveaways: config.DevConfig?.Giveaway,
+	giveawayStorage: "./jsons/giveaways.json",
+});
+
+const startup = new (require("./startup").StartupManager)(config);
 const logger = startup.getLogger();
 
 const client = new Client({
@@ -51,47 +63,33 @@ const client = new Client({
 	},
 });
 
-//create Player Manager
-const manager = new PlayerManager({
-	plugins: [new TTSPlugin(), new YTSRPlugin(), new YouTubePlugin(), new SoundCloudPlugin(), new SpotifyPlugin()],
-	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
-});
-manager.create("search");
 const rl = readline.createInterface({
 	input: process.stdin,
 	output: process.stdout,
 });
 
-useGiveaways(
-	config.DevConfig.Giveaway ?
-		new GiveawaysManager(client, {
-			storage: "./jsons/giveaways.json",
-			default: {
-				botsCanWin: false,
-				embedColor: "Random",
-				embedColorEnd: "#000000",
-				reaction: "🎉",
-			},
-		})
-	:	() => false,
-);
-
 const initialize = async () => {
-	logger.info("Initializing Ziji Bot...");
+	logger.info("Initializing Ziji Bot with App class...");
 	startup.checkForUpdates();
-	useClient(client);
-	useWelcome(new Collection());
-	useCooldowns(new Collection());
-	useResponder(new Collection());
+
+	// Initialize app with client
+	await app.initialize(client);
+
+	// Set up collections directly in app
+	app.cooldowns = new Collection();
+	app.welcome = new Collection();
+	app.responder = new Collection();
+
 	await Promise.all([
-		startup.loadEvents(path.join(__dirname, "events/client"), client),
-		startup.loadEvents(path.join(__dirname, "events/process"), process),
-		startup.loadEvents(path.join(__dirname, "events/console"), rl),
-		startup.loadEvents(path.join(__dirname, "events/player"), manager),
-		startup.loadFiles(path.join(__dirname, "commands"), useCommands(new Collection())),
-		startup.loadFiles(path.join(__dirname, "functions"), useFunctions(new Collection())),
+		startup.loadEvents(path.join(__dirname, "events/client"), client, app),
+		startup.loadEvents(path.join(__dirname, "events/process"), process, app),
+		startup.loadEvents(path.join(__dirname, "events/console"), rl, app),
+		startup.loadEvents(path.join(__dirname, "events/player"), app.getManager(), app),
+		startup.loadFiles(path.join(__dirname, "commands"), app.commands, app),
+		startup.loadFiles(path.join(__dirname, "functions"), app.functions, app),
 		startServer().catch((error) => logger.error("Error start Server:", error)),
 	]);
+
 	client.login(process.env.TOKEN).catch((error) => {
 		logger.error("Error logging in:", error);
 		logger.error("The Bot Token You Entered Into Your Project Is Incorrect Or Your Bot's INTENTS Are OFF!");
