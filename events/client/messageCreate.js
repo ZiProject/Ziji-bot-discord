@@ -5,8 +5,8 @@
  * @property {import("../../core/App").App} app - App instance
  * @property {import("discord.js").Client} client - Discord client instance
  * @property {import("discord.js").Collection} cooldowns - Cooldowns collection
- * @property {import("discord.js").Collection} commands - Commands collection
- * @property {import("discord.js").Collection} functions - Functions collection
+ * @property {import("discord.js").Collection} commands - commands collection
+ * @property {import("discord.js").Collection} functions -  functions collection
  * @property {import("discord.js").Collection} responder - Responder collection
  * @property {import("discord.js").Collection} welcome - Welcome collection
  * @property {import("discord-giveaways").GiveawaysManager|Function} giveaways - Giveaways manager
@@ -22,9 +22,6 @@ const mentionRegex = /@(everyone|here|ping)/;
 const ziicon = require("./../../utility/icon");
 const { getPlayer } = require("ziplayer");
 
-const Commands = this.commands;
-const Functions = useFunctions();
-
 module.exports = {
 	name: Events.MessageCreate,
 	type: "events",
@@ -38,7 +35,7 @@ module.exports.execute = async (message) => {
 	if (!message.client.isReady()) return;
 	if (message.author.bot) return;
 	// Get the user's language preference
-	const langfunc = Functions.get("ZiRank");
+	const langfunc =  this.functions.get("ZiRank");
 	const lang = await langfunc.execute({ user: message.author, XpADD: 0 });
 	//tts
 	if (message.channel.isThread() && message.channel.name.startsWith(`${message?.client?.user?.username} TTS |`)) {
@@ -61,7 +58,7 @@ const reqai = async (message, lang) => {
 	if (mentionRegex.test(message.content?.toLowerCase())) return;
 	const prompt = message.content.replace(`<@${message.client.user.id}>`, "").trim();
 	if (!prompt) {
-		const commsnd = Commands.get("help");
+		const commsnd = this.commands.get("help");
 		if (commsnd) {
 			modinteraction(message);
 			await commsnd.execute({ interaction: message, lang });
@@ -85,7 +82,7 @@ const reqai = async (message, lang) => {
  */
 
 const reqreponser = async (message) => {
-	const parseVar = this.functions?.get("getVariable");
+	const parseVar = this. this.functions?.get("getVariable");
 	const guildResponders = this.responder.get(message.guild.id) ?? [];
 
 	const trigger = guildResponders.find((responder) => {
@@ -128,7 +125,7 @@ const reqTTS = async (message, lang) => {
 	message.fetchReply = () => {
 		return null;
 	};
-	const tts = await Functions.get("TextToSpeech");
+	const tts = await  this.functions.get("TextToSpeech");
 	if (player?.userdata) await message.react(ziicon.yess);
 	const context = message.content.replace(`<@${message.client.user.id}>`, "").trim();
 

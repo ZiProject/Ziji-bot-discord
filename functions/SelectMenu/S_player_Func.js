@@ -16,8 +16,6 @@
  * @property {Object} db - Database instance
  */
 
-const Functions = useFunctions();
-const config = this.config;
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require("discord.js");
 
 module.exports.data = {
@@ -26,7 +24,7 @@ module.exports.data = {
 	category: "musix",
 };
 async function Update_Player(player) {
-	const player_func = Functions.get("player_func");
+	const player_func = this.functions.get("player_func");
 	if (!player_func) return;
 	const res = await player_func.execute({ player });
 	player.userdata.mess.edit(res);
@@ -61,13 +59,13 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 			return;
 		}
 		case "Queue": {
-			const QueueTrack = Functions.get("Queue");
+			const QueueTrack = this.functions.get("Queue");
 			QueueTrack.execute(interaction, player);
 			return;
 		}
 		case "Fillter": {
 			await interaction.deferReply();
-			const Fillter = Functions.get("Fillter");
+			const Fillter = this.functions.get("Fillter");
 			await Fillter.execute(interaction, null);
 			return;
 		}
@@ -118,7 +116,7 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 			return;
 		}
 		case "unmute": {
-			const volumd = config?.PlayerConfig.volume ?? 100;
+			let volumd = this.config?.PlayerConfig.volume ?? 100;
 			if (volumd === "auto") {
 				volumd = DataBase ? ((await DataBase.ZiUser.findOne({ userID: user.id }))?.volume ?? 100) : 100;
 			}

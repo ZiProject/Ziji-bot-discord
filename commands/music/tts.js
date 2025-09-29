@@ -16,8 +16,6 @@
  * @property {Object} db - Database instance
  */
 
-const Functions = useFunctions();
-
 module.exports.data = {
 	name: "tts",
 	description: "Thay mặt bạn nói điều gì đó",

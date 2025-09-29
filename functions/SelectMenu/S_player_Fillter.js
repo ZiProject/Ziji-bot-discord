@@ -16,7 +16,7 @@
  * @property {Object} db - Database instance
  */
 
-const Functions = useFunctions();
+const Functions = this.functions;
 const { getPlayer } = require("ziplayer");
 
 module.exports.data = {

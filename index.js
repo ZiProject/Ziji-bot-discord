@@ -26,17 +26,6 @@ const readline = require("readline");
 // Import configuration
 const config = require("./config");
 
-// Initialize app
-const app = appManager.initialize({
-	config,
-	logger: console,
-	enableGiveaways: config.DevConfig?.Giveaway,
-	giveawayStorage: "./jsons/giveaways.json",
-});
-
-const startup = new (require("./startup").StartupManager)(config);
-const logger = startup.getLogger();
-
 const client = new Client({
 	rest: [{ timeout: 60_000 }],
 	intents: [
@@ -69,8 +58,22 @@ const rl = readline.createInterface({
 });
 
 const initialize = async () => {
+	// Initialize app
+	const app = appManager.initialize({
+		config,
+		logger: console,
+		enableGiveaways: config.DevConfig?.Giveaway,
+		giveawayStorage: "./jsons/giveaways.json",
+	});
+
+	const startup = new (require("./startup").StartupManager)(config);
+	const logger = startup.getLogger();
+
 	logger.info("Initializing Ziji Bot with App class...");
 	startup.checkForUpdates();
+
+	// Update app logger with Winston logger
+	app.logger = logger;
 
 	// Initialize app with client
 	await app.initialize(client);
@@ -80,14 +83,16 @@ const initialize = async () => {
 	app.welcome = new Collection();
 	app.responder = new Collection();
 
+	const playerManager = app.getManager();
+
 	await Promise.all([
 		startup.loadEvents(path.join(__dirname, "events/client"), client, app),
 		startup.loadEvents(path.join(__dirname, "events/process"), process, app),
 		startup.loadEvents(path.join(__dirname, "events/console"), rl, app),
-		startup.loadEvents(path.join(__dirname, "events/player"), app.getManager(), app),
+		playerManager ? startup.loadEvents(path.join(__dirname, "events/player"), playerManager, app) : Promise.resolve(),
 		startup.loadFiles(path.join(__dirname, "commands"), app.commands, app),
 		startup.loadFiles(path.join(__dirname, "functions"), app.functions, app),
-		startServer().catch((error) => logger.error("Error start Server:", error)),
+		Promise.resolve(startServer.bind(app)()).catch((error) => logger.error("Error start Server:", error)),
 	]);
 
 	client.login(process.env.TOKEN).catch((error) => {
@@ -97,5 +102,5 @@ const initialize = async () => {
 };
 
 initialize().catch((error) => {
-	logger.error("Error during initialization:", error);
+	console.error("Error during initialization:", error);
 });

@@ -21,7 +21,7 @@ const { Events } = require("discord.js");
 module.exports = {
 	name: Events.Debug,
 	type: "events",
-	enable: this.config.DevConfig.DJS_DEBUG,
+	enable: global.ModuleContext?.config?.DevConfig?.DJS_DEBUG,
 
 	/**
 	 *

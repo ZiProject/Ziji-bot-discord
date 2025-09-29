@@ -16,7 +16,7 @@
  * @property {Object} db - Database instance
  */
 
-module.exports = async () => {
+module.exports = async (apps) => {
 	try {
 		let indexs = 0;
 		const responders = await this.db.ZiAutoresponder.find();

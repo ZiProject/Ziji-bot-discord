@@ -41,6 +41,7 @@ class App {
 	 * @param {AppConfig} options - App configuration
 	 */
 	constructor(options = {}) {
+		this.options = options;
 		this.config = options.config || {};
 		this.logger = options.logger || console;
 
@@ -56,11 +57,9 @@ class App {
 
 		// Initialize giveaways
 		this.giveaways = null;
-		this.initializeGiveaways(options);
 
 		// Initialize player manager
 		this.manager = null;
-		this.initializePlayerManager(options);
 
 		// Bind methods to maintain this context
 		this.bindMethods();
@@ -146,11 +145,11 @@ class App {
 		this.client = client;
 
 		// Reinitialize giveaways and player manager with client
-		this.initializeGiveaways({
-			enableGiveaways: this.config.DevConfig?.Giveaway,
-			giveawayStorage: "./jsons/giveaways.json",
-		});
-		this.initializePlayerManager({});
+		this.initializeGiveaways(this.options);
+		this.initializePlayerManager(this.options);
+
+		// Set global context for modules to access at module level
+		this.setGlobalContext();
 	}
 
 	/**
@@ -234,6 +233,27 @@ class App {
 	}
 
 	/**
+	 * Set global context for modules to access at module level
+	 * @private
+	 */
+	setGlobalContext() {
+		// Create a global context object that modules can access
+		global.ModuleContext = {
+			app: this,
+			client: this.client,
+			cooldowns: this.cooldowns,
+			commands: this.commands,
+			functions: this.functions,
+			responder: this.responder,
+			welcome: this.welcome,
+			giveaways: this.giveaways,
+			manager: this.manager,
+			config: this.config,
+			logger: this.logger,
+		};
+	}
+
+	/**
 	 * Bind app instance to module for this context
 	 * @param {Object} module - Module to bind to
 	 * @returns {Object} Module with bound app instance
@@ -243,7 +263,6 @@ class App {
 			return module;
 		}
 
-		// Add app instance to module
 		module.app = this;
 		module.client = this.client;
 		module.cooldowns = this.cooldowns;
@@ -256,14 +275,86 @@ class App {
 		module.config = this.config;
 		module.logger = this.logger;
 
-		// Bind all functions in module
-		Object.keys(module).forEach((key) => {
-			if (typeof module[key] === "function") {
-				module[key] = module[key].bind(module);
+		// Bind all functions in the module to maintain this context
+		this.bindModuleFunctions(module);
+
+		// Call onBind if it exists to allow modules to access context immediately
+		if (typeof module.onBind === "function") {
+			try {
+				module.onBind();
+			} catch (error) {
+				// Ignore errors in onBind
 			}
-		});
+		}
 
 		return module;
+	}
+
+	/**
+	 * Bind all functions in module to maintain this context
+	 * @param {Object} module - Module to bind functions
+	 * @private
+	 */
+	bindModuleFunctions(module) {
+		const visited = new WeakSet();
+		const nativeTypes = new Set([
+			"Object",
+			"Array",
+			"Function",
+			"RegExp",
+			"Date",
+			"Error",
+			"Promise",
+			"ReadableState",
+			"WritableState",
+			"TransformState",
+			"DuplexState",
+		]);
+
+		const bindFunctions = (obj, depth = 0) => {
+			// Prevent infinite recursion and limit depth
+			if (visited.has(obj) || depth > 3 || !obj || typeof obj !== "object") {
+				return;
+			}
+
+			// Skip native objects and prototypes
+			if (obj.constructor && nativeTypes.has(obj.constructor.name)) {
+				return;
+			}
+
+			// Skip prototype objects
+			if (obj === Object.prototype || obj === Function.prototype || obj === Array.prototype) {
+				return;
+			}
+
+			visited.add(obj);
+
+			try {
+				for (const key in obj) {
+					if (Object.prototype.hasOwnProperty.call(obj, key)) {
+						const value = obj[key];
+
+						if (typeof value === "function") {
+							// Skip native functions
+							if (!value.toString().includes("[native code]")) {
+								try {
+									obj[key] = value.bind(module);
+								} catch {
+									// Skip if binding fails
+								}
+							}
+						} else if (value && typeof value === "object" && !Array.isArray(value)) {
+							// Recursively bind nested objects
+							bindFunctions(value, depth + 1);
+						}
+					}
+				}
+			} catch {
+				// Skip if any error occurs
+			}
+		};
+
+		bindFunctions(module);
 	}
 
 	/**

@@ -16,8 +16,6 @@
  * @property {Object} db - Database instance
  */
 
-const config = this.config;
-
 module.exports = {
 	name: "trackStart",
 	type: "Player",
@@ -39,7 +37,7 @@ module.exports = {
 		}
 
 		// Status of voice channel
-		if (config.PlayerConfig?.changeStatus) {
+		if (this.config.PlayerConfig?.changeStatus) {
 			const status = `💿 Now playing: ${track.title}`;
 			const { rest } = this.client;
 			rest.put(`/channels/${player?.connection?.joinConfig.channelId}/voice-status`, { body: { status } }).catch((e) => {

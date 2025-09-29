@@ -19,13 +19,13 @@
 module.exports = {
 	name: "debug",
 	type: "Player",
-	enable: this.config.DevConfig.Player_DEBUG,
 
 	/**
 	 *
 	 * @param {any} arg
 	 */
-	execute: async (...arg) => {
+	execute: async function (...arg) {
+		if (!this.config.DevConfig.Player_DEBUG) return;
 		this.logger.debug(...arg);
 	},
 };

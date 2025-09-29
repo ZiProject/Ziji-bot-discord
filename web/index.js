@@ -25,9 +25,10 @@ const ngrok = require("ngrok");
 const { lyricsExt } = require("@ziplayer/extension");
 
 async function startServer() {
-	const logger = this.logger;
-	const client = this.client;
-	const manager = getManager();
+	const appContext = this;
+	const logger = appContext.logger;
+	const client = appContext.client;
+	const manager = appContext.manager || getManager();
 	const player = manager.create("webid");
 
 	const app = express();
@@ -65,6 +66,7 @@ async function startServer() {
 			clientName: client?.user?.displayName,
 			clientId: client?.user?.id,
 			avatars: client?.user?.displayAvatarURL({ size: 1024 }),
+			appStatus: appContext.getStatus(),
 		});
 	});
 
@@ -95,6 +97,20 @@ async function startServer() {
 		res.json(lyrics);
 	});
 
+	// API endpoint để lấy thông tin app context
+	app.get("/api/app", (req, res) => {
+		res.json({
+			status: "OK",
+			appStatus: appContext.getStatus(),
+			config: appContext.getConfig(),
+			commandsCount: appContext.getCommands().size,
+			functionsCount: appContext.getFunctions().size,
+			cooldownsCount: appContext.getCooldowns().size,
+			responderCount: appContext.getResponder().size,
+			welcomeCount: appContext.getWelcome().size,
+		});
+	});
+
 	const wss = new WebSocket.Server({ server });
 
 	wss.on("connection", (ws) => {
@@ -123,6 +139,19 @@ async function startServer() {
 							JSON.stringify({ event: "ReplyVoice", channel: userData.userdata.channel, guild: queue.userdata.channel.guild }),
 						);
 					}
+				}
+
+				// Thêm event để lấy thông tin app context qua WebSocket
+				if (data.event == "GetAppInfo") {
+					ws.send(
+						JSON.stringify({
+							event: "AppInfo",
+							appStatus: appContext.getStatus(),
+							commandsCount: appContext.getCommands().size,
+							functionsCount: appContext.getFunctions().size,
+						}),
+					);
+					return;
 				}
 				if (!queue || (queue.userdata.LockStatus && queue.userdata.requestedBy?.id !== (user?.id || data.userID))) return;
 
@@ -210,6 +239,11 @@ async function startServer() {
 						queue: queueTracks,
 						filters: null,
 						shuffle: null,
+						appInfo: {
+							commandsCount: appContext.getCommands().size,
+							functionsCount: appContext.getFunctions().size,
+							clientReady: appContext.client?.isReady() || false,
+						},
 					}),
 				);
 			} catch (error) {

@@ -43,7 +43,7 @@ class StartupLoader {
 							const filePath = path.join(folderPath, file);
 
 							try {
-								const module = require(path.resolve(filePath));
+								let module = require(path.resolve(filePath));
 								const disabledCommands = this.config?.disabledCommands ?? [];
 								const isDisabled = disabledCommands.includes(module?.data?.name) || module?.data?.enable === false;
 
@@ -98,7 +98,7 @@ class StartupLoader {
 					}
 
 					try {
-						const event = require(path.resolve(filePath));
+						let event = require(path.resolve(filePath));
 						const isDisabled = event?.enable === false;
 
 						clientEvents.push([

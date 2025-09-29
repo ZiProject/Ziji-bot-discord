@@ -26,6 +26,15 @@ module.exports = {
 	 * @param {Error} error
 	 */
 	execute: async (player, error) => {
+		// Test binding - this should now contain app context
+		console.log("=== CONNECTION ERROR EVENT ===");
+		console.log("this:", this);
+		console.log("this.app:", this.app);
+		console.log("this.client:", this.client);
+		console.log("this.logger:", this.logger);
+		console.log("this.config:", this.config);
+		console.log("=== END TEST ===");
+
 		// Log for diagnostics
 		try {
 			const client = this.client;
