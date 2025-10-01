@@ -1,146 +1,91 @@
-# Webserver App Binding
+### **SƠ YẾU LÝ LỊCH **
 
-## Tổng quan
+**1. Họ và tên:** Nguyễn Thanh Phú
+**2. Ngày tháng năm sinh:** 01/01/2003
+**3. Giới tính:** Nam
+**4. Địa chỉ thường trú:** 265/ATH, An Thuận, Ba Tri, Vĩnh Long
+**5. Số điện thoại cá nhân:** 0362 941 424
+**6. Số điện thoại người thân:** 0973 455 378
+**7. Số CCCD:** 083203001002
+**   Ngày cấp:** 30/03/2021
+**   Nơi cấp:**  CỤC TRƯỞNG CỤC CẢNH SÁT QUẢN LÝ HÀNH CHÍNH VỀ TRẬT TỰ XÃ HỘI
 
-Webserver đã được bind với App class system để có thể truy cập đầy đủ vào context của ứng dụng Discord bot.
+---
 
-## Các thay đổi đã thực hiện
+### **8. Thông tin cá nhân**
 
-### 1. Bind App Context
+* **Chiều cao:** 173 cm
+* **Cân nặng:** 61 kg
+* **Thị lực:** Trái 9/10 – Phải 10/10
+* **Nhóm máu:** O
+* **Có mù màu không:** Không
 
-- Webserver function `startServer()` giờ đây nhận app context thông qua `this` binding
-- Sử dụng `appContext` để truy cập các services như client, manager, logger, config
+---
 
-### 2. API Endpoints mới
+### **9. Quá trình học tập**
 
-#### `/api/app` - Thông tin App Context
+* 2006 – 2011: Trường Tiểu học **An Bình Tây**
+* 2012 – 2016: Trường THCS **An Bình Tây**
+* 2017 – 2020: Trường THPT **Phan Ngọc Tòng**
+* 2021 – 2025: Trường Đại học **Công Nghệ Sài Gòn (STU)**
 
-```json
-{
-  "status": "OK",
-  "appStatus": {
-    "client": true,
-    "clientReady": true,
-    "commands": 45,
-    "functions": 12,
-    "cooldowns": 0,
-    "responder": 3,
-    "welcome": 2,
-    "giveaways": true,
-    "manager": true,
-    "config": true,
-    "logger": true
-  },
-  "config": {...},
-  "commandsCount": 45,
-  "functionsCount": 12,
-  "cooldownsCount": 0,
-  "responderCount": 3,
-  "welcomeCount": 2
-}
-```
+---
 
-#### `/` - Endpoint chính với App Status
+### **10. Kinh nghiệm làm việc**
 
-Endpoint chính giờ đây bao gồm thông tin `appStatus` trong response.
+**Thời gian:** 01/07/2024 – 15/08/2025
+**Công ty:** **CÔNG TY TNHH CÔNG NGHỆ ĐIỆN VÀ CƠ ĐIỆN LẠNH QUANG MINH**
+**Địa chỉ:** Số 2 đường số 16, Phường Tân Quy, Quận 7, TP. Hồ Chí Minh
 
-### 3. WebSocket Events mới
+**Công việc đảm nhận:**
 
-#### `GetAppInfo` Event
+* Bảo trì / sửa chữa hệ thống máy **CTP Screen Platerite 4300, 8600, 8800, 8900**
+* Sửa chữa máy **Ricoh Pro 8100s**
+* Bảo trì / sửa chữa máy **HP Indigo 3050**
+* Bảo trì / sửa chữa máy **in Passport**
+* Bảo trì / sửa chữa hệ thống **Autogate TSN**
 
-Client có thể gửi event này để lấy thông tin app context:
+---
 
-```javascript
-ws.send(
-	JSON.stringify({
-		event: "GetAppInfo",
-	}),
-);
-```
+### **11. Sở thích**
 
-Response:
+* Viết code
+* Tìm hiểu công nghệ mới
 
-```json
-{
-  "event": "AppInfo",
-  "appStatus": {...},
-  "commandsCount": 45,
-  "functionsCount": 12
-}
-```
+---
 
-#### Statistics với App Info
+### **12. Điểm mạnh**
 
-Event `statistics` giờ đây bao gồm thông tin app:
+* Có trách nhiệm trong công việc
+* Ham học hỏi, chịu khó
+* Kỷ luật tốt, sẵn sàng tiếp thu cái mới
 
-```json
-{
-  "event": "statistics",
-  "timestamp": 12345,
-  "listeners": 5,
-  "tracks": 10,
-  "volume": 50,
-  "paused": false,
-  "repeatMode": "off",
-  "track": {...},
-  "queue": [...],
-  "filters": null,
-  "shuffle": null,
-  "appInfo": {
-    "commandsCount": 45,
-    "functionsCount": 12,
-    "clientReady": true
-  }
-}
-```
+---
 
-## Cách sử dụng
+### **13. Điểm yếu**
 
-### 1. Khởi động Bot
+* Còn rụt rè trong giao tiếp, đang rèn luyện để cải thiện
 
-```bash
-node index.js
-```
+---
 
-### 2. Test Webserver
+### **14. Mục đích đi Nhật**
 
-```bash
-node test-webserver.js
-```
+* Phát triển bản thân, trau dồi kỹ năng chuyên môn
+* Tích lũy kinh nghiệm làm việc trong môi trường quốc tế
+* Học hỏi phong cách làm việc chuyên nghiệp, hiện đại
 
-### 3. Truy cập API
+---
 
-- Main endpoint: `http://localhost:2003/`
-- App info: `http://localhost:2003/api/app`
-- Search: `http://localhost:2003/api/search?query=your_search`
-- Lyrics: `http://localhost:2003/api/lyrics?query=song_name`
+### **15. Thông tin gia đình**
 
-## Lợi ích
+| Họ tên                   | Năm sinh | Nghề nghiệp | Quan hệ |
+| ------------------------ | -------- | ----------- | ------- |
+| Nguyễn Thanh Phong       | 1977     | Chăn nuôi   | Cha     |
+| Ngô Lệ Tuyền             | 1978     | May mặc     | Mẹ      |
+| Nguyễn Ngọc Thanh Phương | 2007     | Học sinh    | Em gái  |
 
-1. **Truy cập đầy đủ App Context**: Webserver có thể truy cập tất cả services và collections
-2. **Monitoring**: Có thể monitor trạng thái của bot qua API
-3. **Integration**: Dễ dàng tích hợp với frontend applications
-4. **Real-time Updates**: WebSocket cung cấp thông tin real-time về app status
+---
 
-## Cấu trúc Binding
+### **16. Tình trạng hôn nhân**
 
-```javascript
-// Trong index.js
-startServer.bind(app).catch((error) => logger.error("Error start Server:", error));
-
-// Trong web/index.js
-async function startServer() {
-	const appContext = this; // App instance được bind
-	const logger = appContext.logger;
-	const client = appContext.client;
-	const manager = appContext.manager;
-	// ... sử dụng app context
-}
-```
-
-## Lưu ý
-
-- Webserver sẽ tự động khởi động khi bot start
-- Port mặc định: 2003 (có thể thay đổi qua `SERVER_PORT` env variable)
-- Ngrok integration sẵn có nếu có `NGROK_AUTHTOKEN`
-- Tất cả endpoints đều có error handling
+* **Chưa kết hôn**
