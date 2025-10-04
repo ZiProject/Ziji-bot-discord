@@ -26,30 +26,32 @@ const readline = require("readline");
 // Import configuration
 const config = require("./config");
 
+// Optimized client configuration
 const client = new Client({
-	rest: [{ timeout: 60_000 }],
+	rest: { 
+		timeout: 60_000,
+		retries: 3,
+		offset: 0
+	},
 	intents: [
-		GatewayIntentBits.Guilds, // for guild related things
-		GatewayIntentBits.GuildVoiceStates, // for voice related things
-		GatewayIntentBits.GuildMessageReactions, // for message reactions things
-		GatewayIntentBits.GuildMembers, // for guild members related things
-		// GatewayIntentBits.GuildEmojisAndStickers, // for manage emojis and stickers
-		// GatewayIntentBits.GuildIntegrations, // for discord Integrations
-		// GatewayIntentBits.GuildWebhooks, // for discord webhooks
-		GatewayIntentBits.GuildInvites, // for guild invite managing
-		// GatewayIntentBits.GuildPresences, // for user presence things
-		GatewayIntentBits.GuildMessages, // for guild messages things
-		// GatewayIntentBits.GuildMessageTyping, // for message typing things
-		GatewayIntentBits.DirectMessages, // for dm messages
-		GatewayIntentBits.DirectMessageReactions, // for dm message reaction
-		// GatewayIntentBits.DirectMessageTyping, // for dm message typinh
-		GatewayIntentBits.MessageContent, // enable if you need message content things
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildVoiceStates,
+		GatewayIntentBits.GuildMessageReactions,
+		GatewayIntentBits.GuildMembers,
+		GatewayIntentBits.GuildInvites,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.DirectMessages,
+		GatewayIntentBits.DirectMessageReactions,
+		GatewayIntentBits.MessageContent,
 	],
 	partials: [Partials.User, Partials.GuildMember, Partials.Message, Partials.Channel],
 	allowedMentions: {
 		parse: ["users"],
 		repliedUser: false,
 	},
+	// Performance optimizations
+	shards: "auto",
+	closeTimeout: 5000,
 });
 
 const rl = readline.createInterface({
@@ -58,47 +60,69 @@ const rl = readline.createInterface({
 });
 
 const initialize = async () => {
-	// Initialize app
-	const app = appManager.initialize({
-		config,
-		logger: console,
-		enableGiveaways: config.DevConfig?.Giveaway,
-		giveawayStorage: "./jsons/giveaways.json",
-	});
+	try {
+		// Initialize startup manager first
+		const startup = new (require("./startup").StartupManager)(config);
+		const logger = startup.getLogger();
 
-	const startup = new (require("./startup").StartupManager)(config);
-	const logger = startup.getLogger();
+		logger.info("Initializing Ziji Bot with App class...");
+		
+		// Check for updates in background
+		setImmediate(() => startup.checkForUpdates());
 
-	logger.info("Initializing Ziji Bot with App class...");
-	startup.checkForUpdates();
+		// Initialize app with optimized configuration
+		const app = appManager.initialize({
+			config,
+			logger,
+			enableGiveaways: config.DevConfig?.Giveaway,
+			giveawayStorage: "./jsons/giveaways.json",
+		});
 
-	// Update app logger with Winston logger
-	app.logger = logger;
+		// Initialize app with client
+		await app.initialize(client);
 
-	// Initialize app with client
-	await app.initialize(client);
+		// Set up collections directly in app
+		app.cooldowns = new Collection();
+		app.welcome = new Collection();
+		app.responder = new Collection();
 
-	// Set up collections directly in app
-	app.cooldowns = new Collection();
-	app.welcome = new Collection();
-	app.responder = new Collection();
+		const playerManager = app.getManager();
 
-	const playerManager = app.getManager();
+		// Parallel loading for better performance
+		const loadPromises = [
+			startup.loadEvents(path.join(__dirname, "events/client"), client, app),
+			startup.loadEvents(path.join(__dirname, "events/process"), process, app),
+			startup.loadEvents(path.join(__dirname, "events/console"), rl, app),
+			startup.loadFiles(path.join(__dirname, "commands"), app.commands, app),
+			startup.loadFiles(path.join(__dirname, "functions"), app.functions, app),
+		];
 
-	await Promise.all([
-		startup.loadEvents(path.join(__dirname, "events/client"), client, app),
-		startup.loadEvents(path.join(__dirname, "events/process"), process, app),
-		startup.loadEvents(path.join(__dirname, "events/console"), rl, app),
-		playerManager ? startup.loadEvents(path.join(__dirname, "events/player"), playerManager, app) : Promise.resolve(),
-		startup.loadFiles(path.join(__dirname, "commands"), app.commands, app),
-		startup.loadFiles(path.join(__dirname, "functions"), app.functions, app),
-		Promise.resolve(startServer.bind(app)()).catch((error) => logger.error("Error start Server:", error)),
-	]);
+		// Add player events if manager exists
+		if (playerManager) {
+			loadPromises.push(startup.loadEvents(path.join(__dirname, "events/player"), playerManager, app));
+		}
 
-	client.login(process.env.TOKEN).catch((error) => {
-		logger.error("Error logging in:", error);
-		logger.error("The Bot Token You Entered Into Your Project Is Incorrect Or Your Bot's INTENTS Are OFF!");
-	});
+		// Add web server if enabled
+		if (config.webAppConfig?.enabled) {
+			loadPromises.push(
+				Promise.resolve(startServer.bind(app)()).catch((error) => 
+					logger.error("Error starting web server:", error)
+				)
+			);
+		}
+
+		// Wait for all loading operations to complete
+		await Promise.all(loadPromises);
+
+		logger.info("All modules loaded successfully");
+
+		// Login to Discord
+		await client.login(process.env.TOKEN);
+		
+	} catch (error) {
+		console.error("Critical error during initialization:", error);
+		process.exit(1);
+	}
 };
 
 initialize().catch((error) => {

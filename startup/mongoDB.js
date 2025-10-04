@@ -19,17 +19,17 @@
 const { Schema, model } = require("mongoose");
 
 const ZiUser = Schema({
-	userID: { type: String },
-	name: { type: String },
-	xp: { type: Number },
-	level: { type: Number, default: 1 },
-	coin: { type: Number, default: 0 },
-	lang: { type: String },
+	userID: { type: String, required: true, index: true },
+	name: { type: String, index: true },
+	xp: { type: Number, default: 0, index: true },
+	level: { type: Number, default: 1, index: true },
+	coin: { type: Number, default: 0, index: true },
+	lang: { type: String, default: "vi" },
 	volume: { type: Number, default: 100 },
 	color: { type: String, default: "Random" },
-	lastDaily: { type: Date },
+	lastDaily: { type: Date, index: true },
 	dailyStreak: { type: Number, default: 0 },
-	lastHunt: { type: Date },
+	lastHunt: { type: Date, index: true },
 	totalAnimals: { type: Number, default: 0 },
 	huntStats: { type: Schema.Types.Mixed, default: {} },
 	lootboxes: { type: Number, default: 0 },
@@ -53,12 +53,16 @@ const ZiUser = Schema({
 	// Quest system
 	dailyQuests: { type: Array, default: [] },
 	lastQuestReset: { type: Date },
+}, {
+	timestamps: true,
+	// Optimize for read operations
+	read: 'secondaryPreferred'
 });
 
 const ZiAutoresponder = Schema(
 	{
-		guildId: { type: String, required: true },
-		trigger: { type: String, required: true },
+		guildId: { type: String, required: true, index: true },
+		trigger: { type: String, required: true, index: true },
 		response: { type: String, required: true },
 		options: {
 			matchMode: { type: String, enum: ["exactly", "startswith", "endswith", "includes"], default: "exactly" },
@@ -66,24 +70,26 @@ const ZiAutoresponder = Schema(
 	},
 	{
 		timestamps: true,
+		read: 'secondaryPreferred'
 	},
 );
 
 const ZiWelcome = Schema(
 	{
-		guildId: { type: String, required: true },
+		guildId: { type: String, required: true, index: true },
 		channel: { type: String, required: true },
 		content: { type: String, required: true },
 		Bchannel: { type: String, required: true },
-		Bcontent: { type: String }, // Corrected duplicate
+		Bcontent: { type: String },
 	},
 	{
 		timestamps: true,
+		read: 'secondaryPreferred'
 	},
 );
 
 const ZiGuild = Schema({
-	guildId: { type: String, required: true },
+	guildId: { type: String, required: true, index: true },
 	voice: {
 		logMode: { type: Boolean, default: false },
 	},
@@ -94,34 +100,40 @@ const ZiGuild = Schema({
 		defaultUserLimit: { type: Number, default: 0 },
 		tempChannels: [
 			{
-				channelId: String,
-				ownerId: String,
+				channelId: { type: String, index: true },
+				ownerId: { type: String, index: true },
 				locked: { type: Boolean, default: false },
 			},
 		],
 		blockedUser: [String],
 	},
+}, {
+	timestamps: true,
+	read: 'secondaryPreferred'
 });
 
 const ZiConfess = Schema({
 	enabled: { type: Boolean, default: false },
-	guildId: { type: String, required: true },
+	guildId: { type: String, required: true, index: true },
 	channelId: { type: String, required: true },
 	reviewSystem: { type: Boolean, default: false },
-	reviewChannelId: { type: String, required: false, default: null },
+	reviewChannelId: { type: String, default: null },
 	currentId: { type: Number, default: 0 },
 	confessions: [
 		{
-			id: { type: Number },
+			id: { type: Number, index: true },
 			content: { type: String },
 			author: { type: Object },
 			type: { type: String, enum: ["anonymous", "public"] },
-			status: { type: String, enum: ["pending", "rejected", "approved"], default: "approved" },
+			status: { type: String, enum: ["pending", "rejected", "approved"], default: "approved", index: true },
 			messageId: { type: String, default: null },
 			threadId: { type: String, default: null },
 			reviewMessageId: { type: String, default: null },
 		},
 	],
+}, {
+	timestamps: true,
+	read: 'secondaryPreferred'
 });
 
 module.exports = {

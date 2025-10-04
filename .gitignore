@@ -1,41 +1,60 @@
-# Prerequisites
-*.d
+# Dependencies
+node_modules/
+package-lock.json
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+*.env
 
-# Precompiled Headers
-*.gch
-*.pch
+# Configuration files
+config.js
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+# Logs
+*.log
+logs/
+bot.log
 
-# Fortran module files
-*.mod
-*.smod
+# Runtime data
+jsons/
+giveaways.json
+temp/
+tmp/
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Executables
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+dist/
+build/
 *.exe
 *.out
 *.app
-node_modules
-package-lock.json
-*.env
-config.js
-.env
-package-lock.json
-giveaways.json
-bot.log
-jsons/
+
+# Cache
+.cache/
+.npm/
+.yarn/
+
+# Coverage reports
+coverage/
+*.lcov
+
+# Performance monitoring
+*.cpuprofile
+*.heapprofile

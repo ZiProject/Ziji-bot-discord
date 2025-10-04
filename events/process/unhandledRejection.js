@@ -16,12 +16,12 @@
  * @property {Object} db - Database instance
  */
 
-const client = this.client;
 
 module.exports = {
 	name: "unhandledRejection",
 	type: "process",
 	execute: async (error) => {
+		const client = this.client;
 		this.logger.error("Unhandled promise rejection:", error);
 		client?.errorLog(`Unhandled promise rejection: **${error.message}**`);
 		client?.errorLog(error.stack);

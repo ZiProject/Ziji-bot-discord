@@ -35,6 +35,7 @@ module.exports.execute = async (message) => {
 	if (!message.client.isReady()) return;
 	if (message.author.bot) return;
 	// Get the user's language preference
+	console.log(this)
 	const langfunc =  this.functions.get("ZiRank");
 	const lang = await langfunc.execute({ user: message.author, XpADD: 0 });
 	//tts

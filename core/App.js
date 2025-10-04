@@ -298,22 +298,14 @@ class App {
 	bindModuleFunctions(module) {
 		const visited = new WeakSet();
 		const nativeTypes = new Set([
-			"Object",
-			"Array",
-			"Function",
-			"RegExp",
-			"Date",
-			"Error",
-			"Promise",
-			"ReadableState",
-			"WritableState",
-			"TransformState",
-			"DuplexState",
+			"Object", "Array", "Function", "RegExp", "Date", "Error", "Promise",
+			"ReadableState", "WritableState", "TransformState", "DuplexState",
+			"Buffer", "Map", "Set", "WeakMap", "WeakSet"
 		]);
 
 		const bindFunctions = (obj, depth = 0) => {
 			// Prevent infinite recursion and limit depth
-			if (visited.has(obj) || depth > 3 || !obj || typeof obj !== "object") {
+			if (visited.has(obj) || depth > 2 || !obj || typeof obj !== "object") {
 				return;
 			}
 
@@ -330,23 +322,20 @@ class App {
 			visited.add(obj);
 
 			try {
-				for (const key in obj) {
-					if (Object.prototype.hasOwnProperty.call(obj, key)) {
-						const value = obj[key];
-
-						if (typeof value === "function") {
-							// Skip native functions
-							if (!value.toString().includes("[native code]")) {
-								try {
-									obj[key] = value.bind(module);
-								} catch {
-									// Skip if binding fails
-								}
+				// Use Object.entries for better performance
+				for (const [key, value] of Object.entries(obj)) {
+					if (typeof value === "function") {
+						// Skip native functions and bound functions
+						if (!value.toString().includes("[native code]") && !value.toString().includes("bound ")) {
+							try {
+								obj[key] = value.bind(module);
+							} catch {
+								// Skip if binding fails
 							}
-						} else if (value && typeof value === "object" && !Array.isArray(value)) {
-							// Recursively bind nested objects
-							bindFunctions(value, depth + 1);
 						}
+					} else if (value && typeof value === "object" && !Array.isArray(value)) {
+						// Recursively bind nested objects
+						bindFunctions(value, depth + 1);
 					}
 				}
 			} catch {

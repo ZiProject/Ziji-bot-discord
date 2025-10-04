@@ -19,6 +19,7 @@
 const { StartupLoader } = require("./loader.js");
 const { UpdateChecker } = require("./checkForUpdate");
 const { LoggerFactory } = require("./logger.js");
+const { MemoryManager, PerformanceMonitor } = require("../utils/performance.js");
 
 class StartupManager {
 	constructor(config) {
@@ -26,6 +27,14 @@ class StartupManager {
 		this.logger = LoggerFactory.create(this.config);
 		this.loader = new StartupLoader(this.config, this.logger);
 		this.updateChecker = new UpdateChecker();
+		
+		// Initialize performance monitoring
+		this.memoryManager = new MemoryManager();
+		this.performanceMonitor = new PerformanceMonitor();
+		
+		// Start memory management
+		this.memoryManager.startAutoGC();
+		
 		this.createFile("./jsons");
 	}
 
@@ -34,11 +43,19 @@ class StartupManager {
 	}
 
 	loadFiles(directory, collection, app = null) {
-		return this.loader.loadFiles(directory, collection, app);
+		this.performanceMonitor.startTimer('loadFiles');
+		const result = this.loader.loadFiles(directory, collection, app);
+		const duration = this.performanceMonitor.endTimer('loadFiles');
+		this.logger.info(`Loaded files from ${directory} in ${duration.toFixed(2)}ms`);
+		return result;
 	}
 
 	loadEvents(directory, target, app = null) {
-		return this.loader.loadEvents(directory, target, app);
+		this.performanceMonitor.startTimer('loadEvents');
+		const result = this.loader.loadEvents(directory, target, app);
+		const duration = this.performanceMonitor.endTimer('loadEvents');
+		this.logger.info(`Loaded events from ${directory} in ${duration.toFixed(2)}ms`);
+		return result;
 	}
 
 	createFile(directory) {
@@ -47,6 +64,24 @@ class StartupManager {
 
 	checkForUpdates() {
 		return this.updateChecker.start(this.logger);
+	}
+
+	/**
+	 * Get performance metrics
+	 */
+	getPerformanceMetrics() {
+		return {
+			memory: this.memoryManager.getMemoryStats(),
+			performance: this.performanceMonitor.getAllMetrics()
+		};
+	}
+
+	/**
+	 * Cleanup resources
+	 */
+	cleanup() {
+		this.memoryManager.stopAutoGC();
+		this.logger.info('Startup manager cleanup completed');
 	}
 }
 

@@ -16,12 +16,13 @@
  * @property {Object} db - Database instance
  */
 
-const client = this.client;
 
 module.exports = {
 	name: "uncaughtException",
 	type: "process",
 	execute: async (error) => {
+		const client = this.client;
+
 		this.logger.error("Uncaught exception:", error);
 		client?.errorLog(`Uncaught exception: **${error.message}**`);
 		client?.errorLog(error.stack);

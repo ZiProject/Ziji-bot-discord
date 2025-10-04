@@ -36,6 +36,7 @@ module.exports.data = {
  * @param { object } command - object command
  * @param { import ("discord.js").CommandInteraction } command.interaction - interaction
  * @param { import('../../lang/vi.js') } command.lang - language
+ * @this {ModuleContext}
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
