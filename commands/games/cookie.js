@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const { useFunctions, useDB } = require("@zibot/zihooks");
+const {  useHooks } = require("@zibot/zihooks");
 
 const cookieEmoji = "🍪"; // Biểu tượng cookie
 const zigoldEmoji = "🪙"; // Biểu tượng ZiGold
@@ -55,9 +55,14 @@ module.exports.data = {
  * @param { import("../../lang/vi.js") } command.lang - language
  */
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
 	try {
-		const ZiRank = useFunctions().get("ZiRank");
-		const DataBase = useDB();
+		const ZiRank = useHooks.get("functions").get("ZiRank");
+		const DataBase = useHooks.get("db");
 
 		// Kiểm tra xem cơ sở dữ liệu và các hàm được khởi tạo đúng cách
 		if (!DataBase || !DataBase.ZiUser || !ZiRank) {

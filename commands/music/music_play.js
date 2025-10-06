@@ -1,6 +1,6 @@
-const { useFunctions, useConfig } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { getPlayer } = require("ziplayer");
-const config = useConfig();
+const config = useHooks.get("config");
 
 module.exports.data = {
 	name: "play",
@@ -65,9 +65,14 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
 	const commandtype = interaction.options?.getSubcommand();
 	const query = interaction.options?.getString("query");
-	const command = useFunctions().get("Search");
+	const command = useHooks.get("functions").get("Search");
 	const player = getPlayer(interaction.guildId);
 	if (commandtype === "next") {
 		if (player.connection) {

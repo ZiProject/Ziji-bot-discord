@@ -1,4 +1,4 @@
-const { useCommands } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports.data = {
 	name: "B_refLeaderboard",
@@ -13,6 +13,11 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	const Command = useCommands();
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
+	const Command = useHooks.get("commands");
 	return Command.get("leaderboard").execute({ interaction, lang });
 };

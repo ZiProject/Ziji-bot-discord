@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { useClient, useLogger } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports = {
 	name: "connectionError",
@@ -12,12 +12,12 @@ module.exports = {
 	execute: async (player, error) => {
 		// Log for diagnostics
 		try {
-			const client = useClient();
+			const client = useHooks.get("client");
 			client?.errorLog?.("**Player connectionError**");
 			client?.errorLog?.(error?.message || String(error));
 		} catch {}
 		try {
-			useLogger().error(error);
+			useHooks.get("logger").error(error);
 		} catch {}
 
 		// Lightweight user feedback in the channel (auto-delete)

@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { useFunctions, useDB } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 const zigoldEmoji = "🪙"; // ZiGold emoji
 const giftEmoji = "🎁"; // Gift emoji
@@ -51,8 +51,8 @@ module.exports.data = {
  */
 module.exports.execute = async ({ interaction, lang }) => {
 	try {
-		const ZiRank = useFunctions().get("ZiRank");
-		const DataBase = useDB();
+		const ZiRank = useHooks.get("functions").get("ZiRank");
+		const DataBase = useHooks.get("db");
 
 		// Check if database and functions are properly initialized
 		if (!DataBase || !DataBase.ZiUser || !ZiRank) {

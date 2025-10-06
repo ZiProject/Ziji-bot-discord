@@ -1,5 +1,5 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ComponentType } = require("discord.js");
-const { useFunctions } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports.data = {
 	name: "blackjack",
@@ -23,7 +23,21 @@ module.exports.data = {
  * @param { import("../../lang/vi.js") } command.lang - language
  */
 module.exports.execute = async ({ interaction, lang }) => {
-	const ZiRank = useFunctions().get("ZiRank");
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
+	const functions = useHooks.get("functions");
+	if (!functions) {
+		return interaction.reply({ content: "Hệ thống đang bảo trì, vui lòng thử lại sau.", ephemeral: true });
+	}
+	
+	const ZiRank = functions.get("ZiRank");
+	if (!ZiRank) {
+		return interaction.reply({ content: "Chức năng ZiRank không khả dụng.", ephemeral: true });
+	}
+	
 	const opponent = interaction.options.getUser("opponent");
 	if (opponent && (opponent.bot || opponent.id === interaction.user.id))
 		return interaction.reply({ content: "Bạn không thể thách đấu người này.", ephemeral: true });

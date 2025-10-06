@@ -1,4 +1,4 @@
-const { useFunctions } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 const DefaultPlayerConfig = {
 	selfDeaf: false,
@@ -17,9 +17,14 @@ const DefaultPlayerConfig = {
  * @param { langdef } lang
  */
 module.exports.execute = async (interaction, context, lang, options = { assistant: true }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
 	try {
 		const query = `tts:${lang?.name ?? "vi"}: ${context}`;
-		useFunctions().get("Search").execute(interaction, query, lang, options);
+		useHooks.get("functions").get("Search").execute(interaction, query, lang, options);
 		return;
 	} catch (e) {
 		console.error(e);

@@ -1,4 +1,4 @@
-const { useFunctions } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { EmbedBuilder } = require("discord.js");
 
 module.exports.data = {

@@ -1,5 +1,5 @@
 const { PermissionsBitField } = require("discord.js");
-const { useDB } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports.data = {
 	name: "join-to-create",
@@ -46,8 +46,13 @@ module.exports.data = {
  * @param { import('../../lang/vi.js') } command.lang - language
  */
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
 	await interaction.deferReply({ ephemeral: true });
-	const DataBase = useDB();
+	const DataBase = useHooks.get("db");
 	if (!DataBase)
 		return interaction.editReply({
 			content: lang?.until?.noDB || "Database hiện không được bật, xin vui lòng liên hệ dev bot",

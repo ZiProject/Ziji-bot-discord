@@ -1,6 +1,6 @@
-const { useFunctions, useDB, useConfig } = require("@zibot/zihooks");
-const Functions = useFunctions();
-const config = useConfig();
+const { useHooks } = require("@zibot/zihooks");
+const Functions = useHooks.get("functions");
+const config = useHooks.get("config");
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require("discord.js");
 
 module.exports.data = {
@@ -23,6 +23,11 @@ async function Update_Player(player) {
  */
 
 module.exports.execute = async ({ interaction, lang, player }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
 	const { guild, client, values, user } = interaction;
 	const query = values?.at(0);
 
@@ -66,7 +71,7 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 	const userVoiceChannel = interaction.member.voice.channel;
 	if (!botVoiceChannel || botVoiceChannel.id !== userVoiceChannel?.id)
 		return interaction.followUp({ content: lang.music.NOvoiceMe, ephemeral: true });
-	const DataBase = useDB();
+	const DataBase = useHooks.get("db");
 	switch (query) {
 		case "Lock": {
 			if (player.userdata.requestedBy?.id !== user.id) {

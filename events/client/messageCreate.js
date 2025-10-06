@@ -1,12 +1,12 @@
 const { Events, Message } = require("discord.js");
-const { useResponder, useConfig, useFunctions, useCommands, useLogger, modinteraction, useAI } = require("@zibot/zihooks");
-const config = useConfig();
+const { modinteraction,	useHooks } = require("@zibot/zihooks");
+const config = useHooks.get("config");
 const mentionRegex = /@(everyone|here|ping)/;
 const ziicon = require("./../../utility/icon");
 const { getPlayer } = require("ziplayer");
 
-const Commands = useCommands();
-const Functions = useFunctions();
+const Commands = useHooks.get("commands");
+const Functions = useHooks.get("functions");
 
 module.exports = {
 	name: Events.MessageCreate,
@@ -18,6 +18,11 @@ module.exports = {
  * @param { Message } message
  */
 module.exports.execute = async (message) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
 	if (!message.client.isReady()) return;
 	if (message.author.bot) return;
 	// Get the user's language preference
@@ -56,10 +61,10 @@ const reqai = async (message, lang) => {
 	});
 
 	try {
-		const result = await useAI().run(prompt, message.author, lang);
+		const result = await useHooks.get("ai").run(prompt, message.author, lang);
 		await message.reply(result);
 	} catch (err) {
-		useLogger().error(`Error in generating content: ${err}`);
+		useHooks.get("logger")?.error?.(`Error in generating content: ${err}`);
 	}
 };
 
@@ -68,8 +73,8 @@ const reqai = async (message, lang) => {
  */
 
 const reqreponser = async (message) => {
-	const parseVar = useFunctions().get("getVariable");
-	const guildResponders = useResponder().get(message.guild.id) ?? [];
+	const parseVar = Functions.get("getVariable");
+	const guildResponders = useHooks.get("responder").get(message.guild.id) ?? [];
 
 	const trigger = guildResponders.find((responder) => {
 		const msgContent = message.content.toLowerCase();

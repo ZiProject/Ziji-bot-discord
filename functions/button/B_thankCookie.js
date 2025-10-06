@@ -1,5 +1,5 @@
 const { EmbedBuilder, ButtonBuilder, ActionRowBuilder } = require("discord.js");
-const { useFunctions, useDB } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 const cookieEmoji = "🍪"; // Cookie emoji
 const heartEmoji = "💖"; // Heart emoji
@@ -17,6 +17,11 @@ module.exports.data = {
  * @param { object } params.lang - language object
  */
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
 	let user = null; // Declare in function scope for error logging
 	try {
 		// Get user from interaction (works for both guild and DM interactions)
@@ -29,8 +34,8 @@ module.exports.execute = async ({ interaction, lang }) => {
 		// For button interactions, we need to defer the update to prevent timeout
 		await interaction.deferUpdate();
 
-		const ZiRank = useFunctions().get("ZiRank");
-		const DataBase = useDB();
+		const ZiRank = useHooks.get("functions").get("ZiRank");
+		const DataBase = useHooks.get("db");
 
 		// Validate that required services are available
 		if (!DataBase || !DataBase.ZiUser || !ZiRank) {

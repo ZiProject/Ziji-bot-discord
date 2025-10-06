@@ -1,5 +1,5 @@
 const Encryptor = require("@zibot/ziencryptor");
-const { useFunctions } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const fetch = require("node-fetch");
 
 module.exports.data = {
@@ -17,6 +17,11 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
 	try {
 		let query = interaction.targetMessage.content;
 
@@ -30,7 +35,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 			return;
 		}
 
-		const searchCommand = useFunctions().get("Search");
+		const searchCommand = useHooks.get("functions").get("Search");
 		await searchCommand.execute(interaction, query, lang);
 	} catch (error) {
 		console.error("Error executing command:", error);
@@ -76,7 +81,7 @@ async function handleSaveQueue(interaction, lang) {
 		const decryptor = new Encryptor("Z");
 		const decryptedData = decryptor.decrypt(encryptedData);
 
-		const restoreCommand = useFunctions().get("Restored_tracks");
+		const restoreCommand = useHooks.get("functions").get("Restored_tracks");
 		await restoreCommand.execute(interaction, decryptedData, lang);
 
 		return "ZibotZibotZibotZibot";

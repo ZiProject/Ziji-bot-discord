@@ -1,11 +1,11 @@
-const { useClient, useLogger } = require("@zibot/zihooks");
-const client = useClient();
+const { useHooks } = require("@zibot/zihooks");
+const client = useHooks.get("client");
 
 module.exports = {
 	name: "unhandledRejection",
 	type: "process",
 	execute: async (error) => {
-		useLogger().error("Unhandled promise rejection:", error);
+		useHooks.get("logger").error("Unhandled promise rejection:", error);
 		client?.errorLog(`Unhandled promise rejection: **${error.message}**`);
 		client?.errorLog(error.stack);
 	},

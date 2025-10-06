@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { useFunctions, useDB } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 const zigoldEmoji = "🪙"; // ZiGold emoji
 const DAILY_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
@@ -20,8 +20,8 @@ module.exports.data = {
  * @param { import("../../lang/vi.js") } command.lang - language
  */
 module.exports.execute = async ({ interaction, lang }) => {
-	const ZiRank = useFunctions().get("ZiRank");
-	const DataBase = useDB();
+	const ZiRank = useHooks.get("functions").get("ZiRank");
+	const DataBase = useHooks.get("db");
 
 	if (!DataBase) {
 		const errorEmbed = new EmbedBuilder()

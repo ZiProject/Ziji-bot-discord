@@ -1,12 +1,12 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, BaseInteraction, AttachmentBuilder } = require("discord.js");
-const { useDB, useConfig, useLogger } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { ButtonStyle, StringSelectMenuOptionBuilder, StringSelectMenuBuilder } = require("discord.js");
 const { Worker } = require("worker_threads");
 const langdef = require("./../../lang/vi");
 const ZiIcons = require("./../../utility/icon");
 const { getPlayer, Player, getManager } = require("ziplayer");
-const config = useConfig();
-const logger = useLogger();
+const config = useHooks.get("config");
+const logger = useHooks.get("logger");
 let tempmess = null;
 //====================================================================//
 
@@ -73,6 +73,11 @@ async function buildImageInWorker(searchPlayer, query) {
  * @param { langdef } lang
  */
 module.exports.execute = async (interaction, query, lang, options = {}) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
 	logger.debug(`Executing command with query: ${JSON.stringify(query)}`);
 	const { client, guild, user } = interaction;
 	const voiceChannel = interaction?.member?.voice?.channel ?? options.voice;
@@ -190,7 +195,7 @@ async function getPlayerConfig(options, interaction) {
 
 	if (playerConfig.volume === "auto") {
 		logger.debug("Volume is set to auto, fetching from database");
-		const DataBase = useDB();
+		const DataBase = useHooks.get("db");
 		playerConfig.volume =
 			DataBase ?
 				((await DataBase.ZiUser.findOne({ userID: interaction.user.id }))?.volume ?? DefaultPlayerConfig.volume)

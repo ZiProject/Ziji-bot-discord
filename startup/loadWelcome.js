@@ -1,11 +1,11 @@
-const { useDB, useWelcome, useLogger } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports = async () => {
 	try {
 		let indexs = 0;
-		const Welcome = await useDB().ZiWelcome.find();
+		const Welcome = await useHooks.get("db").ZiWelcome.find();
 		Welcome.forEach((r) => {
-			const Res = useWelcome();
+			const Res = useHooks.get("welcome");
 			if (!Res.has(r.guildId)) {
 				Res.set(r.guildId, []);
 			}
@@ -17,8 +17,8 @@ module.exports = async () => {
 			});
 			indexs++;
 		});
-		useLogger().info(`Successfully reloaded ${indexs} welcome.`);
+		useHooks.get("logger")?.info?.(`Successfully reloaded ${indexs} welcome.`);
 	} catch (error) {
-		useLogger().error("Lỗi khi tải welcome:", error);
+		useHooks.get("logger")?.error?.(`Lỗi khi tải welcome:`, error);
 	}
 };

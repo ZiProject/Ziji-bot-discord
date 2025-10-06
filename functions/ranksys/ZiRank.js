@@ -1,5 +1,5 @@
-const { useDB, useConfig } = require("@zibot/zihooks");
-const config = useConfig();
+const { useHooks } = require("@zibot/zihooks");
+const config = useHooks.get("config");
 
 module.exports.data = {
 	name: "ZiRank",
@@ -13,7 +13,12 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ user, XpADD = 1, CoinADD = 0 }) => {
-	const DataBase = useDB();
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
+	const DataBase = useHooks.get("db");
 	if (DataBase && user) {
 		// Destructure userDB to extract values with default assignments
 		const { xp = 1, level = 1, coin = 1, lang, color } = (await DataBase.ZiUser.findOne({ userID: user.id })) || {};

@@ -1,29 +1,18 @@
 require("dotenv").config();
 const { startServer } = require("./web");
-const {
-	useClient,
-	useCooldowns,
-	useCommands,
-	useFunctions,
-	useGiveaways,
-	useResponder,
-	useWelcome,
-	useConfig,
-} = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const path = require("node:path");
 const { GiveawaysManager } = require("discord-giveaways");
-const config = useConfig(require("./config"));
+const config = require("./config");
+const defaultconfig = require("./startup/defaultconfig");
 const { StartupManager } = require("./startup");
-const { Client, Collection, GatewayIntentBits, Partials } = require("discord.js");
+const { Client, GatewayIntentBits, Partials } = require("discord.js");
 const readline = require("readline");
 
 //music player
 const { default: PlayerManager } = require("ziplayer");
 const { TTSPlugin, YTSRPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin } = require("@ziplayer/plugin");
 const { lyricsExt, voiceExt } = require("@ziplayer/extension");
-
-const startup = new StartupManager(config);
-const logger = startup.getLogger();
 
 const client = new Client({
 	rest: [{ timeout: 60_000 }],
@@ -55,15 +44,19 @@ const client = new Client({
 const manager = new PlayerManager({
 	plugins: [new TTSPlugin(), new YTSRPlugin(), new YouTubePlugin(), new SoundCloudPlugin(), new SpotifyPlugin()],
 	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
-});
-manager.create("search");
+}).create("search");
+
+const startup = new StartupManager(client, config ?? defaultconfig);
+const logger = startup.getLogger();
+
 const rl = readline.createInterface({
 	input: process.stdin,
 	output: process.stdout,
 });
 
-useGiveaways(
-	config.DevConfig.Giveaway ?
+if (config?.DevConfig?.Giveaway) {
+	useHooks.set(
+		"giveaways",
 		new GiveawaysManager(client, {
 			storage: "./jsons/giveaways.json",
 			default: {
@@ -72,27 +65,25 @@ useGiveaways(
 				embedColorEnd: "#000000",
 				reaction: "🎉",
 			},
-		})
-	:	() => false,
-);
+		}),
+	);
+}
 
 const initialize = async () => {
 	logger.info("Initializing Ziji Bot...");
 	startup.checkForUpdates();
-	useClient(client);
-	useWelcome(new Collection());
-	useCooldowns(new Collection());
-	useResponder(new Collection());
+	startup.initHooks();
+
 	await Promise.all([
 		startup.loadEvents(path.join(__dirname, "events/client"), client),
 		startup.loadEvents(path.join(__dirname, "events/process"), process),
 		startup.loadEvents(path.join(__dirname, "events/console"), rl),
 		startup.loadEvents(path.join(__dirname, "events/player"), manager),
-		startup.loadFiles(path.join(__dirname, "commands"), useCommands(new Collection())),
-		startup.loadFiles(path.join(__dirname, "functions"), useFunctions(new Collection())),
+		startup.loadFiles(path.join(__dirname, "commands"), useHooks.get("commands")),
+		startup.loadFiles(path.join(__dirname, "functions"), useHooks.get("functions")),
 		startServer().catch((error) => logger.error("Error start Server:", error)),
 	]);
-	client.login(process.env.TOKEN).catch((error) => {
+	client.login(process.env?.TOKEN ?? config?.botConfig?.TOKEN).catch((error) => {
 		logger.error("Error logging in:", error);
 		logger.error("The Bot Token You Entered Into Your Project Is Incorrect Or Your Bot's INTENTS Are OFF!");
 	});

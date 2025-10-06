@@ -1,6 +1,6 @@
 const { ButtonBuilder, ActionRowBuilder, ButtonStyle, AttachmentBuilder } = require("discord.js");
 const { Font, RankCardBuilder } = require("canvacord");
-const { useDB, useConfig } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { Worker } = require("worker_threads");
 
 async function buildImageInWorker(workerData) {
@@ -74,7 +74,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 	const member = (await interaction?.guild?.members.fetch(targetUser)) || interaction.user;
 
-	const db = useDB();
+	const db = useHooks.get("db");
 	if (!db) return interaction.editReply({ content: lang?.until?.noDB, ephemeral: true }).catch(() => {});
 
 	const [userDB, UserI] = await Promise.all([db.ZiUser.findOne({ userID: member.id }), db.ZiUser.find()]);
@@ -88,7 +88,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 	const sss = usersort.findIndex((user) => user.userID === member.id);
 
-	const strimg = useConfig().botConfig?.rankBackground || "https://i.imgur.com/sVzFJ8W.jpeg";
+	const strimg = useHooks.get("config").botConfig?.rankBackground || "https://i.imgur.com/sVzFJ8W.jpeg";
 
 	const editProf = new ActionRowBuilder().addComponents(
 		new ButtonBuilder().setLabel("Edit ✎").setCustomId("B_editProfile").setStyle(ButtonStyle.Secondary),

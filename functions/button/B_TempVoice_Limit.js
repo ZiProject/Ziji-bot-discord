@@ -1,4 +1,4 @@
-const { useDB } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { TextInputStyle, ModalBuilder, TextInputBuilder, ActionRowBuilder } = require("discord.js");
 
 module.exports.data = {
@@ -13,7 +13,12 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	const config = await useDB().ZiGuild.findOne({ guildId: interaction.guild.id });
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
+	const config = await useHooks.get("db").ZiGuild.findOne({ guildId: interaction.guild.id });
 	if (!config?.joinToCreate.enabled) return interaction.editReply("❌ | Chức năng này chưa được bật ở máy chủ này");
 	const tempChannel = await config.joinToCreate.tempChannels.find((tc) => tc.channelId === interaction.channel.id);
 	if (!tempChannel) return;

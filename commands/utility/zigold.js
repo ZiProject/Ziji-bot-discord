@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { useFunctions, useDB } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 const zigoldEmoji = "🪙"; // ZiGold emoji
 
@@ -26,7 +26,7 @@ module.exports.data = {
  */
 module.exports.execute = async ({ interaction, lang }) => {
 	const targetUser = interaction.options.getUser("user") || interaction.user;
-	const DataBase = useDB();
+	const DataBase = useHooks.get("db");
 
 	let coin = 0;
 	let level = 1;

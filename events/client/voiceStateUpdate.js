@@ -1,6 +1,6 @@
 const { Events, EmbedBuilder } = require("discord.js");
-const config = require("@zibot/zihooks").useConfig();
-const { useFunctions, useDB } = require("@zibot/zihooks");
+const config = require("@zibot/zihooks").useHooks.get("config");
+const { useHooks } = require("@zibot/zihooks");
 const { getPlayer } = require("ziplayer");
 
 module.exports = {
@@ -15,11 +15,11 @@ module.exports = {
 		if (!oldState.client.isReady()) return;
 
 		const guildId = newState.guild.id;
-		const guildSetting = await useDB()?.ZiGuild.findOne({ guildId });
+		const guildSetting = await useHooks.get("db")?.ZiGuild.findOne({ guildId });
 
 		// Join to create
 		if (guildSetting?.joinToCreate.enabled) {
-			const jtcFunc = await useFunctions().get("joinToCreate");
+			const jtcFunc = await useHooks.get("functions").get("joinToCreate");
 			jtcFunc.execute(oldState, newState, guildSetting);
 		}
 

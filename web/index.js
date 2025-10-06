@@ -1,15 +1,15 @@
 const express = require("express");
 const cors = require("cors");
 const WebSocket = require("ws");
-const { useClient, useLogger, useConfig, useFunctions } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { getManager, Player } = require("ziplayer");
 const http = require("http");
 const ngrok = require("ngrok");
 const { lyricsExt } = require("@ziplayer/extension");
 
 async function startServer() {
-	const logger = useLogger();
-	const client = useClient();
+	const logger = useHooks.get("logger");
+	const client = useHooks.get("client");
 	const manager = getManager();
 	const player = manager.create("webid");
 

@@ -1,4 +1,4 @@
-const { useDB } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports.data = {
 	name: "M_TempVoice_Kick",
@@ -12,10 +12,15 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+	}
 	const { guild, customId, fields } = interaction;
 	// Lấy thông tin từ modal
 	const kickUserId = fields.getTextInputValue("kickUserId");
-	const config = await useDB().ZiGuild.findOne({ guildId: interaction.guild.id });
+	const config = await useHooks.get("db").ZiGuild.findOne({ guildId: interaction.guild.id });
 	if (!config?.joinToCreate.enabled) return interaction.editReply("❌ | Chức năng này chưa được bật ở máy chủ này");
 
 	// Kiểm tra xem người dùng có tồn tại và đang ở trong kênh thoại
