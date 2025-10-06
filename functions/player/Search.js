@@ -76,7 +76,10 @@ module.exports.execute = async (interaction, query, lang, options = {}) => {
 	// Check if useHooks is available
 	if (!useHooks) {
 		console.error("useHooks is not available");
-		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
 	}
 	logger.debug(`Executing command with query: ${JSON.stringify(query)}`);
 	const { client, guild, user } = interaction;

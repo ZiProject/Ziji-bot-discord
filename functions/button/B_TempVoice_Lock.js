@@ -15,14 +15,17 @@ module.exports.execute = async ({ interaction, lang }) => {
 	// Check if useHooks is available
 	if (!useHooks) {
 		console.error("useHooks is not available");
-		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
 	}
-	
+
 	const db = useHooks.get("db");
 	if (!db || !db.ZiGuild) {
 		return interaction.reply({ content: "Cơ sở dữ liệu không khả dụng.", ephemeral: true });
 	}
-	
+
 	await interaction.deferReply({ ephemeral: true });
 	const config = await db.ZiGuild.findOne({ guildId: interaction.guild.id });
 	if (!config?.joinToCreate.enabled) return interaction.editReply("❌ | Chức năng này chưa được bật ở máy chủ này");

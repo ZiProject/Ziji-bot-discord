@@ -1,4 +1,4 @@
-const {  useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports.data = {
 	name: "language",

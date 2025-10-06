@@ -53,7 +53,10 @@ module.exports.execute = async (interaction, queue, Nextpage = true) => {
 	// Check if useHooks is available
 	if (!useHooks) {
 		console.error("useHooks is not available");
-		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
 	}
 	if (!queue) return interaction.reply({ content: "There is no music playing in this server" });
 	await interaction.deferReply();

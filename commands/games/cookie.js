@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const {  useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 const cookieEmoji = "🍪"; // Biểu tượng cookie
 const zigoldEmoji = "🪙"; // Biểu tượng ZiGold
@@ -58,7 +58,10 @@ module.exports.execute = async ({ interaction, lang }) => {
 	// Check if useHooks is available
 	if (!useHooks) {
 		console.error("useHooks is not available");
-		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
 	}
 	try {
 		const ZiRank = useHooks.get("functions").get("ZiRank");

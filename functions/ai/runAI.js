@@ -1,19 +1,4 @@
-const 
-
-
-
-
-
-
-
-
-
-
-
-
-{
-	useHooks
-} = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { ButtonStyle, ComponentType, EmbedBuilder, ActionRowBuilder, ButtonBuilder } = require("discord.js");
 
 module.exports.data = {
@@ -25,7 +10,10 @@ module.exports.execute = async (interaction, msg, lang) => {
 	// Check if useHooks is available
 	if (!useHooks) {
 		console.error("useHooks is not available");
-		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
 	}
 	const result = await useHooks.get("ai").run(msg, interaction.user, lang);
 

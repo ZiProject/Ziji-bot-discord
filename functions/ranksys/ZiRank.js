@@ -16,7 +16,10 @@ module.exports.execute = async ({ user, XpADD = 1, CoinADD = 0 }) => {
 	// Check if useHooks is available
 	if (!useHooks) {
 		console.error("useHooks is not available");
-		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
 	}
 	const DataBase = useHooks.get("db");
 	if (DataBase && user) {

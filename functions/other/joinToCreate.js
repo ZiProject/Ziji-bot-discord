@@ -33,7 +33,10 @@ module.exports.execute = async (oldState, newState, guildSetting) => {
 	// Check if useHooks is available
 	if (!useHooks) {
 		console.error("useHooks is not available");
-		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
 	}
 	// Người dùng join vào kênh JTC
 	if (newState.channelId === guildSetting.joinToCreate.voiceChannelId) {

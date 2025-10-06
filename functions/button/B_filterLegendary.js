@@ -16,7 +16,10 @@ module.exports.execute = async ({ interaction, lang }) => {
 	// Check if useHooks is available
 	if (!useHooks) {
 		console.error("useHooks is not available");
-		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
 	}
 	// Tạo một đối tượng tương tác mới với bộ lọc legendary
 	const newInteraction = {

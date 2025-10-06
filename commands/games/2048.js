@@ -18,14 +18,17 @@ module.exports.execute = async ({ interaction, lang }) => {
 	// Check if useHooks is available
 	if (!useHooks) {
 		console.error("useHooks is not available");
-		return interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) || console.error("No interaction available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
 	}
-	
+
 	const functions = useHooks.get("functions");
 	if (!functions) {
 		return interaction.reply({ content: "Hệ thống đang bảo trì, vui lòng thử lại sau.", ephemeral: true });
 	}
-	
+
 	const ZiRank = functions.get("ZiRank");
 	if (!ZiRank) {
 		return interaction.reply({ content: "Chức năng ZiRank không khả dụng.", ephemeral: true });
