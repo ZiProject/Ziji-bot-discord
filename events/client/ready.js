@@ -38,7 +38,7 @@ module.exports = {
 		]);
 
 		if (mongoConnected) {
-			useHooks.get("db")(require("../../startup/mongoDB"));
+			useHooks.set("db", require("../../startup/mongoDB"));
 			await require("../../startup/loadResponder")();
 			await require("../../startup/loadWelcome")();
 			await require("../../startup/initAI")();
@@ -48,7 +48,7 @@ module.exports = {
 		} else {
 			useHooks.get("logger").error("Failed to connect to MongoDB!");
 			const db = new Database("./jsons/ziDB.json");
-			useHooks.get("db")({
+			useHooks.set("db", {
 				ZiUser: createModel(db, "ZiUser"),
 				ZiAutoresponder: createModel(db, "ZiAutoresponder"),
 				ZiWelcome: createModel(db, "ZiWelcome"),

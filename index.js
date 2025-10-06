@@ -44,7 +44,8 @@ const client = new Client({
 const manager = new PlayerManager({
 	plugins: [new TTSPlugin(), new YTSRPlugin(), new YouTubePlugin(), new SoundCloudPlugin(), new SpotifyPlugin()],
 	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
-}).create("search");
+});
+manager.create("search");
 
 const startup = new StartupManager(client, config ?? defaultconfig);
 const logger = startup.getLogger();

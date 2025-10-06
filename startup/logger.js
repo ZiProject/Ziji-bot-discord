@@ -7,7 +7,7 @@ class LoggerFactory {
 	}
 
 	create() {
-		return (logger = winston.createLogger({
+		return winston.createLogger({
 			level: this.config?.DevConfig?.logger || "",
 			format: winston.format.combine(
 				winston.format.timestamp(),
@@ -25,7 +25,7 @@ class LoggerFactory {
 				}),
 				new winston.transports.File({ filename: "./jsons/bot.log", level: "error" }),
 			],
-		}));
+		});
 	}
 
 	static create(config) {

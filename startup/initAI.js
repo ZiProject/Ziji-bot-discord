@@ -32,7 +32,7 @@ module.exports = async () => {
 		const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 		const DataBase = useHooks.get("db");
 
-		useHooks.get("ai")({
+		useHooks.set("ai", {
 			client,
 			genAI,
 			run: async (prompt, user, lang) => {
