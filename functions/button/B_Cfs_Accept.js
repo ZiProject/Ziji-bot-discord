@@ -1,4 +1,4 @@
-const { useDB } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { EmbedBuilder, PermissionsBitField, MessageFlags } = require("discord.js");
 
 module.exports.data = {
@@ -12,6 +12,14 @@ module.exports.data = {
  * @param { import("../../lang/vi.js") } button.lang
  */
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	const member = await interaction.guild.members.fetch(interaction.user.id);
 	if (!member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
 		return interaction.reply({
@@ -20,7 +28,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 		});
 	}
 
-	const database = useDB();
+	const database = useHooks.get("db");
 	if (!database) {
 		return interaction.reply({
 			content: lang.until.noDB,

@@ -1,4 +1,4 @@
-const { useClient, useLogger } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports = {
 	name: "playerError",
@@ -10,10 +10,10 @@ module.exports = {
 	 * @param {import('ziplayer').Track} track
 	 */
 	execute: async (player, error, track) => {
-		const client = useClient();
+		const client = useHooks.get("client");
 		client.errorLog("**Player playerError**");
 		client?.errorLog(error.message);
 		client?.errorLog(track.url);
-		useLogger().error(error);
+		useHooks.get("logger").error(error);
 	},
 };

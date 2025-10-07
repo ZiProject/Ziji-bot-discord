@@ -1,4 +1,4 @@
-const { useFunctions } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports = {
 	name: "queueEnd",
@@ -8,7 +8,7 @@ module.exports = {
 	 * @param {import('ziplayer').Player} player
 	 */
 	execute: async (player) => {
-		const player_func = useFunctions().get("player_func");
+		const player_func = useHooks.get("functions").get("player_func");
 		if (!player_func) return;
 		const res = await player_func.execute({ player });
 		if (player.userdata.mess) return player.userdata.mess.edit(res).catch((e) => {});

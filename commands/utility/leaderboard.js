@@ -1,5 +1,5 @@
 const { AttachmentBuilder } = require("discord.js");
-const { useDB, useConfig } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { Worker } = require("worker_threads");
 
 async function buildImageInWorker(workerData) {
@@ -51,7 +51,7 @@ module.exports.data = {
 module.exports.execute = async ({ interaction, lang }) => {
 	await interaction.deferReply();
 
-	const db = useDB();
+	const db = useHooks.get("db");
 	if (!db) return interaction.editReply({ content: lang?.until?.noDB, ephemeral: true }).catch(() => {});
 
 	const UserI = await db?.ZiUser?.find();

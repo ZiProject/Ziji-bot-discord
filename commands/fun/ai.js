@@ -1,6 +1,6 @@
-const { useFunctions, useConfig } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { getPlayer } = require("ziplayer");
-const config = useConfig();
+const config = useHooks.get("config");
 
 module.exports.data = {
 	name: "ai",
@@ -44,6 +44,14 @@ module.exports.data = {
  * @param { import('../../lang/vi.js') } command.lang - language
  */
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	await interaction.deferReply();
 
 	const { client, guild, options, member } = interaction;
@@ -85,12 +93,12 @@ module.exports.execute = async ({ interaction, lang }) => {
 };
 
 module.exports.ask = async (interaction, prompt, lang) => {
-	const runAI = useFunctions().get("runAI");
+	const runAI = useHooks.get("functions").get("runAI");
 	await runAI.execute(interaction, prompt, lang);
 };
 
 module.exports.assistant = async (interaction, lang, { query: prompt }) => {
 	const focus = interaction.options.getBoolean("focus") ? interaction.user.id : null;
-	const runVoiceAI = useFunctions().get("runVoiceAI");
+	const runVoiceAI = useHooks.get("functions").get("runVoiceAI");
 	await runVoiceAI.execute(interaction, lang, { query: prompt, focus });
 };

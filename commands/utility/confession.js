@@ -1,4 +1,4 @@
-const { useDB, useFunctions } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js");
 const { PermissionsBitField, MessageFlags } = require("discord.js");
 
@@ -117,9 +117,9 @@ module.exports.execute = async ({ interaction, lang }) => {
 			flags: MessageFlags.Ephemeral,
 		});
 	}
-	const successEmbed = useFunctions().get("createSuccessEmbed");
-	const errorEmbed = useFunctions().get("createErrorEmbed");
-	const database = useDB();
+	const successEmbed = useHooks.get("functions").get("createSuccessEmbed");
+	const errorEmbed = useHooks.get("functions").get("createErrorEmbed");
+	const database = useHooks.get("db");
 	const command = interaction.options.getSubcommand();
 	const user = await interaction.guild.members.fetch(interaction.user);
 	switch (command) {

@@ -1,7 +1,7 @@
 const { PermissionsBitField, EmbedBuilder } = require("discord.js");
-const { useDB, useWelcome, useConfig, useFunctions } = require("@zibot/zihooks");
-const config = useConfig();
-const parseVar = useFunctions().get("getVariable");
+const { useHooks } = require("@zibot/zihooks");
+const config = useHooks.get("config");
+const parseVar = useHooks.get("functions").get("getVariable");
 module.exports.data = {
 	name: "welcomer",
 	description: "Quản lý chào mừng / tạm biệt thanh viên",
@@ -86,12 +86,20 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 		return interaction.reply({ content: lang.until.noPermission, ephemeral: true });
 	}
-	const db = useDB();
+	const db = useHooks.get("db");
 	if (!db) return interaction.reply({ content: lang?.until?.noDB });
-	const Welcome = useWelcome();
+	const Welcome = useHooks.get("welcome");
 	const commandtype = interaction.options?.getSubcommand();
 	const channel = interaction.options.getChannel("channel");
 	const content = interaction.options.getString("content");

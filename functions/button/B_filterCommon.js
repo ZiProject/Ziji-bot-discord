@@ -1,4 +1,4 @@
-const { useCommands } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports.data = {
 	name: "B_filterCommon",
@@ -13,6 +13,14 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	// Tạo một đối tượng tương tác mới với bộ lọc common
 	const newInteraction = {
 		...interaction,
@@ -22,6 +30,6 @@ module.exports.execute = async ({ interaction, lang }) => {
 		},
 	};
 
-	const Command = useCommands();
+	const Command = useHooks.get("commands");
 	return Command.get("zoo").execute({ interaction: newInteraction, lang });
 };

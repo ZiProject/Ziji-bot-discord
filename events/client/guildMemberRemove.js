@@ -1,6 +1,6 @@
-const { useConfig, useWelcome, useFunctions } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { Events, GuildMember, AttachmentBuilder } = require("discord.js");
-const config = useConfig();
+const config = useHooks.get("config");
 const { Worker } = require("worker_threads");
 
 async function buildImageInWorker(workerData) {
@@ -43,7 +43,7 @@ module.exports = {
 	 */
 	execute: async (member) => {
 		// create card
-		const welcome = useWelcome().get(member.guild.id)?.at(0);
+		const welcome = useHooks.get("welcome").get(member.guild.id)?.at(0);
 		if (!welcome) return;
 		try {
 			const attachment = await buildImageInWorker({
@@ -53,7 +53,7 @@ module.exports = {
 				ZMessage: `See you again in ${member.guild.name}!`,
 			});
 			const channel = await member.client.channels.fetch(welcome.Bchannel);
-			const parseVar = useFunctions().get("getVariable");
+			const parseVar = useHooks.get("functions").get("getVariable");
 			await channel.send({
 				files: [
 					{

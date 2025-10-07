@@ -1,7 +1,7 @@
 const { PermissionsBitField, EmbedBuilder } = require("discord.js");
-const { useGiveaways, useConfig } = require("@zibot/zihooks");
-const Giveaways = useGiveaways();
-const config = useConfig();
+const { useHooks } = require("@zibot/zihooks");
+const Giveaways = useHooks.get("giveaways");
+const config = useHooks.get("config");
 
 const ms = require("ms");
 
@@ -12,6 +12,14 @@ const ms = require("ms");
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 		return interaction.reply({ content: lang.until.noPermission, ephemeral: true });
 	}

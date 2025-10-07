@@ -1,4 +1,4 @@
-const config = require("@zibot/zihooks").useConfig();
+const config = require("@zibot/zihooks").useHooks.get("config");
 module.exports = {
 	name: "en",
 	local_names: "en_US",

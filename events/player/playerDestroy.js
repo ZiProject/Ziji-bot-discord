@@ -6,6 +6,6 @@ module.exports = {
 	 * @param {import('ziplayer').Player} player
 	 */
 	execute: async (player) => {
-		if (player.userdata.mess) return player.userdata.mess.edit({ components: [] }).catch((e) => {});
+		if (player.userdata?.mess) return player.userdata.mess.edit({ components: [] }).catch((e) => {});
 	},
 };

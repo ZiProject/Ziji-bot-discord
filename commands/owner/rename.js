@@ -1,4 +1,4 @@
-const config = require("@zibot/zihooks").useConfig();
+const config = require("@zibot/zihooks").useHooks.get("config");
 
 module.exports.data = {
 	name: "rename",
@@ -30,6 +30,14 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	if (!config.OwnerID.length || !config.OwnerID.includes(interaction.user.id))
 		return interaction.reply({ content: lang.until.noPermission, ephemeral: true });
 

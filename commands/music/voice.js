@@ -1,5 +1,5 @@
-const { useFunctions, useConfig, useDB } = require("@zibot/zihooks");
-const config = useConfig();
+const { useHooks } = require("@zibot/zihooks");
+const config = useHooks.get("config");
 const { PermissionsBitField } = require("discord.js");
 
 module.exports.data = {
@@ -38,10 +38,18 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	const commandtype = interaction.options?.getSubcommand();
 
 	if (commandtype === "join") {
-		const command = useFunctions().get("Search");
+		const command = useHooks.get("functions").get("Search");
 		await command.execute(interaction, null, lang, { joinvoice: true });
 		return;
 	} else if (commandtype === "log") {
@@ -51,7 +59,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 		const toggle = interaction.options.getBoolean("enabled");
 		const guildId = interaction.guild.id;
 
-		const DataBase = useDB();
+		const DataBase = useHooks.get("db");
 		if (!DataBase)
 			return interaction.editReply({
 				content: lang?.until?.noDB || "Database hiện không được bật, xin vui lòng liên hệ dev bot",

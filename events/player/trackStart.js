@@ -1,5 +1,5 @@
-const { useClient, useFunctions, useConfig } = require("@zibot/zihooks");
-const config = useConfig();
+const { useHooks } = require("@zibot/zihooks");
+const config = useHooks.get("config");
 
 module.exports = {
 	name: "trackStart",
@@ -10,7 +10,7 @@ module.exports = {
 	 * @param {import('ziplayer').Track} track
 	 */
 	execute: async (player, track) => {
-		const player_func = useFunctions().get("player_func");
+		const player_func = useHooks.get("functions").get("player_func");
 		if (!player_func) return;
 
 		const playerGui = await player_func.execute({ player, tracks: track });
@@ -24,7 +24,7 @@ module.exports = {
 		// Status of voice channel
 		if (config.PlayerConfig?.changeStatus) {
 			const status = `💿 Now playing: ${track.title}`;
-			const { rest } = useClient();
+			const { rest } = useHooks.get("client");
 			rest.put(`/channels/${player?.connection?.joinConfig.channelId}/voice-status`, { body: { status } }).catch((e) => {
 				console.log(e);
 			});

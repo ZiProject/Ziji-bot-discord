@@ -1,6 +1,6 @@
-const { useConfig } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const config = useConfig();
+const config = useHooks.get("config");
 module.exports.data = {
 	name: "feedback",
 	description: "Gửi phản hồi cho nhà phát triển bot.",

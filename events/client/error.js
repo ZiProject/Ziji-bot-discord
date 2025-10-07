@@ -1,4 +1,4 @@
-const { useLogger } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { Events } = require("discord.js");
 
 module.exports = {
@@ -9,6 +9,6 @@ module.exports = {
 	 * @param { Error } error
 	 */
 	execute: async (error) => {
-		useLogger().error(error.message);
+		useHooks.get("logger").error(error.message);
 	},
 };

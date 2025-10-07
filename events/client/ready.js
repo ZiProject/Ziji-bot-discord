@@ -2,7 +2,7 @@ const { Events, Client, ActivityType } = require("discord.js");
 const config = require("../../config");
 const deploy = require("../../startup/deploy");
 const mongoose = require("mongoose");
-const { useDB, useLogger } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { Database, createModel } = require("@zibot/db");
 
 module.exports = {
@@ -27,7 +27,7 @@ module.exports = {
 					}
 				}
 			} catch (error) {
-				useLogger().error("Lỗi khi gửi tin nhắn lỗi:", error);
+				useHooks.get("logger").error("Lỗi khi gửi tin nhắn lỗi:", error);
 			}
 		};
 
@@ -38,17 +38,17 @@ module.exports = {
 		]);
 
 		if (mongoConnected) {
-			useDB(require("../../startup/mongoDB"));
+			useHooks.set("db", require("../../startup/mongoDB"));
 			await require("../../startup/loadResponder")();
 			await require("../../startup/loadWelcome")();
 			await require("../../startup/initAI")();
 
-			useLogger().info("Connected to MongoDB!");
+			useHooks.get("logger").info("Connected to MongoDB!");
 			client.errorLog("Connected to MongoDB!");
 		} else {
-			useLogger().error("Failed to connect to MongoDB!");
+			useHooks.get("logger").error("Failed to connect to MongoDB!");
 			const db = new Database("./jsons/ziDB.json");
-			useDB({
+			useHooks.set("db", {
 				ZiUser: createModel(db, "ZiUser"),
 				ZiAutoresponder: createModel(db, "ZiAutoresponder"),
 				ZiWelcome: createModel(db, "ZiWelcome"),
@@ -57,7 +57,7 @@ module.exports = {
 			await require("../../startup/loadResponder")();
 			await require("../../startup/loadWelcome")();
 			await require("../../startup/initAI")();
-			useLogger().info("Connected to LocalDB!");
+			useHooks.get("logger").info("Connected to LocalDB!");
 			client.errorLog("Connected to LocalDB!");
 		}
 
@@ -71,7 +71,7 @@ module.exports = {
 			},
 		});
 
-		useLogger().info(`Ready! Logged in as ${client.user.tag}`);
+		useHooks.get("logger").info(`Ready! Logged in as ${client.user.tag}`);
 		client.errorLog(`Ready! Logged in as ${client.user.tag}`);
 	},
 };

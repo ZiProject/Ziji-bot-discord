@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require("discord.js");
-const { useFunctions, useDB } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const animals = require("../../data/animals.json");
 const { updateQuestProgress } = require("./quests.js");
 
@@ -67,9 +67,17 @@ module.exports.data = {
 };
 
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	try {
-		const ZiRank = useFunctions().get("ZiRank");
-		const DataBase = useDB();
+		const ZiRank = useHooks.get("functions").get("ZiRank");
+		const DataBase = useHooks.get("db");
 
 		// Check if database and functions are properly initialized
 		if (!DataBase || !DataBase.ZiUser || !ZiRank) {

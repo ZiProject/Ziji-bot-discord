@@ -1,5 +1,5 @@
-const { useFunctions } = require("@zibot/zihooks");
-const config = require("@zibot/zihooks").useConfig();
+const { useHooks } = require("@zibot/zihooks");
+const config = require("@zibot/zihooks").useHooks.get("config");
 const { getPlayer, Player, Track } = require("ziplayer");
 const {
 	Client,
@@ -56,7 +56,7 @@ module.exports = {
 		let requestedBy =
 			(track?.requestedBy === "auto" ? player.userdata.requestedBy : track?.requestedBy) ?? player.userdata.requestedBy;
 
-		const lang = await useFunctions().get("ZiRank").execute({ user: requestedBy, XpADD: 0 });
+		const lang = await useHooks.get("functions").get("ZiRank").execute({ user: requestedBy, XpADD: 0 });
 
 		const queryTypeIcon = getQueryTypeIcon(track?.source);
 
