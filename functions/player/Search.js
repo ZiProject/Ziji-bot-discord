@@ -278,7 +278,7 @@ async function handleError(interaction, lang) {
 //#endregion Play Request
 //#region Search Track
 async function handleSearchRequest(interaction, query, lang) {
-	const results = await getPlayer("search").search(query, interaction.user);
+	const results = await getManager().search(query, interaction.user);
 	logger.debug(`Search results:  ${results?.tracks?.length}`);
 	const tracks = filterTracks(results?.tracks);
 	logger.debug(`Filtered tracks:  ${tracks?.length}`);
