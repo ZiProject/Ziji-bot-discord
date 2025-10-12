@@ -1,6 +1,6 @@
-const { useFunctions, useConfig } = require("@zibot/zihooks");
-const { getPlayer } = require("ziplayer");
-const config = useConfig();
+const { useHooks } = require("@zibot/zihooks");
+const {getPlayer, getManager } = require("ziplayer");
+const config = useHooks.get("config");
 
 module.exports.data = {
 	name: "play",
@@ -65,9 +65,17 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	const commandtype = interaction.options?.getSubcommand();
 	const query = interaction.options?.getString("query");
-	const command = useFunctions().get("Search");
+	const command = useHooks.get("functions").get("Search");
 	const player = getPlayer(interaction.guildId);
 	if (commandtype === "next") {
 		if (player.connection) {
@@ -103,7 +111,7 @@ module.exports.autocomplete = async ({ interaction, lang }) => {
 		const query = interaction.options.getString("query", true);
 		if (!query) return;
 
-		const results = await getPlayer("search").search(query);
+		const results = await getManager().search(query);
 
 		const tracks = results.tracks
 			.filter((t) => t.title.length > 0 && t.title.length < 100 && t.url.length > 0 && t.url.length < 100)
@@ -111,7 +119,7 @@ module.exports.autocomplete = async ({ interaction, lang }) => {
 
 		if (!tracks.length) return;
 
-		await interaction.respond(tracks.map((t) => ({ name: `${t?.metadata?.author} - ${t.title}`, value: t.url }))).catch(() => {});
+		await interaction.respond(tracks.map((t) => ({ name: `${t?.metadata?.author?.slice(0, 20)} - ${t.title}`.slice(0, 100), value: t.url }))).catch(() => {});
 		return;
 	} catch (e) {
 		return;

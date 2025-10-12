@@ -2,7 +2,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("
 const os = require("os");
 const { version: DjsVersion } = require("discord.js");
 const { execSync } = require("child_process");
-const { useCommands, useConfig } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports.data = {
 	name: "statistics",
@@ -20,7 +20,7 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	const config = useConfig();
+	const config = useHooks.get("config");
 	await interaction.deferReply();
 	const { client } = interaction;
 
@@ -51,7 +51,7 @@ module.exports.execute = async ({ interaction, lang }) => {
           • ${lang?.BotStats?.User}: \`${totalMembers || 0}\`
           • ${lang?.BotStats?.Server}: \`${totalGuilds || 0}\`
           • ${lang?.BotStats?.Voice}: \`${voiceConnections}\`
-          • ${lang?.BotStats?.Command}: \`${useCommands().map((c) => c.data.name).length}\`
+          • ${lang?.BotStats?.Command}: \`${useHooks.get("commands").map((c) => c.data.name).length}\`
           • ${lang?.BotStats?.Operation}: <t:${Math.floor(Number(Date.now() - client.uptime) / 1000)}:R>
           • Ping: \`${client.ws.ping} MS\`
           • ${lang?.BotStats?.RAMUsage}: \`${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB\`

@@ -1,4 +1,4 @@
-const { useFunctions, useConfig } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const {
 	ButtonBuilder,
 	ButtonStyle,
@@ -30,6 +30,14 @@ let isCurrentlyHidden;
  * @param { import('discord.js').VoiceState } newState
  */
 module.exports.execute = async (oldState, newState, guildSetting) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	// Người dùng join vào kênh JTC
 	if (newState.channelId === guildSetting.joinToCreate.voiceChannelId) {
 		const channel = await newState.guild.channels
@@ -71,7 +79,7 @@ module.exports.execute = async (oldState, newState, guildSetting) => {
 			.setTitle("Quản lý phòng")
 			.setDescription(`Xin chào **${newState.member.user.username}**! Hãy sử dụng các nút để điều khiển phòng thoại nhé`)
 			.setColor("Random")
-			.setImage(useConfig().botConfig?.Banner)
+			.setImage(useHooks.get("config").botConfig?.Banner)
 			.setFooter({ text: "Nhấn các nút bên dưới để sử dụng giao diện" })
 			.setTimestamp();
 

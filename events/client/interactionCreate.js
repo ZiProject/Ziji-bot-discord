@@ -1,11 +1,11 @@
 const { Events, CommandInteraction, PermissionsBitField, MessageFlags, EmbedBuilder } = require("discord.js");
-const { useCooldowns, useCommands, useFunctions, useConfig, useLogger } = require("@zibot/zihooks");
-const config = useConfig();
+const { useHooks } = require("@zibot/zihooks");
+const config = useHooks.get("config");
 const fs = require("fs");
 const path = require("path");
-const Cooldowns = useCooldowns();
-const Commands = useCommands();
-const Functions = useFunctions();
+const Cooldowns = useHooks.get("cooldowns");
+const Commands = useHooks.get("commands");
+const Functions = useHooks.get("functions");
 const { getPlayer } = require("ziplayer");
 
 /**
@@ -117,6 +117,14 @@ module.exports = {
  * @param { CommandInteraction } interaction
  */
 module.exports.execute = async (interaction) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	const { client, user } = interaction;
 	if (!client.isReady()) return;
 
@@ -147,9 +155,11 @@ module.exports.execute = async (interaction) => {
 		if (interaction.isAutocomplete()) {
 			await command.autocomplete({ interaction, lang });
 		} else {
-			useLogger().debug(
-				`Interaction received: ${interaction?.commandName || interaction?.customId} >> User: ${interaction?.user?.username} >> Guild: ${interaction?.guild?.name} (${interaction?.guildId})`,
-			);
+			useHooks
+				.get("logger")
+				.debug(
+					`Interaction received: ${interaction?.commandName || interaction?.customId} >> User: ${interaction?.user?.username} >> Guild: ${interaction?.guild?.name} (${interaction?.guildId})`,
+				);
 
 			const status = await checkStatus(interaction, client, lang);
 			if (status) return;

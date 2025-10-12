@@ -1,4 +1,4 @@
-const { useFunctions, useAI, useClient } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { EmbedBuilder } = require("discord.js");
 
 module.exports = {
@@ -78,15 +78,15 @@ module.exports = {
 				return;
 			}
 		}
-		const voice = useClient().channels.cache.get(player.connection.joinConfig.channelId);
-		const aifunc = await useFunctions().get("runVoiceAI");
+		const voice = useHooks.get("client").channels.cache.get(player.connection.joinConfig.channelId);
+		const aifunc = await useHooks.get("functions").get("runVoiceAI");
 		if (aifunc.checkStatus) {
-			const result = await useAI().run(lowerContent, events.user);
+			const result = await useHooks.get("ai").run(lowerContent, events.user);
 
-			const tts = await useFunctions().get("TextToSpeech");
+			const tts = await useHooks.get("functions").get("TextToSpeech");
 			await tts.execute(
 				{
-					client: useClient(),
+					client: useHooks.get("client"),
 					guild: channel.guild,
 					user: events.user,
 					deferReply: async () => {},

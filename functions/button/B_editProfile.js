@@ -1,4 +1,4 @@
-const { useDB } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { ModalBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle } = require("discord.js");
 
 module.exports.data = {
@@ -14,7 +14,15 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	const db = useDB();
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
+	const db = useHooks.get("db");
 	if (!db) return interaction.reply({ content: lang?.until?.noDB, ephemeral: true }).catch(() => {});
 
 	let rankkk = await db?.ZiUser?.findOne({ userID: interaction?.user.id }).catch((e) => {});

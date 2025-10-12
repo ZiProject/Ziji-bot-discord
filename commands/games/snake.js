@@ -1,5 +1,5 @@
 const { Snake } = require("discord-gamecord");
-const { useFunctions } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports.data = {
 	name: "snake",
@@ -14,7 +14,15 @@ module.exports.data = {
  * @param { import('../../lang/vi.js') } command.lang - language
  */
 module.exports.execute = async ({ interaction, lang }) => {
-	const ZiRank = useFunctions().get("ZiRank");
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
+	const ZiRank = useHooks.get("functions").get("ZiRank");
 	const Game = new Snake({
 		message: interaction,
 		isSlashGame: true,

@@ -33,7 +33,7 @@
 		"@snazzah/davey": "^0.1.6",
 		"@zibot/db": "^0.0.2",
 		"@zibot/ziencryptor": "^0.0.1",
-		"@zibot/zihooks": "^1.0.9",
+		"@zibot/zihooks": "^1.0.10",
 		"@ziplayer/extension": "^0.1.1",
 		"@ziplayer/plugin": "^0.1.33",
 		"axios": "^1.7.7",

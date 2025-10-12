@@ -1,6 +1,6 @@
 const { PermissionsBitField } = require("discord.js");
-const { useDB, useResponder, useConfig } = require("@zibot/zihooks");
-const config = useConfig();
+const { useHooks } = require("@zibot/zihooks");
+const config = useHooks.get("config");
 
 module.exports.data = {
 	name: "autoresponder",
@@ -59,12 +59,20 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 		return interaction.reply({ content: lang.until.noPermission, ephemeral: true });
 	}
-	const db = useDB();
+	const db = useHooks.get("db");
 	if (!db) return interaction.reply({ content: lang?.until?.noDB });
-	const autoRes = useResponder();
+	const autoRes = useHooks.get("responder");
 	const commandtype = interaction.options?.getSubcommand();
 	const trigger = interaction.options.getString("trigger");
 	const response = interaction.options.getString("response");

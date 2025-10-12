@@ -1,7 +1,7 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { useDB, useAI, useLogger, useClient, useConfig } = require("@zibot/zihooks");
-const config = useConfig();
-const client = useClient();
+const { useHooks } = require("@zibot/zihooks");
+const config = useHooks.get("config");
+const client = useHooks.get("client");
 
 const promptBuilder = async ({ content, user, lang, DataBase }) => {
 	const { promptHistory, CurrentAI, CurrentUser } = (await DataBase.ZiUser.findOne({ userID: user?.id })) || {};
@@ -27,12 +27,12 @@ const promptBuilder = async ({ content, user, lang, DataBase }) => {
 
 module.exports = async () => {
 	try {
-		if (!config.DevConfig.ai || !process.env?.GEMINI_API_KEY?.length) return;
+		if (!config?.DevConfig?.ai || !process.env?.GEMINI_API_KEY?.length) return;
 
 		const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-		const DataBase = useDB();
+		const DataBase = useHooks.get("db");
 
-		useAI({
+		useHooks.set("ai", {
 			client,
 			genAI,
 			run: async (prompt, user, lang) => {
@@ -44,8 +44,8 @@ module.exports = async () => {
 				};
 				const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig });
 				const { Prompt, old_Prompt } = await promptBuilder({ content: prompt, user, lang, DataBase });
-				console.log("Prompt:", Prompt);
-				console.log("Old Prompt:", old_Prompt);
+				useHooks.get("logger")?.info?.(`Prompt:`, Prompt);
+				useHooks.get("logger")?.info?.(`Old Prompt:`, old_Prompt);
 				const result = await model.generateContent(Prompt, {});
 				const text = result?.response?.text();
 
@@ -68,8 +68,8 @@ module.exports = async () => {
 			},
 		});
 
-		useLogger().info(`Successfully loaded Ai model.`);
+		useHooks.get("logger")?.info?.(`Successfully loaded Ai model.`);
 	} catch (error) {
-		useLogger().error("Lỗi khi tải Ai model:", error);
+		useHooks.get("logger")?.error?.(`Lỗi khi tải Ai model:`, error);
 	}
 };

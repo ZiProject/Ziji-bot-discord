@@ -1,4 +1,4 @@
-const { useFunctions, useAI } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports.data = {
 	name: "runVoiceAI",
@@ -8,6 +8,14 @@ module.exports.data = {
 let voiceAI = false; // Đặt mặc định là `false`
 
 module.exports.execute = async (interaction, lang, options = { query: null }) => {
+	// Check if useHooks is available
+	if (!useHooks) {
+		console.error("useHooks is not available");
+		return (
+			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
+			console.error("No interaction available")
+		);
+	}
 	try {
 		const { client, guild, user } = interaction;
 
@@ -36,8 +44,8 @@ module.exports.execute = async (interaction, lang, options = { query: null }) =>
 		}
 
 		// Tham gia voice channel
-		const tts = useFunctions().get("TextToSpeech");
-		const result = options?.query ?? useAI().run(`Hello, my name is ${user.username}`);
+		const tts = useHooks.get("functions").get("TextToSpeech");
+		const result = options?.query ?? useHooks.get("ai").run(`Hello, my name is ${user.username}`);
 		await tts.execute(interaction, result, lang);
 
 		voiceAI = true;
