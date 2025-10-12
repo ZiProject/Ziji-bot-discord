@@ -4,7 +4,7 @@ const { getManager } = require("ziplayer");
 module.exports = {
 	name: "close",
 	type: "console",
-	enable: true,
+	enable: false,
 	execute: async () => {
 		const client = useHooks.get("client");
 		const logger = useHooks.get("logger");
