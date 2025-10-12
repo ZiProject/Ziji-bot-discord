@@ -1,5 +1,5 @@
 const { useHooks } = require("@zibot/zihooks");
-const {getPlayer, getManager } = require("ziplayer");
+const { getPlayer, getManager } = require("ziplayer");
 const config = useHooks.get("config");
 
 module.exports.data = {
@@ -119,7 +119,9 @@ module.exports.autocomplete = async ({ interaction, lang }) => {
 
 		if (!tracks.length) return;
 
-		await interaction.respond(tracks.map((t) => ({ name: `${t?.metadata?.author?.slice(0, 20)} - ${t.title}`.slice(0, 100), value: t.url }))).catch(() => {});
+		await interaction
+			.respond(tracks.map((t) => ({ name: `${t?.metadata?.author?.slice(0, 20)} - ${t.title}`.slice(0, 100), value: t.url })))
+			.catch(() => {});
 		return;
 	} catch (e) {
 		return;
