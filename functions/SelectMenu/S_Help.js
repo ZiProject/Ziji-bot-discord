@@ -1,6 +1,6 @@
 const { EmbedBuilder, Routes } = require("discord.js");
 const ZiIcons = require("../../utility/icon.js");
-const config = require("@zibot/zihooks").useHooks.get("config");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports.data = {
 	name: "S_Help",
@@ -14,14 +14,8 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	// Check if useHooks is available
-	if (!useHooks) {
-		console.error("useHooks is not available");
-		return (
-			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
-			console.error("No interaction available")
-		);
-	}
+	const config = useHooks.get("config");
+
 	const selection = interaction.values?.at(0);
 	const embed = new EmbedBuilder()
 		.setAuthor({
@@ -30,7 +24,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 		})
 		.setDescription(lang.Help.Placeholder)
 		.setColor(lang?.color || "Random")
-		.setImage(config.botConfig?.Banner || null)
+		.setImage(config?.botConfig?.Banner || null)
 		.setFooter({
 			text: `${lang.until.requestBy} ${interaction.user?.username}`,
 			iconURL: interaction.user.displayAvatarURL({ size: 1024 }),

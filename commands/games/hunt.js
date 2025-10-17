@@ -28,6 +28,8 @@ module.exports.data = {
 
 module.exports.execute = async ({ interaction, lang }) => {
 	// Check if useHooks is available
+	await interaction.deferReply();
+
 	if (!useHooks) {
 		console.error("useHooks is not available");
 		return (
@@ -47,7 +49,6 @@ module.exports.execute = async ({ interaction, lang }) => {
 		const userId = interaction.user.id;
 		const guildId = interaction.guild?.id;
 		const now = new Date();
-
 		// Lấy dữ liệu người dùng với tích hợp ZiRank
 		let userLang;
 		try {
@@ -168,7 +169,7 @@ async function handleInitializationError(interaction, isDatabaseError) {
 		})
 		.setTimestamp();
 
-	return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+	return await interaction.editReply({ embeds: [errorEmbed], ephemeral: true });
 }
 
 function checkHuntCooldown(userDB, now) {
@@ -212,7 +213,7 @@ async function showCooldownMessage(interaction, cooldownCheck, userDB) {
 		})
 		.setTimestamp();
 
-	return await interaction.reply({ embeds: [cooldownEmbed], ephemeral: true });
+	return await interaction.editReply({ embeds: [cooldownEmbed], ephemeral: true });
 }
 
 function calculateHuntCost(userDB) {
@@ -241,7 +242,7 @@ async function showInsufficientFunds(interaction, huntCost, userCoin) {
 		})
 		.setTimestamp();
 
-	return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+	return await interaction.editReply({ embeds: [errorEmbed], ephemeral: true });
 }
 
 function generateHuntResult(userDB) {
@@ -439,7 +440,7 @@ async function showHuntError(interaction) {
 		})
 		.setTimestamp();
 
-	return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+	return await interaction.editReply({ embeds: [errorEmbed], ephemeral: true });
 }
 
 function checkLevelUp(oldUserData, newUserData) {
@@ -558,7 +559,7 @@ async function sendHuntSuccessMessage(interaction, huntResult, xpReward, huntCos
 		new ButtonBuilder().setCustomId("B_huntAgain").setLabel("Hunt Again").setStyle(ButtonStyle.Success).setEmoji(`${huntEmoji}`),
 	);
 
-	await interaction.reply({ embeds: [successEmbed], components: [row] });
+	await interaction.editReply({ embeds: [successEmbed], components: [row] });
 }
 
 async function handleCommandError(interaction, error) {
@@ -584,6 +585,15 @@ async function handleCommandError(interaction, error) {
 	if (interaction.replied || interaction.deferred) {
 		await interaction.followUp(errorResponse).catch(() => {});
 	} else {
-		await interaction.reply(errorResponse).catch(() => {});
+		await interaction.editReply(errorResponse).catch(() => {});
+	}
+}
+
+async function logHuntDebug(type, context, error) {
+	const logger = useHooks.get("logger");
+	if (logger) {
+		logger.error(`[HUNT_DEBUG] [${type}]: ${context}\nError: ${error?.message || error}`);
+	} else {
+		console.error(`[HUNT_DEBUG] [${type}]`, { context, error: error?.message || error });
 	}
 }

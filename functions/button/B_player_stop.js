@@ -3,7 +3,7 @@ const { getPlayer } = require("ziplayer");
 module.exports.data = {
 	name: "B_player_stop",
 	type: "button",
-	category: "musix-s",
+	category: "musix",
 	lock: true,
 };
 

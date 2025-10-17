@@ -153,7 +153,7 @@ module.exports.execute = async (interaction) => {
 	// Try to execute the command and handle errors
 	try {
 		if (interaction.isAutocomplete()) {
-			await command.autocomplete({ interaction, lang });
+			await command?.autocomplete({ interaction, lang });
 		} else {
 			useHooks
 				.get("logger")
