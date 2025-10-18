@@ -34,23 +34,38 @@ module.exports.execute = async ({ interaction, lang }) => {
 	switch (selection) {
 		case "guild_commands":
 			const { guildCommands } = await this.commands(interaction);
-			embed.setDescription(
-				`# ${lang.Help.GuildCommands}:\n\n` +
-					guildCommands
-						.map((cmd) => {
-							if (cmd.options?.at(0).type == 1) {
-								let optionss = "";
-								for (const option of cmd.options) {
-									if (option.type == 1) {
-										optionss += `</${cmd.name} ${option.name}:${cmd.id}>: ${option.description}\n`;
-									}
-								}
-								return optionss;
+			const guildcommands = `# ${lang.Help.GuildCommands}:\n\n${guildCommands
+				.map((cmd) => {
+					if (cmd.options?.at(0).type == 1) {
+						let optionss = "";
+						for (const option of cmd.options) {
+							if (option.type == 1) {
+								optionss += `</${cmd.name} ${option.name}:${cmd.id}>: ${option.description}\n`;
 							}
-							return `</${cmd.name}:${cmd.id}>: ${cmd.description}\n`;
-						})
-						.join(""),
-			);
+						}
+						return optionss;
+					}
+					return `</${cmd.name}:${cmd.id}>: ${cmd.description}\n`;
+				})
+				.join("")}`;
+			const totalPages = Math.ceil(guildcommands.length / 4095);
+			let page = 1;
+			if (interaction.message?.embeds?.[0]?.fields?.[0]?.value?.includes("Page:")) {
+				page = parseInt(interaction.message?.embeds?.[0]?.fields?.[0]?.value?.split("Page:")[1].split("/")[0]) + 1;
+			}
+
+			page = page > totalPages ? 1 : page;
+
+			const startIndex = (page - 1) * 4095;
+			const endIndex = startIndex + 4095;
+			const currentContent = guildcommands.slice(startIndex, endIndex);
+			if (guildcommands.length > 4095) {
+				embed.addFields({ name: "...", value: `Page: ${page}/${totalPages}/uid=${interaction.user.id}` });
+				embed.setDescription(currentContent);
+			} else {
+				embed.setDescription(guildcommands);
+			}
+
 			break;
 		case "context_commands":
 			const { contextCommands } = await this.commands(interaction);
