@@ -1,5 +1,5 @@
 const cron = require("node-cron");
-const { useDB, useLogger } = require("@zibot/zihooks");
+const { useHooks } = require("@zibot/zihooks");
 const { claimGenshinDaily } = require("../utils/hoyolab");
 
 class HoyoAutoClaimer {
@@ -10,13 +10,13 @@ class HoyoAutoClaimer {
 
 	start(client) {
 		if (this.job) return;
-		const log = useLogger();
-		// Run daily at 00:05 local time
-		this.job = cron.schedule("5 0 * * *", async () => {
+		const log = useHooks.get("logger");
+		// Run daily at 04:05 local time
+		this.job = cron.schedule("5 4 * * *", async () => {
 			if (this.running) return;
 			this.running = true;
 			try {
-				const db = useDB();
+				const db = useHooks.get("db");
 				if (!db?.ZiUser) return;
 
 				const allUsers = (await db.ZiUser.find()) || [];
@@ -50,7 +50,7 @@ class HoyoAutoClaimer {
 					}
 				}
 			} catch (err) {
-				useLogger()?.error?.("HoyoAutoClaimer job error:", err);
+				useHooks.get("logger")?.error?.("HoyoAutoClaimer job error:", err);
 			} finally {
 				this.running = false;
 			}
