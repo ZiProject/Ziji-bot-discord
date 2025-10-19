@@ -5,13 +5,29 @@ const { useHooks } = require("@zibot/zihooks");
 const { Collection } = require("discord.js");
 
 class StartupManager {
-	constructor(client, config) {
-		this.config = config ?? useHooks.get("config");
+	constructor(client) {
+		this.config = this.initCongig();
 		this.logger = LoggerFactory.create(this.config);
 		this.loader = new StartupLoader(this.config, this.logger);
 		this.updateChecker = new UpdateChecker();
 		this.createFile("./jsons");
 		this.client = client;
+	}
+
+	initCongig() {
+		try {
+			this.config = require("../config");
+		} catch {
+			this.logger.warn("No config file found, using default configuration.");
+			this.config = require("./defaultconfig");
+		}
+
+		useHooks.set("config", this.config);
+		return this.config;
+	}
+
+	getConfig() {
+		return this.config;
 	}
 
 	getLogger() {

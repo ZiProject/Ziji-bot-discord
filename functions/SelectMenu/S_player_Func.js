@@ -1,6 +1,5 @@
 const { useHooks } = require("@zibot/zihooks");
-const Functions = useHooks.get("functions");
-const config = useHooks.get("config");
+
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require("discord.js");
 
 module.exports.data = {
@@ -23,14 +22,8 @@ async function Update_Player(player) {
  */
 
 module.exports.execute = async ({ interaction, lang, player }) => {
-	// Check if useHooks is available
-	if (!useHooks) {
-		console.error("useHooks is not available");
-		return (
-			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
-			console.error("No interaction available")
-		);
-	}
+	const Functions = useHooks.get("functions");
+	const config = useHooks.get("config");
 	const { guild, client, values, user } = interaction;
 	const query = values?.at(0);
 
