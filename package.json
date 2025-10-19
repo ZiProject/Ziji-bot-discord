@@ -35,7 +35,7 @@
 		"@zibot/ziencryptor": "^0.0.1",
 		"@zibot/zihooks": "^1.0.10",
 		"@ziplayer/extension": "^0.1.1",
-		"@ziplayer/plugin": "^0.1.41",
+		"@ziplayer/plugin": "^0.1.50",
 		"axios": "^1.7.7",
 		"axios-cookiejar-support": "^6.0.4",
 		"bgutils-js": "^3.2.0",
