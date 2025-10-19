@@ -18,7 +18,7 @@ class StartupManager {
 		try {
 			this.config = require("../config");
 		} catch {
-			this.logger.warn("No config file found, using default configuration.");
+			console.warn("No config file found, using default configuration.");
 			this.config = require("./defaultconfig");
 		}
 
