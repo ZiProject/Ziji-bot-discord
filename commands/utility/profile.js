@@ -1,5 +1,4 @@
 const { ButtonBuilder, ActionRowBuilder, ButtonStyle, AttachmentBuilder } = require("discord.js");
-const { Font, RankCardBuilder } = require("canvacord");
 const { useHooks } = require("@zibot/zihooks");
 const { Worker } = require("worker_threads");
 
@@ -104,8 +103,21 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const colorr = lang?.color || "#ffffff";
 
 	const rankCard_data = {
-		member,
-		userDB,
+		member: {
+			tag: member.user.tag,
+			nickname: member.nickname,
+			user: {
+				tag: member.user.tag,
+				displayAvatarURL: member.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
+			},
+		},
+		userDB: {
+			_doc: {
+				coin: userDB._doc?.coin || 0,
+				xp: userDB._doc?.xp || 0,
+				level: userDB._doc?.level || 1,
+			},
+		},
 		sss,
 		strimg,
 		status,
