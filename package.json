@@ -65,7 +65,7 @@
 		"txtgen": "^3.0.7",
 		"winston": "^3.17.0",
 		"ws": "^8.18.0",
-		"ziplayer": "^0.1.4"
+		"ziplayer": "^0.1.5"
 	},
 	"devDependencies": {
 		"cross-env": "^10.0.0",

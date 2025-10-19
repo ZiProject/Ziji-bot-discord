@@ -163,6 +163,9 @@ module.exports = {
 		NoPlaying: "❌ | Không có bài hát nào đang phát.",
 		NoPermission: "❌ | Bot không có quyền tham gia hoặc nói trong kênh thoại này",
 		HostLeave: "{HOST} đã rời đi, {USER} đã được chọn làm host player",
+		DownloadOK: "✅ | Đã tải nhạc thành công",
+		DownloadNG: "❌ | Đã tải nhạc thất bại",
+		DownloadNGLargeFile: "❌ | Đã tải nhạc thất bại, file quá lớn",
 	},
 	voiceCommands: {
 		Play: "Phát nhạc",

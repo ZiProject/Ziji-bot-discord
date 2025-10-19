@@ -163,6 +163,9 @@ module.exports = {
 		NoPlaying: "❌ | No tracks playing.",
 		NoPermission: "❌ | Bot does not have permission to join or speak in this voice channel",
 		HostLeave: "{HOST} has left, {USER} has been selected as host player",
+		DownloadOK: "✅ | Download successfully",
+		DownloadNG: "❌ | Download failed",
+		DownloadNGLargeFile: "❌ | Download failed, file is too large",
 	},
 	voiceCommands: {
 		Play: "Play",
