@@ -20,6 +20,10 @@ const ZiUser = Schema({
 	cookiesReceived: { type: Number, default: 0 },
 	lastCookie: { type: Date },
 	thankedCookies: { type: [String], default: [] },
+	// HoYoLAB / Genshin daily claim
+	hoyoCookie: { type: String, default: null },
+	genshinAutoClaim: { type: Boolean, default: false },
+	lastGenshinClaim: { type: Date, default: null },
 	// Pet care system
 	petCare: {
 		lastFeed: { type: Date },

@@ -3,6 +3,7 @@ const config = require("../../config");
 const deploy = require("../../startup/deploy");
 const mongoose = require("mongoose");
 const { useHooks } = require("@zibot/zihooks");
+const { HoyoAutoClaimer } = require("../../startup/hoyolabAutoClaim");
 const { Database, createModel } = require("@zibot/db");
 
 module.exports = {
@@ -42,6 +43,10 @@ module.exports = {
 			await require("../../startup/loadResponder")();
 			await require("../../startup/loadWelcome")();
 			await require("../../startup/initAI")();
+			// Start HoYoLAB auto claimer (after DB ready)
+			try {
+				new HoyoAutoClaimer().start(client);
+			} catch {}
 
 			useHooks.get("logger").info("Connected to MongoDB!");
 			client.errorLog("Connected to MongoDB!");
@@ -57,7 +62,14 @@ module.exports = {
 			await require("../../startup/loadResponder")();
 			await require("../../startup/loadWelcome")();
 			await require("../../startup/initAI")();
+
+			// Start HoYoLAB auto claimer in LocalDB mode as well
+			try {
+				new HoyoAutoClaimer().start(client);
+			} catch {}
+
 			useHooks.get("logger").info("Connected to LocalDB!");
+
 			client.errorLog("Connected to LocalDB!");
 		}
 

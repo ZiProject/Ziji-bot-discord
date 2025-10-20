@@ -3,15 +3,14 @@ const { startServer } = require("./web");
 const { useHooks } = require("@zibot/zihooks");
 const path = require("node:path");
 const { GiveawaysManager } = require("discord-giveaways");
-const config = require("./config");
-const defaultconfig = require("./startup/defaultconfig");
+
 const { StartupManager } = require("./startup");
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
 const readline = require("readline");
 
 //music player
 const { default: PlayerManager } = require("ziplayer");
-const { TTSPlugin, YTSRPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin } = require("@ziplayer/plugin");
+const { TTSPlugin, YTSRPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin, AttachmentsPlugin } = require("@ziplayer/plugin");
 const { lyricsExt, voiceExt } = require("@ziplayer/extension");
 
 const client = new Client({
@@ -42,13 +41,20 @@ const client = new Client({
 
 //create Player Manager
 const manager = new PlayerManager({
-	plugins: [new TTSPlugin(), new YouTubePlugin({ player: null }), new SoundCloudPlugin(), new SpotifyPlugin()],
+	plugins: [
+		new TTSPlugin(),
+		new YouTubePlugin({ player: null }),
+		new SoundCloudPlugin(),
+		new SpotifyPlugin(),
+		new AttachmentsPlugin(),
+	],
 	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
 });
 manager.create("search");
 
-const startup = new StartupManager(client, config ?? defaultconfig);
+const startup = new StartupManager(client);
 const logger = startup.getLogger();
+const config = startup.getConfig();
 
 const rl = readline.createInterface({
 	input: process.stdin,

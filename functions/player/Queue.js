@@ -7,7 +7,7 @@ const {
 	ButtonStyle,
 } = require("discord.js");
 const ZiIcons = require("./../../utility/icon");
-const config = require("@zibot/zihooks").useHooks.get("config");
+const { useHooks } = require("@zibot/zihooks");
 
 const { Worker } = require("worker_threads");
 
@@ -46,33 +46,19 @@ async function buildImageInWorker(searchPlayer, query) {
 
 /**
  * @param { ButtonInteraction } interaction
- * @param { import("discord-player").GuildQueue } queue
+ * @param { import("ziplayer").Player } player
  */
 
-module.exports.execute = async (interaction, queue, Nextpage = true) => {
-	// Check if useHooks is available
-	if (!useHooks) {
-		console.error("useHooks is not available");
-		return (
-			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
-			console.error("No interaction available")
-		);
-	}
-	if (!queue) return interaction.reply({ content: "There is no music playing in this server" });
+module.exports.execute = async (interaction, player, Nextpage = true) => {
+	if (!player.queue?.tracks?.length) return interaction.reply({ content: "There is no music playing in this server" });
 	await interaction.deferReply();
 	const fieldName = interaction?.message?.embeds?.at(0)?.data?.fields?.at(0);
 	const mainRequire = fieldName?.value?.includes("﹏");
 	const pageData = fieldName?.name?.replace("Page:", " ").trim().split("/");
 	const queuetrack = [];
 	let code = { content: "" };
-	queue.tracks.map(async (track, i) => {
-		queuetrack.push({
-			title: track?.title,
-			url: track?.url,
-			duration: track?.duration,
-			thumbnail: track?.thumbnail,
-			duration: track?.duration,
-		});
+	player.queue.tracks.map(async (track, i) => {
+		queuetrack.push(track);
 	});
 	if (!queuetrack.length) {
 		if (!mainRequire) {
@@ -96,7 +82,7 @@ module.exports.execute = async (interaction, queue, Nextpage = true) => {
 	if (!currentTrack && !currentTrack.length) return;
 	/*=================== embed / image =====================*/
 
-	if (config?.ImageSearch) {
+	if (useHooks.get("config")?.ImageSearch) {
 		const searchPlayer = currentTrack.map((track, i) => ({
 			index: ++now,
 			avatar: track?.thumbnail ?? "https://i.imgur.com/vhcoFZo_d.webp",

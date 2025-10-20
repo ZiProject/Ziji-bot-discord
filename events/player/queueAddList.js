@@ -11,14 +11,14 @@ module.exports = {
 	execute: async (player, tracks) => {
 		const embed = new EmbedBuilder()
 			.setDescription(
-				`Đã thêm danh sách phát: [${tracks[0]?.playlist?.title || "Không có tiêu đề"}](${tracks[0]?.playlist?.url || `https://soundcloud.com`})`,
+				`Đã thêm danh sách phát: [${tracks[0]?.metadata?.playlist?.title || "Không có tiêu đề"}](${tracks[0]?.metadata?.playlist?.url || `https://soundcloud.com`})`,
 			)
-			.setThumbnail(tracks?.thumbnail)
+			.setThumbnail(tracks?.[0]?.thumbnail)
 			.setColor("Random")
 			.setTimestamp()
 			.setFooter({
-				text: `by: ${tracks?.requestedBy?.username}`,
-				iconURL: tracks?.requestedBy?.displayAvatarURL?.({ size: 1024 }) ?? null,
+				text: `by: ${tracks?.[0]?.requestedBy?.username}`,
+				iconURL: tracks?.[0]?.requestedBy?.displayAvatarURL?.({ size: 1024 }) ?? null,
 			});
 		const replied = await player.userdata?.channel?.send({ embeds: [embed], fetchReply: true }).catch((e) => {});
 		setTimeout(function () {
