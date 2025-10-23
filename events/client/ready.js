@@ -1,5 +1,4 @@
 const { Events, Client, ActivityType } = require("discord.js");
-const config = require("../../config");
 const deploy = require("../../startup/deploy");
 const mongoose = require("mongoose");
 const { useHooks } = require("@zibot/zihooks");
@@ -17,6 +16,7 @@ module.exports = {
 		/**
 		 * @param { String } messenger
 		 */
+		const config = useHooks.get("config");
 		client.errorLog = async (messenger) => {
 			if (!config?.botConfig?.ErrorLog) return;
 			try {

@@ -189,6 +189,12 @@ module.exports = {
 					Value: "Shuffle",
 					Emoji: ZiIcons.shuffle,
 				},
+				{
+					Label: "Filter",
+					Description: lang?.playerFunc?.Fields?.Filter || "Quản lý bộ lọc",
+					Value: "Filter",
+					Emoji: ZiIcons.fillter,
+				},
 			];
 
 			const filteredFunctions = functions.filter((f) => {

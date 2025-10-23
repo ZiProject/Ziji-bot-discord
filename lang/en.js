@@ -166,6 +166,9 @@ module.exports = {
 		DownloadOK: "✅ | Download successfully",
 		DownloadNG: "❌ | Download failed",
 		DownloadNGLargeFile: "❌ | Download failed, file is too large",
+		filterFailed: "❌ | Cannot apply filter",
+		filterApplied: "✅ | Filter applied",
+		NoActiveFilters: "❌ | No active filters",
 	},
 	voiceCommands: {
 		Play: "Play",

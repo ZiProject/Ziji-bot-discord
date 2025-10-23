@@ -166,6 +166,9 @@ module.exports = {
 		DownloadOK: "✅ | Đã tải nhạc thành công",
 		DownloadNG: "❌ | Đã tải nhạc thất bại",
 		DownloadNGLargeFile: "❌ | Đã tải nhạc thất bại, file quá lớn",
+		filterFailed: "❌ | Không thể áp dụng bộ lọc",
+		filterApplied: "✅ | Đã áp dụng bộ lọc",
+		NoActiveFilters: "❌ | Không có bộ lọc nào đang áp dụng",
 	},
 	voiceCommands: {
 		Play: "Phát nhạc",

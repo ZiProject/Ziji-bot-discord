@@ -8,10 +8,10 @@ module.exports.data = {
 	category: "musix",
 };
 async function Update_Player(player) {
-	const player_func = Functions.get("player_func");
+	const player_func = useHooks.get("functions").get("player_func");
 	if (!player_func) return;
 	const res = await player_func.execute({ player });
-	player.userdata.mess.edit(res);
+	player.userdata.mess.edit(res).catch((e) => {});
 }
 
 /**
@@ -22,7 +22,6 @@ async function Update_Player(player) {
  */
 
 module.exports.execute = async ({ interaction, lang, player }) => {
-	const Functions = useHooks.get("functions");
 	const config = useHooks.get("config");
 	const { guild, client, values, user } = interaction;
 	const query = values?.at(0);
@@ -45,14 +44,14 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 			return;
 		}
 		case "Queue": {
-			const QueueTrack = Functions.get("Queue");
-			QueueTrack.execute(interaction, player);
+			const QueueTrack = useHooks.get("functions").get("Queue");
+			await QueueTrack.execute({ interaction, player });
 			return;
 		}
-		case "Fillter": {
+		case "Filter": {
 			await interaction.deferReply();
-			const Fillter = Functions.get("Fillter");
-			await Fillter.execute(interaction, null);
+			const Fillter = useHooks.get("commands").get("filter");
+			await Fillter.execute({ interaction, lang, player });
 			return;
 		}
 	}
