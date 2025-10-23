@@ -39,7 +39,8 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 					.setTitle(`Active filters: ${activeFilters?.length || 0}`)
 					.setDescription(
 						activeFilters?.length > 0 ?
-							`${activeFilters?.map((filter) => `\`${filter}\``).join(", ")}`
+							`${activeFilters?.map((filter) => `\`${filter}\``).join(", ")}
+							Clear all filters: \`OFF\``
 						:	`${lang.music.NoActiveFilters}`,
 					)
 					.setTimestamp()
@@ -59,18 +60,19 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 			],
 			components: [
 				new ActionRowBuilder().addComponents(
-					new ButtonBuilder().setCustomId("B_filter_modal").setLabel("Manager filters").setStyle(ButtonStyle.Secondary),
+					new ButtonBuilder().setCustomId("B_filter_modal").setLabel("🔍 / Manager filters").setStyle(ButtonStyle.Secondary),
+					new ButtonBuilder().setCustomId("B_filter_clear").setLabel("❌ / Clear all filters").setStyle(ButtonStyle.Secondary),
 				),
 			],
 		});
 	}
 	if (fillterr == "OFF") {
 		await player?.filter.clearAll();
+		return interaction.editReply({ content: lang.music.filterCleared }).catch((e) => {});
+	} else {
+		await player?.filter.applyFilter(`${fillterr}`);
+		return interaction.editReply({ content: lang.music.filterApplied }).catch((e) => {});
 	}
-
-	await player?.filter.applyFilter(`${fillterr}`);
-
-	return interaction.editReply({ content: lang.music.filterApplied }).catch((e) => {});
 };
 
 module.exports.autocomplete = async ({ interaction }) => {

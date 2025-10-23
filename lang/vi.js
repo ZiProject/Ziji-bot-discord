@@ -169,6 +169,7 @@ module.exports = {
 		filterFailed: "❌ | Không thể áp dụng bộ lọc",
 		filterApplied: "✅ | Đã áp dụng bộ lọc",
 		NoActiveFilters: "❌ | Không có bộ lọc nào đang áp dụng",
+		filterCleared: "✅ | Đã xóa tất cả bộ lọc",
 	},
 	voiceCommands: {
 		Play: "Phát nhạc",

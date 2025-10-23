@@ -169,6 +169,7 @@ module.exports = {
 		filterFailed: "❌ | Cannot apply filter",
 		filterApplied: "✅ | Filter applied",
 		NoActiveFilters: "❌ | No active filters",
+		filterCleared: "✅ | Filter cleared",
 	},
 	voiceCommands: {
 		Play: "Play",
