@@ -49,7 +49,6 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 			return;
 		}
 		case "Filter": {
-			await interaction.deferReply();
 			const Fillter = useHooks.get("commands").get("filter");
 			await Fillter.execute({ interaction, lang, player });
 			return;
