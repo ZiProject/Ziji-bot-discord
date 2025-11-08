@@ -1,6 +1,7 @@
 const { useHooks } = require("@zibot/zihooks");
 
-module.exports = async () => {
+module.exports.execute = async () => {
+	useHooks.get("logger")?.debug?.("Starting loadWelcome...");
 	try {
 		let indexs = 0;
 		const Welcome = await useHooks.get("db").ZiWelcome.find();
@@ -21,4 +22,10 @@ module.exports = async () => {
 	} catch (error) {
 		useHooks.get("logger")?.error?.(`Lỗi khi tải welcome:`, error);
 	}
+};
+
+module.exports.data = {
+	name: "loadWelcome",
+	type: "extension",
+	enable: true,
 };

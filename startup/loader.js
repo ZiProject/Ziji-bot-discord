@@ -13,17 +13,26 @@ class StartupLoader {
 
 	async loadFiles(directory, collection) {
 		try {
-			const folders = await fsPromises.readdir(directory);
+			const items = await fsPromises.readdir(directory, { withFileTypes: true });
 			const clientCommands = [];
 
 			await Promise.all(
-				folders.map(async (folder) => {
-					const folderPath = path.join(directory, folder);
-					const files = await fsPromises.readdir(folderPath).then((items) => items.filter((file) => file.endsWith(".js")));
+				items.map(async (item) => {
+					const itemPath = path.join(directory, item.name);
+					let files = [];
+
+					if (item.isDirectory()) {
+						// Nếu là thư mục, đọc các file .js trong thư mục đó
+						const dirFiles = await fsPromises.readdir(itemPath);
+						files = dirFiles.filter((file) => file.endsWith(".js")).map((file) => path.join(itemPath, file));
+					} else if (item.isFile() && item.name.endsWith(".js")) {
+						// Nếu là file .js trực tiếp, thêm vào danh sách
+						files = [itemPath];
+					}
 
 					await Promise.all(
-						files.map(async (file) => {
-							const filePath = path.join(folderPath, file);
+						files.map(async (filePath) => {
+							const fileName = path.basename(filePath);
 
 							try {
 								const module = require(path.resolve(filePath));
@@ -40,12 +49,12 @@ class StartupLoader {
 										collection.set(module.data.name, module);
 									}
 								} else {
-									clientCommands.push([chalk.hex("#FF5733")(file), "No"]);
-									this.log("warn", `Module from ${file} is missing 'data' or 'execute' property.`);
+									clientCommands.push([chalk.hex("#FF5733")(fileName), "No"]);
+									this.log("warn", `Module from ${fileName} is missing 'data' or 'execute' property.`);
 								}
 							} catch (moduleError) {
-								clientCommands.push([chalk.hex("#FF5733")(file), "No"]);
-								this.log("error", `Error loading command from file ${file}:`, moduleError);
+								clientCommands.push([chalk.hex("#FF5733")(fileName), "No"]);
+								this.log("error", `Error loading command from file ${fileName}:`, moduleError);
 							}
 						}),
 					);

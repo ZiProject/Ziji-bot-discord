@@ -5,6 +5,7 @@ const { PlayerManager } = require("ziplayer");
 module.exports.data = {
 	name: "music",
 	description: "Lệnh music",
+	category: "musix",
 	type: 1,
 	options: [
 		{
@@ -27,10 +28,11 @@ module.exports.data = {
  * @param { object } command - object command
  * @param { import ("discord.js").CommandInteraction } command.interaction - interaction
  * @param { import('../../lang/vi.js') } command.lang - language
+ * @param {import("ziplayer").Player} command.player - player
  */
-module.exports.execute = async ({ interaction, lang }) => {
+module.exports.execute = async ({ interaction, lang, player: defaultPlayer }) => {
 	await interaction.deferReply({ withResponse: true });
-	const player = await PlayerManager.default();
+	const player = defaultPlayer ?? (await PlayerManager.default()); // apply filter if provided
 	const track = await player.search(interaction.options.getString("query"), interaction.user);
 
 	const stream = await player.save(track.tracks[0]);
