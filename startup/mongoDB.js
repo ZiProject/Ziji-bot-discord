@@ -87,6 +87,10 @@ const ZiGuild = Schema({
 		],
 		blockedUser: [String],
 	},
+	autoRole: {
+		enabled: { type: Boolean, default: false },
+		roleIds: { type: [String], default: [] },
+	},
 });
 
 const ZiConfess = Schema({
