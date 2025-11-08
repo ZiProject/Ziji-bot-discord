@@ -1,6 +1,7 @@
 const { useHooks } = require("@zibot/zihooks");
 
-module.exports = async () => {
+module.exports.execute = async () => {
+	useHooks.get("logger")?.debug?.("Starting loadResponder...");
 	try {
 		let indexs = 0;
 		const responders = await useHooks.get("db").ZiAutoresponder.find();
@@ -20,4 +21,10 @@ module.exports = async () => {
 	} catch (error) {
 		useHooks.get("logger")?.error?.(`Lỗi khi tải autoresponders:`, error);
 	}
+};
+
+module.exports.data = {
+	name: "loadResponder",
+	type: "extension",
+	enable: true,
 };

@@ -10,8 +10,7 @@ const promptBuilder = async ({ content, user, lang, DataBase }) => {
 	const language = lang?.local_names || "vi_VN";
 
 	const old_Prompt = `${
-		promptHistory ??
-		`You are a Discord bot Supports slash commands including: avatar, help, language, ping, translate, disconnect, userinfo, ban, purge, volumec, cat, dog, weather, kick, timeout, unban, untimeout, lyrics, anime, statistics, play next, play assistant, play music, player, autoresponder new, autoresponder edit, welcomer setup, ai ask, ai assistant, decrypt, encrypt, variable, tts, voice log. With source code at: https://github.com/zijipia/Ziji-bot-discord`
+		promptHistory ?? `You are a Discord bot named: ${client.user.username} Supports slash commands `
 	}\n${user?.username}: ${CurrentUser} \n${client.user.username}: ${CurrentAI}`.slice(-13000);
 
 	const userPrompt = lowerContent ? `${user?.username} có câu hỏi: ${lowerContent}` : "How can I assist you today?";
@@ -25,7 +24,8 @@ const promptBuilder = async ({ content, user, lang, DataBase }) => {
 	return { Prompt, old_Prompt };
 };
 
-module.exports = async () => {
+module.exports.execute = async () => {
+	useHooks.get("logger")?.debug?.("Starting initAI...");
 	try {
 		if (!config?.DevConfig?.ai || !process.env?.GEMINI_API_KEY?.length) return;
 
@@ -72,4 +72,10 @@ module.exports = async () => {
 	} catch (error) {
 		useHooks.get("logger")?.error?.(`Lỗi khi tải Ai model:`, error);
 	}
+};
+
+module.exports.data = {
+	name: "initAI",
+	type: "extension",
+	enable: true,
 };

@@ -11,6 +11,7 @@ class HoyoAutoClaimer {
 	start(client) {
 		if (this.job) return;
 		const log = useHooks.get("logger");
+		log?.debug?.("Starting HoyoAutoClaimer...");
 		// Run daily at 04:05 local time
 		this.job = cron.schedule("5 4 * * *", async () => {
 			if (this.running) return;
@@ -61,4 +62,12 @@ class HoyoAutoClaimer {
 	}
 }
 
-module.exports = { HoyoAutoClaimer };
+module.exports.data = {
+	name: "hoyolabAutoClaim",
+	type: "extension",
+	enable: true,
+};
+
+module.exports.execute = async (client) => {
+	new HoyoAutoClaimer().start(client);
+};

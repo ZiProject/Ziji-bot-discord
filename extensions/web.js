@@ -7,7 +7,9 @@ const http = require("http");
 const ngrok = require("ngrok");
 const { lyricsExt } = require("@ziplayer/extension");
 
-async function startServer() {
+module.exports.execute = async () => {
+	if (!useHooks.get("config")?.webAppConfig?.enabled) return;
+	useHooks.get("logger")?.debug?.("Starting web...");
 	const logger = useHooks.get("logger");
 	const client = useHooks.get("client");
 	const manager = getManager();
@@ -208,6 +210,10 @@ async function startServer() {
 			clearInterval(statsInterval);
 		});
 	});
-}
+};
 
-module.exports = { startServer };
+module.exports.data = {
+	name: "web",
+	type: "extension",
+	enable: true,
+};

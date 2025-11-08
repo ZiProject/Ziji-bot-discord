@@ -1,5 +1,4 @@
 const { StartupLoader } = require("./loader.js");
-const { UpdateChecker } = require("./checkForUpdate");
 const { LoggerFactory } = require("./logger.js");
 const { useHooks } = require("@zibot/zihooks");
 const { Collection } = require("discord.js");
@@ -9,7 +8,6 @@ class StartupManager {
 		this.config = this.initCongig();
 		this.logger = LoggerFactory.create(this.config);
 		this.loader = new StartupLoader(this.config, this.logger);
-		this.updateChecker = new UpdateChecker();
 		this.createFile("./jsons");
 		this.client = client;
 	}
@@ -46,10 +44,6 @@ class StartupManager {
 		return this.loader.createDirectory(directory);
 	}
 
-	checkForUpdates() {
-		return this.updateChecker.start(this.logger);
-	}
-
 	initHooks() {
 		useHooks.set("config", this.config);
 		useHooks.set("client", this.client);
@@ -58,6 +52,7 @@ class StartupManager {
 		useHooks.set("responder", new Collection());
 		useHooks.set("commands", new Collection());
 		useHooks.set("functions", new Collection());
+		useHooks.set("extensions", new Collection());
 		useHooks.set("logger", this.logger);
 	}
 }

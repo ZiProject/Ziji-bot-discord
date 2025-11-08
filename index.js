@@ -1,5 +1,4 @@
 require("dotenv").config();
-const { startServer } = require("./web");
 const { useHooks } = require("@zibot/zihooks");
 const path = require("node:path");
 const { GiveawaysManager } = require("discord-giveaways");
@@ -78,7 +77,6 @@ if (config?.DevConfig?.Giveaway) {
 
 const initialize = async () => {
 	logger.info("Initializing Ziji Bot...");
-	startup.checkForUpdates();
 	startup.initHooks();
 
 	await Promise.all([
@@ -88,7 +86,7 @@ const initialize = async () => {
 		startup.loadEvents(path.join(__dirname, "events/player"), manager),
 		startup.loadFiles(path.join(__dirname, "commands"), useHooks.get("commands")),
 		startup.loadFiles(path.join(__dirname, "functions"), useHooks.get("functions")),
-		startServer().catch((error) => logger.error("Error start Server:", error)),
+		startup.loadFiles(path.join(__dirname, "extensions"), useHooks.get("extensions")),
 	]);
 	client.login(process.env?.TOKEN ?? config?.botConfig?.TOKEN).catch((error) => {
 		logger.error("Error logging in:", error);

@@ -2,7 +2,7 @@ const { Events, Client, ActivityType } = require("discord.js");
 const deploy = require("../../startup/deploy");
 const mongoose = require("mongoose");
 const { useHooks } = require("@zibot/zihooks");
-const { HoyoAutoClaimer } = require("../../startup/hoyolabAutoClaim");
+const { HoyoAutoClaimer } = require("../../extensions/hoyolabAutoClaim");
 const { Database, createModel } = require("@zibot/db");
 
 module.exports = {
@@ -38,19 +38,7 @@ module.exports = {
 			mongoose.connect(process.env.MONGO).catch(() => false),
 		]);
 
-		if (mongoConnected) {
-			useHooks.set("db", require("../../startup/mongoDB"));
-			await require("../../startup/loadResponder")();
-			await require("../../startup/loadWelcome")();
-			await require("../../startup/initAI")();
-			// Start HoYoLAB auto claimer (after DB ready)
-			try {
-				new HoyoAutoClaimer().start(client);
-			} catch {}
-
-			useHooks.get("logger").info("Connected to MongoDB!");
-			client.errorLog("Connected to MongoDB!");
-		} else {
+		if (!mongoConnected) {
 			useHooks.get("logger").error("Failed to connect to MongoDB!");
 			const db = new Database("./jsons/ziDB.json");
 			useHooks.set("db", {
@@ -59,18 +47,13 @@ module.exports = {
 				ZiWelcome: createModel(db, "ZiWelcome"),
 				ZiGuild: createModel(db, "ZiGuild"),
 			});
-			await require("../../startup/loadResponder")();
-			await require("../../startup/loadWelcome")();
-			await require("../../startup/initAI")();
-
-			// Start HoYoLAB auto claimer in LocalDB mode as well
-			try {
-				new HoyoAutoClaimer().start(client);
-			} catch {}
 
 			useHooks.get("logger").info("Connected to LocalDB!");
-
 			client.errorLog("Connected to LocalDB!");
+		} else {
+			useHooks.set("db", require("../../startup/mongoDB"));
+			useHooks.get("logger").info("Connected to MongoDB!");
+			client.errorLog("Connected to MongoDB!");
 		}
 
 		// Set Activity status
@@ -82,6 +65,14 @@ module.exports = {
 				start: Date.now(),
 			},
 		});
+
+		await Promise.all(
+			useHooks.get("extensions").map(async (extension) => {
+				if (extension.data.enable && typeof extension.execute === "function") {
+					return extension.execute(client);
+				}
+			}),
+		);
 
 		useHooks.get("logger").info(`Ready! Logged in as ${client.user.tag}`);
 		client.errorLog(`Ready! Logged in as ${client.user.tag}`);

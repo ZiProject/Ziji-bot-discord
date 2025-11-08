@@ -1,5 +1,6 @@
 const simpleGit = require("simple-git");
 const cron = require("node-cron");
+const { useHooks } = require("@zibot/zihooks");
 
 class UpdateChecker {
 	constructor(gitClient = simpleGit(), scheduler = cron) {
@@ -52,4 +53,14 @@ class UpdateChecker {
 	}
 }
 
-module.exports = { UpdateChecker };
+module.exports.data = {
+	name: "update",
+	type: "extension",
+	enable: true,
+};
+
+module.exports.execute = async () => {
+	useHooks.get("logger")?.debug?.("Starting update...");
+	const updateChecker = new UpdateChecker();
+	updateChecker.start(useHooks.get("logger"));
+};
