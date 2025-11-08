@@ -2,7 +2,6 @@ const { Events, Client, ActivityType } = require("discord.js");
 const deploy = require("../../startup/deploy");
 const mongoose = require("mongoose");
 const { useHooks } = require("@zibot/zihooks");
-const { HoyoAutoClaimer } = require("../../extensions/hoyolabAutoClaim");
 const { Database, createModel } = require("@zibot/db");
 
 module.exports = {
