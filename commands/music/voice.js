@@ -14,7 +14,7 @@ module.exports.data = {
 			type: 1, // sub command
 			options: [],
 		},
-{name:"leave",description: "Rời kênh voice",type: 1,options: []},
+		{ name: "leave", description: "Rời kênh voice", type: 1, options: [] },
 		{
 			name: "log",
 			description: "Thông báo người tham gia kênh thoại",
@@ -54,22 +54,19 @@ module.exports.execute = async ({ interaction, lang }) => {
 		const command = useHooks.get("functions").get("Search");
 		await command.execute(interaction, null, lang, { assistant: true });
 		return;
-}else if (commandtype==="leave"){
-
-
-	
-	const player = getPlayer(interaction.guild.id);
-await interaction.deferReply({ withResponse: true });
-	if (!player?.connection) {
-		await interaction?.guild?.members?.me?.voice?.disconnect();
-		await interaction.editReply(lang.music.Disconnect);
+	} else if (commandtype === "leave") {
+		const player = getPlayer(interaction.guild.id);
+		await interaction.deferReply({ withResponse: true });
+		if (!player?.connection) {
+			await interaction?.guild?.members?.me?.voice?.disconnect();
+			await interaction.editReply(lang.music.Disconnect);
+			return;
+		}
+		if (player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id) return;
+		await player.userdata?.mess?.edit({ components: [] }).catch((e) => {});
+		player?.destroy();
+		await interaction.editReply(lang.music.DisconnectDes);
 		return;
-	}
-if (player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id) return;
-	await player.userdata?.mess?.edit({ components: [] }).catch((e) => {});
-	player?.destroy();
-	await interaction.editReply(lang.music.DisconnectDes);
-return;
 	} else if (commandtype === "log") {
 		if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 			return interaction.reply({ content: lang.until.noPermission, ephemeral: true });
