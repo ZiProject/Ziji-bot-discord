@@ -88,14 +88,13 @@ module.exports.execute = async (interaction, query, lang, options = {}) => {
 	if (!isUserInVoiceChannel(voiceChannel, interaction, lang)) return;
 	if (!isBotInSameVoiceChannel(guild, voiceChannel, interaction, lang)) return;
 	if (!hasVoiceChannelPermissions(voiceChannel, client, interaction, lang)) return;
-	if (!query) return;
 
 	await interaction.deferReply({ withResponse: true }).catch(() => {
 		logger.warn("Failed to defer reply");
 	});
 	const player = getPlayer(guild.id);
 
-	if (validURL(query) || query.includes("tts: ")) {
+	if (validURL(query) || query?.includes("tts: ")) {
 		logger.debug("Handling play request");
 		return handlePlayRequest(interaction, query, lang, options, player);
 	}
@@ -165,7 +164,7 @@ async function handlePlayRequest(interaction, query, lang, options, player) {
 
 		if (!Player.connection) await Player.connect(interaction?.member?.voice?.channel ?? options?.voice);
 
-		Player.play(query, interaction.user);
+		if(!!query) Player.play(query, interaction?.user);
 
 		await cleanUpInteraction(interaction, player);
 		logger.debug("Track played successfully");
@@ -192,7 +191,7 @@ async function getPlayerConfig(options, interaction) {
 	const playerConfig = { ...DefaultPlayerConfig, ...config?.PlayerConfig };
 
 	if (options.assistant) {
-		logger.debug("Disabling selfDeaf due to assistant option");
+		logger.debug("selfDeaf due to assistant option");
 		playerConfig.selfDeaf = false;
 		playerConfig.extensions.push("voiceExt");
 	}
