@@ -74,7 +74,7 @@ module.exports = {
 			.setColor(lang?.color || "Random")
 			.setFooter({
 				text: `${lang.until.requestBy} ${requestedBy?.username}`,
-				iconURL: requestedBy.displayAvatarURL({ size: 1024 }),
+				iconURL: requestedBy?.displayAvatarURL?.({ size: 1024 })??useHooks.get("client").user.displayAvatarURL?.({ size: 1024 }),
 			})
 			.setTimestamp();
 		if (queryTypeIcon === ZiIcons.youtubeIconURL) {
