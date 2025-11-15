@@ -94,7 +94,7 @@ module.exports.execute = async (interaction, query, lang, options = {}) => {
 	});
 	const player = getPlayer(guild.id);
 
-	if (validURL(query) || query?.includes("tts: ")) {
+	if (validURL(query) || query?.includes("tts: ") || options.assistant) {
 		logger.debug("Handling play request");
 		return handlePlayRequest(interaction, query, lang, options, player);
 	}
