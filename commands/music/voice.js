@@ -67,7 +67,7 @@ await interaction.deferReply({ withResponse: true });
 	}
 if (player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id) return;
 	await player.userdata?.mess?.edit({ components: [] }).catch((e) => {});
-	player?.destroy.();
+	player?.destroy();
 	await interaction.editReply(lang.music.DisconnectDes);
 return;
 	} else if (commandtype === "log") {
