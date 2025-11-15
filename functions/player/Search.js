@@ -88,6 +88,7 @@ module.exports.execute = async (interaction, query, lang, options = {}) => {
 	if (!isUserInVoiceChannel(voiceChannel, interaction, lang)) return;
 	if (!isBotInSameVoiceChannel(guild, voiceChannel, interaction, lang)) return;
 	if (!hasVoiceChannelPermissions(voiceChannel, client, interaction, lang)) return;
+ if (!query) return;
 
 	await interaction.deferReply({ withResponse: true }).catch(() => {
 		logger.warn("Failed to defer reply");
