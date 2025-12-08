@@ -51,7 +51,7 @@
 		"http": "^0.0.1-security",
 		"makeitaquote": "^8.1.1",
 		"mediaplex": "^1.0.0",
-		"mongoose": "^8.8.3",
+		"mongoose": "^9.0.1",
 		"ngrok": "^5.0.0-beta.2",
 		"node-cron": "^4.1.0",
 		"node-fetch": "^2.7.0",
