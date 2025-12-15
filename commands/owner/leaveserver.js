@@ -1,4 +1,4 @@
-const config = require("@zibot/zihooks").useHooks.get("config");
+const { useHooks } = require("@zibot/zihooks");
 
 module.exports.data = {
 	name: "leaveserver",
@@ -24,14 +24,8 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	// Check if useHooks is available
-	if (!useHooks) {
-		console.error("useHooks is not available");
-		return (
-			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
-			console.error("No interaction available")
-		);
-	}
+	const config = useHooks.get("config");
+
 	if (!config.OwnerID.length || !config.OwnerID.includes(interaction.user.id))
 		return interaction.reply({ content: lang.until.noPermission, ephemeral: true });
 
