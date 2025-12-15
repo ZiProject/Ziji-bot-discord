@@ -17,8 +17,7 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang, player }) => {
-	await interaction.deferUpdate().catch(() => {});
-	if (!player?.connection) return interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
+	if (!player?.connection) return interaction.reply({ content: lang.music.NoPlaying, ephemeral: true });
 
 	const modal = new ModalBuilder()
 		.setTitle(`Delete Track ${interaction?.guild?.name}`)
