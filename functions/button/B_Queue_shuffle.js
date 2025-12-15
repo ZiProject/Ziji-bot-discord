@@ -31,6 +31,6 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 	player.shuffle();
 
 	const QueueTrack = useHooks.get("functions").get("Queue");
-	QueueTrack.execute(interaction, player, true);
+	QueueTrack.execute({ interaction, player, Nextpage: true });
 	return;
 };

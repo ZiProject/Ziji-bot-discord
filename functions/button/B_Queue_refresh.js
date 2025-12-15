@@ -26,6 +26,6 @@ module.exports.execute = async ({ interaction, lang }) => {
 	if (!player) return interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
 
 	const QueueTrack = useHooks.get("functions").get("Queue");
-	QueueTrack.execute(interaction, player, true);
+	QueueTrack.execute({ interaction, player, Nextpage: true });
 	return;
 };

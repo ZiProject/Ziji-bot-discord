@@ -49,7 +49,7 @@ async function buildImageInWorker(searchPlayer, query) {
  * @param { import("ziplayer").Player } player
  */
 
-module.exports.execute = async (interaction, player, Nextpage = true) => {
+module.exports.execute = async ({ interaction, player, Nextpage = true }) => {
 	if (!player.queue?.tracks?.length) return interaction.reply({ content: "There is no music playing in this server" });
 	await interaction.deferReply();
 	const fieldName = interaction?.message?.embeds?.at(0)?.data?.fields?.at(0);
