@@ -21,7 +21,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const res = { content: "" };
 	if (targetMessage.content) {
 		const content = await translate(targetMessage.content, { to: lang?.name || "en" });
-		res.content = `${content.text}`;
+		res.content = `${content?.text?.trim(0, 4095)}`;
 	}
 	if (targetMessage.embeds.length) {
 		const revembed = targetMessage.embeds?.at(0)?.data;
@@ -37,7 +37,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 		if (revembed?.description) {
 			const descriptions = await translate(revembed.description, { to: lang?.name || "en" });
-			embed.setDescription(descriptions.text);
+			embed.setDescription(descriptions.text.trim(0, 4095));
 		}
 		if (revembed?.title) {
 			const titles = await translate(revembed.title, { to: lang?.name || "en" });
