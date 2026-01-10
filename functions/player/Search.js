@@ -163,8 +163,10 @@ async function handlePlayRequest(interaction, query, lang, options, player) {
 		});
 
 		if (!Player.connection) await Player.connect(interaction?.member?.voice?.channel ?? options?.voice);
+		let reqPlayOK = false;
+		if (!!query) reqPlayOK = await Player.play(query, interaction?.user);
 
-		if (!!query) Player.play(query, interaction?.user);
+		if (!reqPlayOK) throw new Error("Play request failed");
 
 		await cleanUpInteraction(interaction, player);
 		logger.debug("Track played successfully");
