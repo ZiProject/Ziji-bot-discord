@@ -26,9 +26,10 @@ functionalities, using [discord.js](https://discord.js.org/) and [ziplayer](http
 </table>
 
 ## Web:
-| Web Control | Web Music |
-| :--- | :--- |
-| [Ziji-bot-web](https://github.com/zijipia/Ziji-bot-web) | [Music-Player ](https://github.com/zijipia/Music-Player) |
+
+| Web Control                                                                                                                          | Web Music                                                                                                                            |
+| :----------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| [Ziji-bot-web](https://github.com/zijipia/Ziji-bot-web)                                                                              | [Music-Player ](https://github.com/zijipia/Music-Player)                                                                             |
 | <img width="1909" height="1115" alt="image" src="https://github.com/user-attachments/assets/b2ee308e-2f46-4c20-86a6-c7f95108a86b" /> | <img width="1909" height="1115" alt="image" src="https://github.com/user-attachments/assets/4b7b4988-c61b-4a1b-b424-25a0d103c639" /> |
 
 - **Lyrics**: Using Lrclib
