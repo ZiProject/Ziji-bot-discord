@@ -41,6 +41,7 @@
 		"bgutils-js": "^3.2.0",
 		"canvacord": "^6.0.2",
 		"chalk": "^4.1.2",
+		"cloudflared": "^0.7.1",
 		"cors": "^2.8.5",
 		"discord-gamecord": "^4.4.2",
 		"discord-giveaways": "^6.0.1",

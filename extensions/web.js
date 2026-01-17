@@ -4,7 +4,6 @@ const WebSocket = require("ws");
 const { useHooks } = require("@zibot/zihooks");
 const { getManager, Player } = require("ziplayer");
 const http = require("http");
-const ngrok = require("ngrok");
 const { lyricsExt } = require("@ziplayer/extension");
 
 module.exports.execute = async () => {
@@ -13,9 +12,10 @@ module.exports.execute = async () => {
 	const logger = useHooks.get("logger");
 	const client = useHooks.get("client");
 	const manager = getManager();
-	const player = manager.create("webid");
+	const player = await manager.create("webid");
 
 	const app = express();
+
 	const server = http.createServer(app);
 	app.use(
 		cors({
@@ -24,18 +24,12 @@ module.exports.execute = async () => {
 			credentials: true,
 		}),
 	);
+
+	app.use(express.json());
+
 	server.listen(process.env.SERVER_PORT || 2003, () => {
 		logger.info(`Server running on port ${process.env.SERVER_PORT || 2003}`);
 	});
-
-	if (process.env.NGROK_AUTHTOKEN && process.env.NGROK_AUTHTOKEN !== "") {
-		const url = await ngrok.connect({
-			addr: process.env.SERVER_PORT || 2003,
-			hostname: process.env.NGROK_DOMAIN,
-			authtoken: process.env.NGROK_AUTHTOKEN,
-		});
-		logger.info(`Server running on ${url}`);
-	}
 
 	app.get("/", (req, res) => {
 		if (!client.isReady())
@@ -53,6 +47,10 @@ module.exports.execute = async () => {
 		});
 	});
 
+	app.get("/api/health", (req, res) => {
+		res.json({ status: "ok" });
+	});
+
 	app.get("/api/search", async (req, res) => {
 		try {
 			const query = req.query?.query || req.query?.q;
@@ -64,7 +62,7 @@ module.exports.execute = async () => {
 				requestedBy: client.user,
 			});
 
-			res.json(searchResults.tracks.slice(0, 10));
+			res.json({ results: searchResults.tracks, total: searchResults.tracks.length });
 		} catch (error) {
 			logger.error("Search error:", error);
 			res.status(500).json({ error: "An error occurred during search" });
@@ -209,6 +207,28 @@ module.exports.execute = async () => {
 			logger.debug("[WebSocket] Client disconnected.");
 			clearInterval(statsInterval);
 		});
+	});
+
+	app.post("/api/stream/play", async (req, res) => {
+		const { track } = req.body;
+
+		if (!track) {
+			return res.status(400).json({ error: "Track required" });
+		}
+
+		try {
+			const streamInfo = await player.save(track); //return ReadableStream
+
+			if (!streamInfo) {
+				return res.status(404).json({ error: "Stream not available" });
+			}
+
+			res.setHeader("Content-Type", "audio/webm");
+			streamInfo.pipe(res);
+		} catch (error) {
+			console.error("Stream error:", error);
+			res.status(500).json({ error: "Stream failed" });
+		}
 	});
 };
 
