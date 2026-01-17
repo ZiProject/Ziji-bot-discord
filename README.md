@@ -25,9 +25,11 @@ functionalities, using [discord.js](https://discord.js.org/) and [ziplayer](http
 </tr>
 </table>
 
-- **Web Control**: See [Ziji-bot-web](https://github.com/zijipia/Ziji-bot-web)
-
-![image](https://github.com/user-attachments/assets/b2ee308e-2f46-4c20-86a6-c7f95108a86b)
+## Web:
+| Web Control | Web Music |
+| :--- | :--- |
+| [Ziji-bot-web](https://github.com/zijipia/Ziji-bot-web) | [Music-Player ](https://github.com/zijipia/Music-Player) |
+| <img width="1909" height="1115" alt="image" src="https://github.com/user-attachments/assets/b2ee308e-2f46-4c20-86a6-c7f95108a86b" /> | <img width="1909" height="1115" alt="image" src="https://github.com/user-attachments/assets/4b7b4988-c61b-4a1b-b424-25a0d103c639" /> |
 
 - **Lyrics**: Using Lrclib
   - synced Lyrics
@@ -148,7 +150,7 @@ npm  run  dev
 3. Go to [Domain](https://dashboard.ngrok.com/domains), generate a domain if you don't have and copy it
 4. Copy the domain and paste it into `.env` -> `NGROK_DOMAIN` _(The domain is look like `something.ngrok-free.app`)_
 
-> [!IMPORTANT] Don't create Edges or it won't work, you can delete it after creating
+> [!IMPORTANT] Don't create Edges or it won't work, you can delete it after creating, enable webapp in config!
 
 <img  alt="ngrok"  src="https://files.catbox.moe/dqc3z6.png"  />
 
