@@ -45,7 +45,7 @@
 		"cors": "^2.8.5",
 		"discord-gamecord": "^4.4.2",
 		"discord-giveaways": "^6.0.1",
-		"discord.js": "^14.22.1",
+		"discord.js": "^14.25.1",
 		"dotenv": "^17.0.0",
 		"express": "^5.1.0",
 		"ffmpeg-static": "^5.2.0",
@@ -66,7 +66,7 @@
 		"txtgen": "^3.0.7",
 		"winston": "^3.17.0",
 		"ws": "^8.18.0",
-		"ziplayer": "^0.2.0"
+		"ziplayer": "^0.2.2"
 	},
 	"devDependencies": {
 		"cross-env": "^10.0.0",
