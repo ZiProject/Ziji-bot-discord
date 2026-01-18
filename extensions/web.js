@@ -3,7 +3,7 @@ const cors = require("cors");
 const { useHooks } = require("@zibot/zihooks");
 const http = require("http");
 
-const { searchRoutes, streamRoutes, lyricsRoutes, WebSocketServer } = require("./routes/index.js");
+const { searchRoutes, streamRoutes, lyricsRoutes, suggestionsRoutes, WebSocketServer } = require("./routes/index.js");
 
 module.exports.execute = async () => {
 	if (!useHooks.get("config")?.webAppConfig?.enabled) return;
@@ -52,6 +52,7 @@ module.exports.execute = async () => {
 	app.use("/api/search", searchRoutes);
 	app.use("/api/stream", streamRoutes);
 	app.use("/api/lyrics", lyricsRoutes);
+	app.use("/api/suggestions", suggestionsRoutes);
 	wss.start(logger);
 };
 
