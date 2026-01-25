@@ -45,15 +45,16 @@ class StartupManager {
 	}
 
 	initHooks() {
-		useHooks.set("config", this.config);
-		useHooks.set("client", this.client);
-		useHooks.set("welcome", new Collection());
-		useHooks.set("cooldowns", new Collection());
-		useHooks.set("responder", new Collection());
-		useHooks.set("commands", new Collection());
-		useHooks.set("functions", new Collection());
-		useHooks.set("extensions", new Collection());
-		useHooks.set("logger", this.logger);
+		useHooks.set("config", this.config); // Configuration
+		useHooks.set("client", this.client); // Discord client
+		useHooks.set("welcome", new Collection()); // Welcome messages
+		useHooks.set("cooldowns", new Collection()); // Cooldowns
+		useHooks.set("responder", new Collection()); // Auto Responder
+		useHooks.set("commands", new Collection()); // Slash Commands
+		useHooks.set("Mcommands", new Collection()); // Message Commands
+		useHooks.set("functions", new Collection()); // Functions
+		useHooks.set("extensions", new Collection()); // Extensions
+		useHooks.set("logger", this.logger); // LoggerFactory
 	}
 }
 

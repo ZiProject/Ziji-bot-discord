@@ -48,6 +48,9 @@ class StartupLoader {
 									if (!isDisabled && collection) {
 										collection.set(module.data.name, module);
 									}
+									if ("run" in module) {
+										useHooks.get("Mcommands").set(module.data.name, module);
+									}
 								} else {
 									clientCommands.push([chalk.hex("#FF5733")(fileName), "No"]);
 									this.log("warn", `Module from ${fileName} is missing 'data' or 'execute' property.`);

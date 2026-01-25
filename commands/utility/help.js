@@ -2,35 +2,19 @@ const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, 
 const ZiIcons = require("../../utility/icon");
 const config = require("@zibot/zihooks").useHooks.get("config");
 
-module.exports.data = {
-	name: "help",
-	description: "Help",
-	type: 1, // slash command
-	options: [],
-	integration_types: [0],
-	contexts: [0, 1],
-};
-
-/**
- * @param { object } command - object command
- * @param { import ("discord.js").CommandInteraction } command.interaction - interaction
- * @param { import('../../lang/vi.js') } lang
- */
-
-module.exports.execute = async ({ interaction, lang }) => {
-	await interaction.deferReply();
-
+function buildHelpMenu({ user, bot, lang }) {
+	// This function can be expanded to build dynamic help menus if needed
 	const embed = new EmbedBuilder()
 		.setAuthor({
-			name: `${interaction.client.user.username} Help:`,
-			iconURL: interaction.client.user.displayAvatarURL({ size: 1024 }),
+			name: `${bot.user.username} Help:`,
+			iconURL: bot.user.displayAvatarURL({ size: 1024 }),
 		})
 		.setDescription(lang.Help.Placeholder)
 		.setColor(lang?.color || "Random")
 		.setImage(config.botConfig?.Banner || null)
 		.setFooter({
-			text: `${lang.until.requestBy} ${interaction.user?.username}`,
-			iconURL: interaction.user.displayAvatarURL({ size: 1024 }),
+			text: `${lang.until.requestBy} ${user?.username}`,
+			iconURL: user.displayAvatarURL({ size: 1024 }),
 		})
 		.setTimestamp();
 
@@ -80,11 +64,43 @@ module.exports.execute = async ({ interaction, lang }) => {
 			.setEmoji(ZiIcons.fillter)
 			.setURL(config.botConfig?.InviteBot || `https://discord.com/oauth2/authorize?client_id=${interaction.client.user.id}`),
 	);
-
-	await interaction.editReply({
+	return (code = {
 		embeds: [embed],
 		components: [row, row2],
 		fetchReply: true,
 	});
+}
+
+module.exports.data = {
+	name: "help",
+	description: "Help",
+	type: 1, // slash command
+	options: [],
+	integration_types: [0],
+	contexts: [0, 1],
+};
+
+/**
+ * @param { object } command - object command
+ * @param { import ("discord.js").CommandInteraction } command.interaction - interaction
+ * @param { import('../../lang/vi.js') } lang
+ */
+
+module.exports.execute = async ({ interaction, lang }) => {
+	await interaction.deferReply();
+
+	const menu = buildHelpMenu({ user: interaction.user, bot: interaction.client, lang });
+	await interaction.editReply(menu);
+	return;
+};
+
+/**
+ * @param { object } command - object command
+ * @param { import ("discord.js").Message } command.message - interaction
+ * @param { import('../../lang/vi.js') } lang
+ */
+module.exports.run = async ({ message, lang }) => {
+	const menu = buildHelpMenu({ user: message.author, bot: message.client, lang });
+	await message.reply(menu);
 	return;
 };
