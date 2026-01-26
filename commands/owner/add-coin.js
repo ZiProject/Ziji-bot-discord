@@ -1,5 +1,5 @@
 const { EmbedBuilder, ApplicationCommandOptionType } = require("discord.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const { ZigoldManager, ZigoldTransactionLogger } = require("../../utils/zigoldManager");
 
 const zigoldEmoji = "🪙"; // Biểu tượng ZiGold

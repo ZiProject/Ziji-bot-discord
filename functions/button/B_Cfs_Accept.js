@@ -1,4 +1,4 @@
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const { EmbedBuilder, PermissionsBitField, MessageFlags } = require("discord.js");
 
 module.exports.data = {

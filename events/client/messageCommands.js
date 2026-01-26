@@ -1,5 +1,5 @@
 const { Events, Message, PermissionsBitField, MessageFlags, EmbedBuilder } = require("discord.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks, modinteraction } = require("zihooks");
 const config = useHooks.get("config");
 const fs = require("fs");
 const path = require("path");
@@ -134,17 +134,30 @@ module.exports.execute = async (message) => {
 	const command = Commands.get(args.shift().toLowerCase());
 
 	if (!command) return;
-	console.log(`Executing message command: ${command.data.name}`);
 	// Get the user's language preference
 	const langfunc = Functions.get("ZiRank");
 
 	const lang = await langfunc.execute({ user: message.author, XpADD: 1 });
 
+	modinteraction(message);
+
 	const commandStatus = await checkStatus(message, message.client, lang);
 
 	if (commandStatus) return;
+	if (command.data?.default_member_permissions && command.data.default_member_permissions === "0") {
+		//check member
+		if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+			return message.reply({ content: lang.until.noPermission, ephemeral: true });
+		}
+	}
 
 	try {
+		useHooks
+			.get("logger")
+			.debug(
+				`Messenger received: ${command.data.name} >> User: ${message.author?.username} >> Guild: ${message?.guild?.name} (${message?.guildId})`,
+			);
+
 		let cmdops = null;
 		if (command?.data.category == "musix") {
 			const sts = await checkMusicstat({ message, command, lang });

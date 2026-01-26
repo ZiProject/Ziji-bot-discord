@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 
 module.exports = {
 	name: "connectionError",

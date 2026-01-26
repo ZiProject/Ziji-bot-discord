@@ -1,5 +1,5 @@
-const { useHooks } = require("@zibot/zihooks");
-const config = require("@zibot/zihooks").useHooks.get("config");
+const { useHooks } = require("zihooks");
+const config = require("zihooks").useHooks.get("config");
 const { getPlayer, Player, Track } = require("ziplayer");
 const {
 	Client,

@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { ApplicationCommandOptionType } = require("discord.js");
-const config = require("@zibot/zihooks").useHooks.get("config");
+const config = require("zihooks").useHooks.get("config");
 module.exports.data = {
 	name: "dev-unban",
 	description: "Cấm người dùng sử dụng bot",

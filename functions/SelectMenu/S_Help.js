@@ -1,6 +1,6 @@
 const { EmbedBuilder, Routes } = require("discord.js");
 const ZiIcons = require("../../utility/icon.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 
 module.exports.data = {
 	name: "S_Help",

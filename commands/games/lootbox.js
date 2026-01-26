@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const lootboxUtil = require("../../utils/lootboxUtil.js");
 
 const blank = "⬜"; // Biểu tượng khoảng trống

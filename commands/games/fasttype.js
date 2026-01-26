@@ -1,6 +1,6 @@
 const { FastType } = require("discord-gamecord");
 const { sentence } = require("txtgen/dist/cjs/txtgen.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 module.exports.data = {
 	name: "fast-type",
 	description: "Kiểm tra trình độ gõ của bạn",

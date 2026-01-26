@@ -1,4 +1,4 @@
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const ngrok = require("ngrok");
 
 module.exports.data = {

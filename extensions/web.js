@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const http = require("http");
 
 const { searchRoutes, streamRoutes, lyricsRoutes, suggestionsRoutes, WebSocketServer } = require("./routes/index.js");

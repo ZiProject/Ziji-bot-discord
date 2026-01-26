@@ -1,4 +1,4 @@
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const { TextInputStyle, ModalBuilder, ActionRowBuilder, TextInputBuilder } = require("discord.js");
 
 module.exports.data = {

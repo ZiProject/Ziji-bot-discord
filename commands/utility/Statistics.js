@@ -2,7 +2,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("
 const os = require("os");
 const { version: DjsVersion } = require("discord.js");
 const { execSync } = require("child_process");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 
 module.exports.data = {
 	name: "statistics",

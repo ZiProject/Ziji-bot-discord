@@ -1,7 +1,7 @@
 const { default: axios } = require("axios");
 const { ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js");
 const { EmbedBuilder } = require("discord.js");
-const config = require("@zibot/zihooks").useHooks.get("config");
+const config = require("zihooks").useHooks.get("config");
 
 module.exports.data = {
 	name: "ping",

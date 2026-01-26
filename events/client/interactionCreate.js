@@ -1,5 +1,5 @@
 const { Events, CommandInteraction, PermissionsBitField, MessageFlags, EmbedBuilder } = require("discord.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const config = useHooks.get("config");
 const fs = require("fs");
 const path = require("path");

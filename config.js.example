@@ -1,5 +1,11 @@
 module.exports = {
 	/**
+	 * Prefix mặc định của bot
+	 * Default bot prefix
+	 */
+	prefix: "zz",
+
+	/**
 	 * Cho phép deploy command bot
 	 * Allow bot command deployment
 	 */

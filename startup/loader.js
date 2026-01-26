@@ -3,7 +3,7 @@ const fsPromises = require("fs").promises;
 const fs = require("fs");
 const chalk = require("chalk");
 const path = require("node:path");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 
 class StartupLoader {
 	constructor(config = useHooks.get("config"), logger = console) {

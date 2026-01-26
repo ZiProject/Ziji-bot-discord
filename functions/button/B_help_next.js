@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const { useLang } = require("@zibot/zihooks");
+const { useLang } = require("zihooks");
 const SHelpModule = require("../SelectMenu/S_Help.js");
 
 module.exports.data = {

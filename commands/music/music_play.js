@@ -1,4 +1,4 @@
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const { getPlayer, getManager } = require("ziplayer");
 const config = useHooks.get("config");
 

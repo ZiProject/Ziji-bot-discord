@@ -1,4 +1,4 @@
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 
 module.exports.execute = async () => {
 	useHooks.get("logger")?.debug?.("Starting loadResponder...");

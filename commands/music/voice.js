@@ -1,4 +1,4 @@
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const config = useHooks.get("config");
 const { PermissionsBitField } = require("discord.js");
 const { getPlayer } = require("ziplayer");

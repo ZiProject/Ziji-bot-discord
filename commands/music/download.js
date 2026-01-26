@@ -1,4 +1,4 @@
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const { AttachmentBuilder } = require("discord.js");
 const { PlayerManager } = require("ziplayer");
 

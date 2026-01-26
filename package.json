@@ -33,7 +33,6 @@
 		"@snazzah/davey": "^0.1.6",
 		"@zibot/db": "^0.0.2",
 		"@zibot/ziencryptor": "^0.0.1",
-		"@zibot/zihooks": "^1.0.10",
 		"@ziplayer/extension": "^0.1.1",
 		"@ziplayer/plugin": "^0.1.52",
 		"axios": "^1.7.7",
@@ -66,6 +65,7 @@
 		"txtgen": "^3.0.7",
 		"winston": "^3.17.0",
 		"ws": "^8.18.0",
+		"zihooks": "^2.0.0",
 		"ziplayer": "^0.2.3"
 	},
 	"devDependencies": {

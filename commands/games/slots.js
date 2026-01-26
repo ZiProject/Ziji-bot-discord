@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 
 const maxBet = 250000;
 const zigoldEmoji = "🪙"; // ZiGold emoji

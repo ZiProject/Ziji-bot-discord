@@ -1,4 +1,4 @@
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const { bin, install } = require("cloudflared");
 const { spawn } = require("node:child_process");
 const fs = require("fs");

@@ -1,6 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const ZiIcons = require("../../utility/icon");
-const config = require("@zibot/zihooks").useHooks.get("config");
+const config = require("zihooks").useHooks.get("config");
 
 function buildHelpMenu({ user, bot, lang }) {
 	// This function can be expanded to build dynamic help menus if needed

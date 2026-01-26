@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const animals = require("../../data/animals.json");
 
 const giveEmoji = "🎁"; // Give emoji

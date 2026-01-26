@@ -1,6 +1,6 @@
 const { Events, EmbedBuilder } = require("discord.js");
-const config = require("@zibot/zihooks").useHooks.get("config");
-const { useHooks } = require("@zibot/zihooks");
+const config = require("zihooks").useHooks.get("config");
+const { useHooks } = require("zihooks");
 const { getPlayer } = require("ziplayer");
 
 module.exports = {

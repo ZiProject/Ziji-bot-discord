@@ -1,4 +1,4 @@
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const Commands = useHooks.get("commands");
 
 module.exports.data = {

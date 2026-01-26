@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { ApplicationCommandOptionType } = require("discord.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 
 module.exports.data = {
 	name: "dev-ban",

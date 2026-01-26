@@ -1,6 +1,6 @@
 const { StartupLoader } = require("./loader.js");
 const { LoggerFactory } = require("./logger.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const { Collection } = require("discord.js");
 
 class StartupManager {

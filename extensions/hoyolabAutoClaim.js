@@ -1,5 +1,5 @@
 const cron = require("node-cron");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const { claimGenshinDaily } = require("../utils/hoyolab");
 
 class HoyoAutoClaimer {

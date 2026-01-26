@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 
 const zigoldEmoji = "🪙"; // ZiGold emoji
 const DAILY_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours in milliseconds

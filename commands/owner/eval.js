@@ -1,6 +1,6 @@
 const { EmbedBuilder, ApplicationCommandOptionType } = require("discord.js");
 const DUMMY_TOKEN = "MY_TOKEN_IS_SECRET";
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 
 /**
  * @type {import("@structures/Command")}

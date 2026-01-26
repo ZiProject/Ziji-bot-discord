@@ -1,6 +1,6 @@
 const simpleGit = require("simple-git");
 const cron = require("node-cron");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 
 class UpdateChecker {
 	constructor(gitClient = simpleGit(), scheduler = cron) {

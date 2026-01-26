@@ -1,5 +1,5 @@
 const { Events, Message } = require("discord.js");
-const { modinteraction, useHooks } = require("@zibot/zihooks");
+const { modinteraction, useHooks } = require("zihooks");
 const config = useHooks.get("config");
 const mentionRegex = /@(everyone|here|ping)/;
 const ziicon = require("./../../utility/icon");

@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const animals = require("../../data/animals.json");
 
 const GIVE_COOLDOWN = 30 * 1000; // 30 giây giữa các lần tặng

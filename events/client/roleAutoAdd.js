@@ -1,4 +1,4 @@
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const { Events, GuildMember, AttachmentBuilder } = require("discord.js");
 
 module.exports = {

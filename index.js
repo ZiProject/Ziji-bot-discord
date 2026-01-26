@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 const path = require("node:path");
 const { GiveawaysManager } = require("discord-giveaways");
 

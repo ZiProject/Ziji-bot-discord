@@ -1,5 +1,5 @@
 const { EmbedBuilder, ButtonBuilder, ActionRowBuilder } = require("discord.js");
-const { useHooks } = require("@zibot/zihooks");
+const { useHooks } = require("zihooks");
 
 const cookieEmoji = "🍪"; // Cookie emoji
 const heartEmoji = "💖"; // Heart emoji
