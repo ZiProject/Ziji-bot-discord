@@ -18,7 +18,6 @@ module.exports = {
  * @param { Message } message
  */
 module.exports.execute = async (message) => {
-
 	if (!message.client.isReady()) return;
 	if (message.author.bot) return;
 	// Get the user's language preference
