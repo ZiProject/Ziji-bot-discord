@@ -3,7 +3,7 @@ module.exports = {
 	 * Prefix mặc định của bot
 	 * Default bot prefix
 	 */
-	prefix: "zz",
+	prefix: "z!",
 
 	/**
 	 * Cho phép deploy command bot

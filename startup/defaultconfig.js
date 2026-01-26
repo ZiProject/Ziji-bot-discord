@@ -1,6 +1,12 @@
 //Discord iOS
 module.exports = {
 	/**
+	 * Tiền tố mặc định của bot
+	 * Default bot prefix
+	 */
+	prefix: "z!",
+
+	/**
 	 * Cho phép deploy command bot
 	 * Allow bot command deployment
 	 */

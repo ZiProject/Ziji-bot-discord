@@ -1,4 +1,4 @@
-const { Events, Message, PermissionsBitField, MessageFlags, EmbedBuilder } = require("discord.js");
+const { Client, Events, Message, PermissionsBitField, MessageFlags, EmbedBuilder } = require("discord.js");
 const { useHooks, modinteraction } = require("zihooks");
 const config = useHooks.get("config");
 const fs = require("fs");
@@ -18,7 +18,7 @@ module.exports = {
 
 /**
  *
- * @param { Message } message
+ * @param { import("zihooks").CommandInteraction } message
  * @param { Client } client
  * @param { import("./../../lang/vi.js") } lang
  * @returns
