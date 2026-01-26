@@ -32,6 +32,8 @@ module.exports = {
 		VoiceCommandsDescription: "Xem danh sách các lệnh có thể sử dụng bằng giọng nói",
 		Attention: "Chú ý:",
 		Note: "Lưu ý:",
+		MessCommands: "Lệnh prefix",
+		MessCommandsDescription: "Xem danh sách các lệnh có thể sử dụng trong server",
 	},
 	BotStats: {
 		Description: "Thống kê về bot",

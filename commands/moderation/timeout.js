@@ -27,6 +27,7 @@ module.exports.data = {
 	integration_types: [0],
 	contexts: [0],
 	default_member_permissions: "0",
+	alias: ["mute"],
 };
 
 /**

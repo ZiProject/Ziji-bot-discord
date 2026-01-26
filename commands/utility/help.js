@@ -31,6 +31,12 @@ function buildHelpMenu({ user, bot, lang }) {
 				description: lang.Help.GuildCommandsDescription || "Xem danh sách các lệnh có thể sử dụng trong server",
 			},
 			{
+				emoji: "<:section:1254203682686373938>",
+				label: lang.Help.MessCommands,
+				value: "msg_commands",
+				description: lang.Help.MessCommandsDescription || "Xem danh sách các lệnh có thể sử dụng trong server",
+			},
+			{
 				emoji: "<:zi_user:1253090627923611709>",
 				label: lang.Help.ContextCommands,
 				value: "context_commands",
@@ -78,6 +84,7 @@ module.exports.data = {
 	options: [],
 	integration_types: [0],
 	contexts: [0, 1],
+	alias: ["h"],
 };
 
 /**

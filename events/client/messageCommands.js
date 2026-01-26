@@ -1,11 +1,11 @@
 const { Client, Events, Message, PermissionsBitField, MessageFlags, EmbedBuilder } = require("discord.js");
 const { useHooks, modinteraction } = require("zihooks");
-const config = useHooks.get("config");
 const fs = require("fs");
 const path = require("path");
 const Cooldowns = useHooks.get("cooldowns");
-const Commands = useHooks.get("commands");
+const Commands = useHooks.get("Mcommands");
 const Functions = useHooks.get("functions");
+const config = useHooks.get("config");
 const { getPlayer } = require("ziplayer");
 
 const ziicon = require("./../../utility/icon");
@@ -130,7 +130,6 @@ module.exports.execute = async (message) => {
 	if (!message.content.toLowerCase().startsWith(prefix.toLowerCase())) return;
 
 	const args = message.content.slice(prefix.length).trim().split(/ +/);
-
 	const command = Commands.get(args.shift().toLowerCase());
 
 	if (!command) return;

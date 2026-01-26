@@ -44,6 +44,8 @@ module.exports = {
 		VoiceCommandsDescription: "View the list of commands that can be used by voice",
 		Attention: "Attention:",
 		Note: "Note:",
+		MessCommands: "prefix command",
+		MessCommandsDescription: "View the list of commands that can be used in the server",
 	},
 	TicTacToe: {
 		turnMessage: "{emoji} | Its turn of player **{player}**.",

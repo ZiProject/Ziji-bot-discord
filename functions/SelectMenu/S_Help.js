@@ -67,6 +67,26 @@ module.exports.execute = async ({ interaction, lang }) => {
 			}
 
 			break;
+		case "msg_commands":
+			const { mCommandsf } = await this.commands(interaction);
+			const Mcommands = `# ${lang.Help.MessCommands}:\n\n${mCommandsf
+				.map((cmds) => {
+					if (!("run" in cmd)) return "";
+					const cmd = cmds.data;
+					if (!cmd) return "";
+
+					let optionss = `\`${config.prefix} ${cmd.name}`;
+					if (cmd.alas)
+						for (const alas of cmd.alas) {
+							optionss += ` | ${alas}`;
+						}
+					optionss += `\`: ${cmd.description}\n`;
+					return optionss;
+				})
+				.join("")}`;
+			embed.setDescription(Mcommands);
+
+			break;
 		case "context_commands":
 			const { contextCommands } = await this.commands(interaction);
 			embed.setDescription(`# ${lang.Help.ContextCommands}:\n\n` + contextCommands.map((cmd) => `### ${cmd.name}`).join("\n\n"));
@@ -194,5 +214,6 @@ module.exports.commands = async (interaction) => {
 	const commands = await interaction.client.rest.get(Routes.applicationCommands(interaction.client.user.id));
 	const guildCommands = commands.filter((cmd) => cmd.type === 1 || cmd.type === 2);
 	const contextCommands = commands.filter((cmd) => cmd.type === 3);
-	return { guildCommands, contextCommands };
+	const mCommandsf = useHooks.get("commands");
+	return { guildCommands, contextCommands, mCommandsf };
 };

@@ -62,6 +62,7 @@ module.exports.data = {
 	lock: true, // only host control
 	ckeckVoice: true, // check voice channel
 	enable: true, // enable or disable command
+	alias: ["cmd1", "cmd2"],
 };
 
 /**

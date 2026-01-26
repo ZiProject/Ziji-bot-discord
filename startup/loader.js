@@ -49,7 +49,13 @@ class StartupLoader {
 										collection.set(module.data.name, module);
 									}
 									if ("run" in module) {
-										useHooks.get("Mcommands").set(module.data.name, module);
+										const mCommandsf = useHooks.get("Mcommands");
+										mCommandsf.set(module.data.name, module);
+										if (module.data?.alias && Array.isArray(module.data?.alias)) {
+											for (let alias of module.data?.alias) {
+												if (!mCommandsf.get(alias)) mCommandsf.set(alias, module);
+											}
+										}
 									}
 								} else {
 									clientCommands.push([chalk.hex("#FF5733")(fileName), "No"]);
