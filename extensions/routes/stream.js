@@ -1,7 +1,8 @@
 const express = require("express");
-const { getManager } = require("ziplayer");
-
 const router = express.Router();
+
+const { getManager } = require("ziplayer");
+const { useHooks } = require("zihooks");
 
 router.get("/play", async (req, res) => {
 	try {
@@ -136,14 +137,14 @@ router.post("/play", async (req, res) => {
 	}
 });
 
-module.exports = { router };
-
 module.exports.data = {
 	name: "streamRoutes",
 	description: "Stream route for serving audio streams",
 	version: "1.0.0",
-	disable: true, //for web router
+	enable: true,
 };
 module.exports.execute = () => {
+	const server = useHooks.get("server");
+	server.use("/api/stream", router);
 	return;
 };
