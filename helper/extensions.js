@@ -8,6 +8,7 @@ module.exports.data = {
 	name: "extensions Helper",
 	type: "extension",
 	enable: true,
+	priority: 1, // set priority to load early 1 - 10
 };
 /**
  *

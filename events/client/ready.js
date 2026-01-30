@@ -16,6 +16,7 @@ module.exports = {
 		 * @param { String } messenger
 		 */
 		const config = useHooks.get("config");
+		const logger = useHooks.get("logger");
 		client.errorLog = async (messenger) => {
 			if (!config?.botConfig?.ErrorLog) return;
 			try {
@@ -27,7 +28,7 @@ module.exports = {
 					}
 				}
 			} catch (error) {
-				useHooks.get("logger").error("Lỗi khi gửi tin nhắn lỗi:", error);
+				logger?.error?.("Lỗi khi gửi tin nhắn lỗi:", error);
 			}
 		};
 
@@ -38,7 +39,7 @@ module.exports = {
 		]);
 
 		if (!mongoConnected) {
-			useHooks.get("logger").error("Failed to connect to MongoDB!");
+			logger?.error?.("Failed to connect to MongoDB!");
 			const db = new Database("./jsons/ziDB.json");
 			useHooks.set("db", {
 				ZiUser: createModel(db, "ZiUser"),
@@ -47,11 +48,11 @@ module.exports = {
 				ZiGuild: createModel(db, "ZiGuild"),
 			});
 
-			useHooks.get("logger").info("Connected to LocalDB!");
+			logger?.info?.("Connected to LocalDB!");
 			client.errorLog("Connected to LocalDB!");
 		} else {
 			useHooks.set("db", require("../../startup/mongoDB"));
-			useHooks.get("logger").info("Connected to MongoDB!");
+			logger?.info?.("Connected to MongoDB!");
 			client.errorLog("Connected to MongoDB!");
 		}
 
@@ -65,15 +66,18 @@ module.exports = {
 			},
 		});
 
-		await Promise.all(
-			useHooks.get("extensions").map(async (extension) => {
-				if (extension.data.enable && typeof extension.execute === "function") {
-					return extension.execute(client);
-				}
-			}),
-		);
-
-		useHooks.get("logger").info(`Ready! Logged in as ${client.user.tag}`);
+		for (let priority = 1; priority <= 10; priority++) {
+			let res = await Promise.all(
+				useHooks.get("extensions").map(async (extension) => {
+					extension.data.priority = extension.data?.priority ?? 10;
+					if (extension.data.enable && extension.data.priority === priority && typeof extension.execute === "function") {
+						logger?.debug?.(`Loaded extension: ${extension.data.name} (priority: ${priority})`);
+						return await extension.execute(client);
+					}
+				}),
+			);
+		}
+		logger?.info?.(`Ready! Logged in as ${client.user.tag}`);
 		client.errorLog(`Ready! Logged in as ${client.user.tag}`);
 	},
 };

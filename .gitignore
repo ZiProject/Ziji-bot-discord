@@ -39,3 +39,4 @@ package-lock.json
 giveaways.json
 bot.log
 jsons/
+*.json
