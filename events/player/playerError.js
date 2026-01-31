@@ -12,8 +12,8 @@ module.exports = {
 	execute: async (player, error, track) => {
 		const client = useHooks.get("client");
 		client.errorLog("**Player playerError**");
-		client?.errorLog(error.message);
-		client?.errorLog(track.url);
+		client?.errorLog(error?.message);
+		client?.errorLog(track?.url);
 		useHooks.get("logger").error(error);
 	},
 };
