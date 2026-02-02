@@ -169,7 +169,7 @@ module.exports.run = async ({ message, args }) => {
 	const rawColor = args.shift();
 	if (!rawColor) return message.reply("❌ Thiếu màu embed");
 
-	const color = COLOR_MAP[rawColor.toLowerCase()] || (rawColor.startsWith("#") ? rawColor : null);
+	const color = COLOR_MAP[rawColor.toLowerCase()] || (rawColor.startsWith("#") ? rawColor.toLowerCase() : null);
 
 	if (!color) return message.reply("❌ Màu không hợp lệ");
 
@@ -177,7 +177,7 @@ module.exports.run = async ({ message, args }) => {
 	if (!text) return message.reply("❌ Thiếu nội dung embed");
 
 	const embed = new EmbedBuilder()
-		.setColor(color)
+		.setColor(`${color}`)
 		.setDescription(text)
 		.setTimestamp()
 		.setFooter({
