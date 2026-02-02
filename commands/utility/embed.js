@@ -1,4 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
+const { useHooks } = require("zihooks");
 
 module.exports.data = {
 	name: "embed",
@@ -139,16 +140,21 @@ module.exports.execute = async ({ interaction }) => {
  * @param { import('../../lang/vi.js') } command.lang - language
  */
 module.exports.run = async ({ message, args }) => {
+	const config = useHooks.get("config");
+	const flag = config.prefix || "z!";
 	if (!args.length) {
 		const demo = new EmbedBuilder()
 			.setColor("#00ffff")
 			.setTitle("✨ Embed Command Demo")
 			.setDescription(
 				"**Cách dùng:**\n" +
-					"`!embed [#channel] <color> <text>`\n\n" +
+					flag +
+					"`embed --channel <channel ID> --color <color> <text>`\n\n" +
 					"**Ví dụ:**\n" +
-					"`!embed red Xin chào Discord`\n" +
-					"`!embed #general blue Hello world`\n\n" +
+					flag +
+					"`embed --color red Xin chào Discord`\n" +
+					flag +
+					"`em --channel 1007597271392727051 --color blue Hello world`\n\n" +
 					"**Nâng cao:**\n" +
 					"`--title`, `--image`, `--thumb`, `--author`",
 			)
@@ -158,15 +164,14 @@ module.exports.run = async ({ message, args }) => {
 		return message.reply({ embeds: [demo] });
 	}
 
-	let channel = message.mentions.channels.first() || message.channel;
-	if (message.mentions.channels.first()) args.shift();
-
 	const title = getFlag(args, "title");
 	const image = getFlag(args, "image");
 	const thumb = getFlag(args, "thumb");
 	const author = getFlag(args, "author");
+	const rawColor = getFlag(args, "color") || args.shift();
+	const rawChannel = getFlag(args, "channel");
+	const channel = message.guild.channels.cache.get(rawChannel) || message.channel;
 
-	const rawColor = args.shift();
 	if (!rawColor) return message.reply("❌ Thiếu màu embed");
 
 	const color = COLOR_MAP[rawColor.toLowerCase()] || (rawColor.startsWith("#") ? rawColor.toLowerCase() : null);
