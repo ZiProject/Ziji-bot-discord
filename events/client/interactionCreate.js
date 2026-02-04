@@ -117,20 +117,14 @@ module.exports = {
  * @param { CommandInteraction } interaction
  */
 module.exports.execute = async (interaction) => {
-	// Check if useHooks is available
-	if (!useHooks) {
-		console.error("useHooks is not available");
-		return (
-			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
-			console.error("No interaction available")
-		);
-	}
 	const { client, user } = interaction;
 	if (!client.isReady()) return;
 
 	let command;
 	let commandType;
 	let cmdops = null;
+	const logger = useHooks.get("logger");
+
 	// Determine the interaction type and set the command
 	if (interaction.isChatInputCommand() || interaction.isAutocomplete() || interaction.isMessageContextMenuCommand()) {
 		command = Commands.get(interaction.commandName);
@@ -142,7 +136,7 @@ module.exports.execute = async (interaction) => {
 
 	// If no command was found, log the error and return
 	if (!command) {
-		console.error(`No ${commandType} matching ${interaction.commandName || interaction.customId} was found.`);
+		logger.debug(`No ${commandType} matching ${interaction.commandName || interaction.customId} was found.`);
 		return;
 	}
 
@@ -155,11 +149,9 @@ module.exports.execute = async (interaction) => {
 		if (interaction.isAutocomplete()) {
 			await command?.autocomplete({ interaction, lang });
 		} else {
-			useHooks
-				.get("logger")
-				.debug(
-					`Interaction received: ${interaction?.commandName || interaction?.customId} >> User: ${interaction?.user?.username} >> Guild: ${interaction?.guild?.name} (${interaction?.guildId})`,
-				);
+			logger.debug(
+				`Interaction received: ${interaction?.commandName || interaction?.customId} >> User: ${interaction?.user?.username} >> Guild: ${interaction?.guild?.name} (${interaction?.guildId})`,
+			);
 
 			const status = await checkStatus(interaction, client, lang);
 			if (status) return;

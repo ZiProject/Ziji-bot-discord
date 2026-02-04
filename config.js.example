@@ -168,6 +168,10 @@ module.exports = {
 		dashboardUrl: 'https://zibot-dashboard.vercel.app/'
 	},
 
+	ticket: {
+		logChannelId: "1468618088558760086",
+	},
+	
 	/**
 	 * Ngôn ngữ mặc định của bot (vi, en, ...)
 	 * Default bot language (vi, en, ...)

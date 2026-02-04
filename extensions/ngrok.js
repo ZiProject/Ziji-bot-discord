@@ -1,5 +1,5 @@
 const { useHooks } = require("zihooks");
-const ngrok = require("ngrok");
+const ngrok = require("@ngrok/ngrok");
 
 module.exports.data = {
 	name: "Ngrok",
@@ -8,14 +8,17 @@ module.exports.data = {
 };
 
 module.exports.execute = async (client) => {
-	if (!useHooks.get("config")?.webAppConfig?.enabled) return;
 	if (!process.env.NGROK_AUTHTOKEN) return;
 	if (process.env.NGROK_AUTHTOKEN == "") return;
+	const logger = useHooks.get("logger");
 
-	const url = await ngrok.connect({
+	const url = await ngrok.forward({
 		addr: process.env.SERVER_PORT || 2003,
-		hostname: process.env.NGROK_DOMAIN,
-		authtoken: process.env.NGROK_AUTHTOKEN,
+		authtoken_from_env: true,
+		on_status_change: (addr, error) => {
+			logger.warn(`disconnected, addr ${addr} error: ${error}`);
+		},
 	});
-	logger.info(`Server running on ${url}`);
+
+	logger.info(`Server running on: ${url?.url()}`);
 };
