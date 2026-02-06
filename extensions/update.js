@@ -59,7 +59,9 @@ module.exports.data = {
 	enable: true,
 };
 
-module.exports.execute = async () => {
+module.exports.execute = async (requireUpdate = false) => {
+	if (process.env.DISABLE_UPDATE === "true" && !requireUpdate) return;
+
 	useHooks.get("logger")?.debug?.("Starting update...");
 	const updateChecker = new UpdateChecker();
 	updateChecker.start(useHooks.get("logger"));

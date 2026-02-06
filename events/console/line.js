@@ -21,8 +21,9 @@ module.exports = {
 				logger.info(`Bot đang ${client.isReady() ? "hoạt động" : "tắt"}`);
 				break;
 			case "update":
+			case "up":
 				logger.info(`Update Stating...`);
-				useHooks.get("extensions")?.get("update")?.execute?.();
+				useHooks.get("extensions")?.get("update")?.execute?.(true);
 				break;
 			case "stop":
 			case "exit":
