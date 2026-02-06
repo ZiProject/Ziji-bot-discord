@@ -2,6 +2,7 @@ const { useHooks } = require("zihooks");
 const { Events, GuildMember, AttachmentBuilder } = require("discord.js");
 const config = useHooks.get("config");
 const { Worker } = require("worker_threads");
+const path = require("path");
 
 async function buildImageInWorker(workerData) {
 	return new Promise((resolve, reject) => {
@@ -45,27 +46,43 @@ module.exports = {
 		// create card
 		const welcome = useHooks.get("welcome").get(member.guild.id)?.at(0);
 		if (!welcome) return;
+		let attachment = null;
 		try {
-			const attachment = await buildImageInWorker({
+			const renderer = useHooks.get("renderer");
+			if (!renderer) throw new Error("GifRenderer not found in hooks.");
+
+			const buffer = await renderer.render({
+				template: path.join(__dirname, "../../utility/WelcomeCard.js"),
+				props: {
+					avatar: member.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
+					displayName: member.user.username,
+					type: "welcome",
+					message: `to ${member.guild.name}.`,
+				},
+			});
+			const parseVar = useHooks.get("functions").get("getVariable");
+			attachment = new AttachmentBuilder(buffer, {
+				name: "WelcomeCard.gif",
+				description:
+					parseVar?.execute(welcome.content, member) ||
+					`Xin chào **${member.user.name}**! Server hiện nay đã tăng thành ${member.guild.memberCount} người.`,
+			});
+		} catch (error) {
+			console.error("Error building image:", error);
+
+			attachment = await buildImageInWorker({
 				ZDisplayName: member.user.username,
 				ZType: "welcome",
 				ZAvatar: member.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
 				ZMessage: `to ${member.guild.name}.`,
 			});
-			const channel = await member.client.channels.fetch(welcome.channel);
-			const parseVar = useHooks.get("functions").get("getVariable");
-			await channel.send({
-				files: [
-					{
-						attachment,
-						description:
-							parseVar?.execute(welcome.content, member) ||
-							`Xin chào **${member.user.name}**! Server hiện nay đã tăng thành ${member.guild.memberCount} người.`,
-					},
-				],
-			});
-		} catch (error) {
-			console.error("Error building image:", error);
 		}
+		if (!attachment) return;
+
+		// send welcome
+		const channel = await member.client.channels.fetch(welcome.channel);
+		await channel.send({
+			files: [attachment],
+		});
 	},
 };
