@@ -163,6 +163,15 @@ module.exports.execute = async (message) => {
 			if (!sts.status) return;
 			cmdops = sts;
 		}
+
+		message.getFlag = (name) => {
+			const index = args.indexOf(`${config.Moptions || "--"}${name}`);
+			if (index === -1) return null;
+			const value = args[index + 1];
+			args.splice(index, 2);
+			return value ?? null;
+		};
+
 		await command.run({ message, args, lang, ...cmdops });
 	} catch (error) {
 		console.error(`Error executing message command ${command.data.name}:`, error);

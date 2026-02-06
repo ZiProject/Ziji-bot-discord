@@ -32,61 +32,92 @@ module.exports.execute = async ({ interaction, lang }) => {
 		.setTimestamp();
 
 	switch (selection) {
-		case "guild_commands":
+		case "guild_commands": {
 			const { guildCommands } = await this.commands(interaction);
-			const guildcommands = `# ${lang.Help.GuildCommands}:\n\n${guildCommands
-				.map((cmd) => {
-					if (cmd.options?.at(0).type == 1) {
-						let optionss = "";
-						for (const option of cmd.options) {
-							if (option.type == 1) {
-								optionss += `</${cmd.name} ${option.name}:${cmd.id}>: ${option.description}\n`;
-							}
+
+			const lines = [];
+			lines.push(`# ${lang.Help.GuildCommands}:\n\n`);
+
+			for (const cmd of guildCommands) {
+				if (cmd.options?.at(0)?.type === 1) {
+					for (const option of cmd.options) {
+						if (option.type === 1) {
+							lines.push(`</${cmd.name} ${option.name}:${cmd.id}>: ${option.description}\n`);
 						}
-						return optionss;
 					}
-					return `</${cmd.name}:${cmd.id}>: ${cmd.description}\n`;
-				})
-				.join("")}`;
-			const totalPages = Math.ceil(guildcommands.length / 4095);
-			let page = 1;
-			if (interaction.message?.embeds?.[0]?.fields?.[0]?.value?.includes("Page:")) {
-				page = parseInt(interaction.message?.embeds?.[0]?.fields?.[0]?.value?.split("Page:")[1].split("/")[0]) + 1;
+				} else {
+					lines.push(`</${cmd.name}:${cmd.id}>: ${cmd.description}\n`);
+				}
 			}
 
-			page = page > totalPages ? 1 : page;
+			const pages = paginateLines(lines);
+			let page = 0;
 
-			const startIndex = (page - 1) * 4095;
-			const endIndex = startIndex + 4095;
-			const currentContent = guildcommands.slice(startIndex, endIndex);
-			if (guildcommands.length > 4095) {
-				embed.addFields({ name: "...", value: `Page: ${page}/${totalPages}/uid=${interaction.user.id}` });
-				embed.setDescription(currentContent);
-			} else {
-				embed.setDescription(guildcommands);
+			const field = interaction.message?.embeds?.[0]?.fields?.[0]?.value;
+			if (field?.includes("Page:")) {
+				page = Number(field.split("Page:")[1].split("/")[0]) || 1;
 			}
 
+			page++;
+			if (page > pages.length) page = 1;
+
+			embed.setDescription(pages[page - 1]);
+
+			if (pages.length > 1) {
+				embed.addFields({
+					name: "📄 Trang",
+					value: `Page: ${page}/${pages.length}/uid=${interaction.user.id}`,
+				});
+			}
 			break;
-		case "msg_commands":
+		}
+		case "msg_commands": {
 			const { mCommandsf } = await this.commands(interaction);
-			const Mcommands = `# ${lang.Help.MessCommands}:\n\n${mCommandsf
-				.map((cmds) => {
-					if (!("run" in cmd)) return "";
-					const cmd = cmds.data;
-					if (!cmd) return "";
 
-					let optionss = `\`${config.prefix} ${cmd.name}`;
-					if (cmd.alas)
-						for (const alas of cmd.alas) {
-							optionss += ` | ${alas}`;
-						}
-					optionss += `\`: ${cmd.description}\n`;
-					return optionss;
-				})
-				.join("")}`;
-			embed.setDescription(Mcommands);
+			const lines = [];
+			lines.push(`# ${lang.Help.MessCommands}:\n\n`);
 
+			for (const [, cmds] of mCommandsf) {
+				if (!("run" in cmds)) continue;
+
+				const cmd = cmds.data;
+				if (!cmd) continue;
+				let row = `\`${config.prefix}${cmd.name}`;
+
+				if (cmd.alas) for (const alas of cmd.alas) row += ` | ${alas}`;
+
+				row += `\`: ${cmd.description}\n`;
+				lines.push(row);
+
+				if (cmd.Moptions) {
+					for (const option of cmd.Moptions) {
+						lines.push(`    ‣ \`${config.Moptions || "--"}${option.name}\`: ${option.description}\n`);
+					}
+				}
+			}
+
+			const pages = paginateLines(lines);
+			let page = 0;
+
+			const field = interaction.message?.embeds?.[0]?.fields?.[0]?.value;
+			if (field?.includes("Page:")) {
+				page = Number(field.split("Page:")[1].split("/")[0]) || 1;
+			}
+
+			page++;
+			if (page > pages.length) page = 1;
+
+			embed.setDescription(pages[page - 1]);
+
+			if (pages.length > 1) {
+				embed.addFields({
+					name: "📄 Trang",
+					value: `Page: ${page}/${pages.length}/uid=${interaction.user.id}`,
+				});
+			}
 			break;
+		}
+
 		case "context_commands":
 			const { contextCommands } = await this.commands(interaction);
 			embed.setDescription(`# ${lang.Help.ContextCommands}:\n\n` + contextCommands.map((cmd) => `### ${cmd.name}`).join("\n\n"));
@@ -217,3 +248,21 @@ module.exports.commands = async (interaction) => {
 	const mCommandsf = useHooks.get("commands");
 	return { guildCommands, contextCommands, mCommandsf };
 };
+
+const EMBED_LIMIT = 4095;
+
+function paginateLines(lines, limit = EMBED_LIMIT) {
+	const pages = [];
+	let current = "";
+
+	for (const line of lines) {
+		if ((current + line).length > limit) {
+			pages.push(current);
+			current = "";
+		}
+		current += line;
+	}
+
+	if (current.length) pages.push(current);
+	return pages;
+}

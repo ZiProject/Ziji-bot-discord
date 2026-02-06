@@ -52,15 +52,39 @@ module.exports.data = {
 	alias: ["em"],
 	category: "utils",
 	enable: true,
+	Moptions: [
+		{
+			name: "channel",
+			type: "string",
+			description: "Channel ID để gửi embed",
+		},
+		{
+			name: "color",
+			type: "string",
+			description: "Màu embed (red, blue, #ff0000)",
+		},
+		{
+			name: "title",
+			type: "string",
+			description: "Tiêu đề embed",
+		},
+		{
+			name: "image",
+			type: "string",
+			description: "Link ảnh embed",
+		},
+		{
+			name: "thumb",
+			type: "string",
+			description: "Thumbnail embed",
+		},
+		{
+			name: "author",
+			type: "string",
+			description: "Author embed",
+		},
+	],
 };
-
-function getFlag(args, name) {
-	const index = args.indexOf(`--${name}`);
-	if (index === -1) return null;
-	const value = args[index + 1];
-	args.splice(index, 2);
-	return value ?? null;
-}
 
 const COLOR_MAP = {
 	red: "#ff0000",
@@ -164,12 +188,12 @@ module.exports.run = async ({ message, args }) => {
 		return message.reply({ embeds: [demo] });
 	}
 
-	const title = getFlag(args, "title");
-	const image = getFlag(args, "image");
-	const thumb = getFlag(args, "thumb");
-	const author = getFlag(args, "author");
-	const rawColor = getFlag(args, "color") || args.shift();
-	const rawChannel = getFlag(args, "channel");
+	const title = message.getFlag("title");
+	const image = message.getFlag("image");
+	const thumb = message.getFlag("thumb");
+	const author = message.getFlag("author");
+	const rawColor = message.getFlag("color") || args.shift();
+	const rawChannel = message.getFlag("channel");
 	const channel = message.guild.channels.cache.get(rawChannel) || message.channel;
 
 	if (!rawColor) return message.reply("❌ Thiếu màu embed");

@@ -42,10 +42,10 @@ module.exports.execute = async () => {
 					topP: 0.1,
 					topK: 16,
 				};
-				const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig });
+				const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig });
 				const { Prompt, old_Prompt } = await promptBuilder({ content: prompt, user, lang, DataBase });
-				useHooks.get("logger")?.info?.(`Prompt:`, Prompt);
-				useHooks.get("logger")?.info?.(`Old Prompt:`, old_Prompt);
+				useHooks.get("logger")?.debug?.(`Prompt: ${Prompt}`);
+				useHooks.get("logger")?.debug?.(`Old Prompt: ${old_Prompt}`);
 				const result = await model.generateContent(Prompt, {});
 				const text = result?.response?.text();
 

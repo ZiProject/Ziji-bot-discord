@@ -6,6 +6,12 @@ module.exports = {
 	prefix: "z!",
 
 	/**
+	 * Ký tự tiền tố cho các tùy chọn lệnh
+	 * Command option prefix character
+	 */
+	Moptions: "--",
+
+	/**
 	 * Cho phép deploy command bot
 	 * Allow bot command deployment
 	 */

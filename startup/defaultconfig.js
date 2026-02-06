@@ -6,7 +6,8 @@ module.exports = {
 	defaultColor: "Random",
 	ImageSearch: true,
 	botConfig: {
-		prefix: "~~",
+		prefix: "z!",
+		Moptions: "--",
 		ActivityName: "Hello, i'm Ziji",
 		ActivityType: "Custom",
 		Status: "online",
