@@ -48,7 +48,7 @@ async function handleCreate(interaction) {
 		});
 
 	const channel = await guild.channels.create({
-		name: `ticket-${user.id}`,
+		name: `ticket-${user.username ?? user.tag}`,
 		type: ChannelType.GuildText,
 		permissionOverwrites: [
 			{
