@@ -6,7 +6,6 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const WebSocket = require("ws");
-const { GifRenderer } = require("canvacord-gif");
 
 class StartupManager {
 	constructor(client) {
@@ -16,11 +15,6 @@ class StartupManager {
 		this.loader = new StartupLoader(this.config, this.logger);
 		this.createFile("./jsons");
 		this.web = this.initWeb();
-		this.renderer = new GifRenderer({
-			workers: 4,
-			background: "./utility/BG.gif",
-			delay: 120,
-		});
 	}
 
 	initCongig() {
@@ -91,7 +85,6 @@ class StartupManager {
 		useHooks.set("logger", this.logger); // LoggerFactory
 		useHooks.set("wss", this.web.wss); // WebSocket Server
 		useHooks.set("server", this.web.server); // Web Server
-		useHooks.set("renderer", this.renderer); // Gif Renderer
 	}
 }
 

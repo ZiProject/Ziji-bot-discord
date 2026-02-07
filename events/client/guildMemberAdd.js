@@ -3,6 +3,7 @@ const { Events, GuildMember, AttachmentBuilder, EmbedBuilder } = require("discor
 const config = useHooks.get("config");
 const { Worker } = require("worker_threads");
 const path = require("path");
+const { GifRenderer } = require("canvacord-gif");
 
 async function buildImageInWorker(workerData) {
 	return new Promise((resolve, reject) => {
@@ -52,8 +53,11 @@ module.exports = {
 			parseVar?.execute(welcome.content, member) ||
 			`Xin chào **${member.user.name}**! Server hiện nay đã tăng thành ${member.guild.memberCount} người.`;
 		try {
-			const renderer = useHooks.get("renderer");
-			if (!renderer) throw new Error("GifRenderer not found in hooks.");
+			const renderer = new GifRenderer({
+				workers: 4,
+				background: "./utility/BG.gif",
+				delay: 120,
+			});
 
 			const buffer = await renderer.render({
 				template: path.join(__dirname, "../../utility/WelcomeCard.js"),
@@ -64,6 +68,7 @@ module.exports = {
 					message: `to ${member.guild.name}.`,
 				},
 			});
+			renderer.close();
 			const attachment = new AttachmentBuilder(buffer, {
 				name: "WelcomeCard.gif",
 				description: datadescription,
