@@ -52,7 +52,7 @@ module.exports = {
 
 		const datdescription =
 			parseVar?.execute(welcome.Bcontent, member) ||
-			`Tạm biệt ${member.user.name}! Server hiện nay chỉ còn ${member.guild.memberCount} người.`;
+			`Tạm biệt ${member.user.username}! Server hiện nay chỉ còn ${member.guild.memberCount} người.`;
 		try {
 			const renderer = new GifRenderer({
 				workers: 4,

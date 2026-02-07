@@ -51,7 +51,7 @@ module.exports = {
 
 		const datadescription =
 			parseVar?.execute(welcome.content, member) ||
-			`Xin chào **${member.user.name}**! Server hiện nay đã tăng thành ${member.guild.memberCount} người.`;
+			`Xin chào **${member.user.username}**! Server hiện nay đã tăng thành ${member.guild.memberCount} người.`;
 		try {
 			const renderer = new GifRenderer({
 				workers: 4,
