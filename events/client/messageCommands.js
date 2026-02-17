@@ -8,8 +8,6 @@ const Functions = useHooks.get("functions");
 const config = useHooks.get("config");
 const { getPlayer } = require("ziplayer");
 
-const ziicon = require("./../../utility/icon");
-
 module.exports = {
 	name: Events.MessageCreate,
 	type: "events",
@@ -125,7 +123,7 @@ module.exports.execute = async (message) => {
 
 	if (message.author.bot) return;
 
-	const prefix = config?.prefix || "zz";
+	const prefix = config?.prefix || "z!";
 
 	if (!message.content.toLowerCase().startsWith(prefix.toLowerCase())) return;
 

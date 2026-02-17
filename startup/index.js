@@ -6,6 +6,7 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const WebSocket = require("ws");
+const zzicon = require("./../utility/icon.js");
 
 class StartupManager {
 	constructor(client) {
@@ -85,6 +86,7 @@ class StartupManager {
 		useHooks.set("logger", this.logger); // LoggerFactory
 		useHooks.set("wss", this.web.wss); // WebSocket Server
 		useHooks.set("server", this.web.server); // Web Server
+		useHooks.set("icon", zzicon); // Icon
 	}
 }
 

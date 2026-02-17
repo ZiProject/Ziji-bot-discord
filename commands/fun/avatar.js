@@ -1,3 +1,5 @@
+const { AttachmentBuilder } = require("discord.js");
+const fs = require("fs");
 module.exports.data = {
 	name: "avatar",
 	description: "Xem ảnh đại diện của ai đó",
@@ -12,6 +14,7 @@ module.exports.data = {
 	],
 	integration_types: [0, 1],
 	contexts: [0, 1, 2],
+	alias: ["avt"],
 };
 
 /**
@@ -22,7 +25,19 @@ module.exports.data = {
 
 module.exports.execute = async ({ interaction, lang }) => {
 	const user = interaction.options.getUser("user") || interaction.user;
+	const url = user.displayAvatarURL({ size: 1024 });
+	interaction.reply({ files: [url] });
+	return;
+};
 
-	interaction.reply(user.displayAvatarURL({ size: 1024 }));
+/**
+ * @param { object } command - message command
+ * @param { import ("zihooks").CommandInteraction } command.message - message
+ * @param { import('../../lang/vi.js') } command.lang - language
+ */
+module.exports.run = async ({ message, args, lang }) => {
+	const user = message.mentions.users.first() || message.author;
+	const url = user.displayAvatarURL({ size: 1024 });
+	message.reply({ files: [url] });
 	return;
 };

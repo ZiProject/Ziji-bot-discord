@@ -2,7 +2,6 @@ const { Events, Message } = require("discord.js");
 const { modinteraction, useHooks } = require("zihooks");
 const config = useHooks.get("config");
 const mentionRegex = /@(everyone|here|ping)/;
-const ziicon = require("./../../utility/icon");
 const { getPlayer } = require("ziplayer");
 
 const Commands = useHooks.get("commands");
@@ -112,7 +111,7 @@ const reqTTS = async (message, lang) => {
 		return null;
 	};
 	const tts = await Functions.get("TextToSpeech");
-	if (player?.userdata) await message.react(ziicon.yess);
+	if (player?.userdata) await message.react(useHooks.get("icon").yess);
 	const context = message.content.replace(`<@${message.client.user.id}>`, "").trim();
 
 	await tts.execute(message, context, lang, { player });

@@ -1,5 +1,4 @@
 const { useHooks } = require("zihooks");
-const Commands = useHooks.get("commands");
 
 module.exports.data = {
 	name: "Quote Image Generation",
@@ -14,14 +13,6 @@ module.exports.data = {
  * @param { import('../../lang/vi.js') } context.lang - language
  */
 module.exports.execute = async ({ interaction, lang }) => {
-	// Check if useHooks is available
-	if (!useHooks) {
-		console.error("useHooks is not available");
-		return (
-			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
-			console.error("No interaction available")
-		);
-	}
 	await interaction.deferReply();
 	let msg = interaction.targetMessage;
 	lang.quote = { error: lang?.quote?.error || "An error occurred while generating the quote image." };
@@ -36,6 +27,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 		bgcolor: true,
 		watermark: interaction.client.user.tag,
 	};
+	const Commands = useHooks.get("commands");
 	const Quote = Commands.get("quote");
 
 	let cardimage = await Quote.tryMIQ(context).catch(async (error) => {
