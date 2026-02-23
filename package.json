@@ -27,19 +27,16 @@
 	},
 	"homepage": "https://github.com/zijipia/Ziji-bot-discord#readme",
 	"dependencies": {
-		"@discordjs/voice": "^0.19.0",
 		"@google/generative-ai": "^0.24.0",
 		"@iamtraction/google-translate": "^2.0.1",
 		"@ngrok/ngrok": "^1.7.0",
-		"@snazzah/davey": "^0.1.6",
 		"@zibot/db": "^0.0.2",
 		"@zibot/ziencryptor": "^0.0.1",
 		"@ziplayer/extension": "^0.1.1",
-		"@ziplayer/plugin": "^0.1.52",
+		"@ziplayer/plugin": "^0.2.1",
 		"@ziplayer/ytexecplug": "^0.0.2",
 		"axios": "^1.13.5",
 		"axios-cookiejar-support": "^6.0.4",
-		"bgutils-js": "^3.2.0",
 		"canvacord": "^6.0.2",
 		"canvacord-gif": "^1.0.0",
 		"chalk": "^4.1.2",
@@ -73,7 +70,7 @@
 	},
 	"devDependencies": {
 		"cross-env": "^10.0.0",
-		"nodemon": "^3.1.9",
+		"nodemon": "^3.1.14",
 		"prettier": "^3.3.2"
 	}
 }

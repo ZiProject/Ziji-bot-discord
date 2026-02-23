@@ -37,9 +37,13 @@ const client = new Client({
 		repliedUser: false,
 	},
 });
-const ytbplg = new YouTubePlugin({ player: null });
 
-ytbplg.getStream = new YTexec().getStream;
+const ytbplg = new YouTubePlugin({
+	debug: true,
+	fallbackStream: new YTexec().getStream,
+	clientType: "WEB_REMIX",
+	searchClientType: "WEB",
+});
 
 //create Player Manager
 const manager = new PlayerManager({
