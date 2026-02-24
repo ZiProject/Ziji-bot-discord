@@ -209,8 +209,7 @@ module.exports = {
 		cookieInvalid: "Invalid cookie",
 		cookieEmpty: "Empty cookie",
 		cookieGuideTitle: "🍪 HoYoLAB Cookie Guide",
-		cookieGuideDescription:
-			"HoYoLAB cookie is authentication information needed for the bot to automatically claim daily check-in rewards for you in Genshin Impact.",
+		cookieGuideDescription: "HoYoLAB cookie is authentication information needed for the bot to automatically claim daily check-in rewards for you in Genshin Impact.",
 		cookieSteps: {
 			step1: "**Step 1:** Visit https://www.hoyolab.com/ and login",
 			step2: "**Step 2:** Press `F12` to open Developer Tools",
@@ -219,24 +218,17 @@ module.exports = {
 			step5: "**Step 5:** Enter each value separately into corresponding options",
 		},
 		cookieImportant: "⚠️ **Important Notes:**",
-		cookieWarning:
-			"• NEVER share your cookie with others\n• Cookie may expire and need periodic updates\n• Only use cookie from your own account",
-		cookieExample:
-			"**Valid Cookie Example:**\n```\nltuid_v2: 123456789\nltoken_v2: v2_abcdef1234567890abcdef1234567890abcdef12\ncookie_token_v2: v2_xyz7890123456789xyz7890123456789xyz789\n```",
-		cookieInvalidReasons:
-			"**Reasons for Invalid Cookie:**\n• LTUID too short (less than 5 characters)\n• LTOKEN too short (less than 10 characters)\n• Missing `ltuid_v2` or `ltoken_v2` (required)\n• Incorrect format",
-		cookieEmptyReasons:
-			"**Reasons for Empty Cookie:**\n• You haven't entered cookie in the command\n• Cookie was accidentally deleted during copy/paste\n• Only entered part of the cookie",
-		cookieFixSteps:
-			"**How to Fix:**\n1. Get cookie again from HoYoLAB following the guide above\n2. Copy complete cookie (including both `ltuid_v2` and `ltoken_v2`)\n3. Enter each value into corresponding option in `/genshin bind` command",
+		cookieWarning: "• NEVER share your cookie with others\n• Cookie may expire and need periodic updates\n• Only use cookie from your own account",
+		cookieExample: "**Valid Cookie Example:**\n```\nltuid_v2: 123456789\nltoken_v2: v2_abcdef1234567890abcdef1234567890abcdef12\ncookie_token_v2: v2_xyz7890123456789xyz7890123456789xyz789\n```",
+		cookieInvalidReasons: "**Reasons for Invalid Cookie:**\n• LTUID too short (less than 5 characters)\n• LTOKEN too short (less than 10 characters)\n• Missing `ltuid_v2` or `ltoken_v2` (required)\n• Incorrect format",
+		cookieEmptyReasons: "**Reasons for Empty Cookie:**\n• You haven't entered cookie in the command\n• Cookie was accidentally deleted during copy/paste\n• Only entered part of the cookie",
+		cookieFixSteps: "**How to Fix:**\n1. Get cookie again from HoYoLAB following the guide above\n2. Copy complete cookie (including both `ltuid_v2` and `ltoken_v2`)\n3. Enter each value into corresponding option in `/genshin bind` command",
 		cookieFooter: "If you still have issues, contact server admin for support.",
 		notLoggedIn: "Not logged in",
 		notLoggedInTitle: "🔐 Cookie expired or invalid",
 		notLoggedInDescription: "Your HoYoLAB cookie has expired or is invalid. You need to update with a new cookie.",
-		notLoggedInReasons:
-			"**Possible causes:**\n• Cookie has expired (usually after 30 days)\n• HoYoLAB account has logged out\n• Cookie changed due to re-login\n• Account temporarily locked",
-		notLoggedInFixSteps:
-			"**How to fix:**\n1. Visit https://www.hoyolab.com/ and login again\n2. Get new cookie following the guide above\n3. Use `/genshin bind` to update with new cookie\n4. Try `/genshin claim` again",
+		notLoggedInReasons: "**Possible causes:**\n• Cookie has expired (usually after 30 days)\n• HoYoLAB account has logged out\n• Cookie changed due to re-login\n• Account temporarily locked",
+		notLoggedInFixSteps: "**How to fix:**\n1. Visit https://www.hoyolab.com/ and login again\n2. Get new cookie following the guide above\n3. Use `/genshin bind` to update with new cookie\n4. Try `/genshin claim` again",
 	},
 	role: {
 		noReason: "No reason",

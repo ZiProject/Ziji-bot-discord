@@ -13,6 +13,7 @@ module.exports.data = {
 			choices: [
 				{ name: "Tiếng Việt", value: "vi" },
 				{ name: "English", value: "en" },
+				{ name: "日本語", value: "ja" },
 			],
 		},
 	],

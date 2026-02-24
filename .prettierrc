@@ -17,5 +17,13 @@
 	"requirePragma": false,
 	"tabWidth": 2,
 	"useTabs": true,
-	"embeddedLanguageFormatting": "auto"
+	"embeddedLanguageFormatting": "auto",
+	"overrides": [
+		{
+			"files": ["lang/*.js"],
+			"options": {
+				"printWidth": 300
+			}
+		}
+	]
 }

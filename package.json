@@ -1,6 +1,6 @@
 {
 	"name": "ziji-bot-discord",
-	"version": "7.4.3",
+	"version": "7.4.4",
 	"description": "Ziji bot discord",
 	"main": "index.js",
 	"scripts": {
@@ -48,7 +48,6 @@
 		"dotenv": "^17.0.0",
 		"express": "^5.1.0",
 		"ffmpeg-static": "^5.2.0",
-		"googleapis": "^171.0.0",
 		"http": "^0.0.1-security",
 		"makeitaquote": "^8.1.1",
 		"mediaplex": "^1.0.0",

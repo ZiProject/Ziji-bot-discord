@@ -134,7 +134,6 @@ module.exports = {
 			PausePlay: "Tạm dừng/Phát",
 			Stop: "Dừng",
 			SelectTrack: "Chọn bài hát",
-			Lock: "Khoá",
 			Lyrics: "Lời bài hát",
 			UnLock: "Mở khoá",
 			Unmute: "Mở khoá âm lượng",
@@ -209,8 +208,7 @@ module.exports = {
 		cookieInvalid: "Cookie không hợp lệ",
 		cookieEmpty: "Cookie trống",
 		cookieGuideTitle: "🍪 Hướng dẫn lấy Cookie HoYoLAB",
-		cookieGuideDescription:
-			"Cookie HoYoLAB là thông tin xác thực cần thiết để bot có thể tự động nhận daily check-in cho bạn trong game Genshin Impact.",
+		cookieGuideDescription: "Cookie HoYoLAB là thông tin xác thực cần thiết để bot có thể tự động nhận daily check-in cho bạn trong game Genshin Impact.",
 		cookieSteps: {
 			step1: "**Bước 1:** Truy cập https://www.hoyolab.com/ và đăng nhập",
 			step2: "**Bước 2:** Nhấn `F12` để mở Developer Tools",
@@ -219,24 +217,17 @@ module.exports = {
 			step5: "**Bước 5:** Nhập từng giá trị riêng biệt vào các option tương ứng",
 		},
 		cookieImportant: "⚠️ **Lưu ý quan trọng:**",
-		cookieWarning:
-			"• KHÔNG BAO GIỜ chia sẻ cookie với người khác\n• Cookie có thể hết hạn và cần cập nhật định kỳ\n• Chỉ sử dụng cookie từ tài khoản của chính bạn",
-		cookieExample:
-			"**Ví dụ Cookie hợp lệ:**\n```\nltuid_v2: 123456789\nltoken_v2: v2_abcdef1234567890abcdef1234567890abcdef12\ncookie_token_v2: v2_xyz7890123456789xyz7890123456789xyz789\n```",
-		cookieInvalidReasons:
-			"**Nguyên nhân Cookie không hợp lệ:**\n• LTUID quá ngắn (dưới 5 ký tự)\n• LTOKEN quá ngắn (dưới 10 ký tự)\n• Thiếu `ltuid_v2` hoặc `ltoken_v2` (bắt buộc)\n• Format không đúng chuẩn",
-		cookieEmptyReasons:
-			"**Nguyên nhân Cookie trống:**\n• Bạn chưa nhập cookie vào lệnh\n• Cookie bị xóa nhầm khi copy/paste\n• Chỉ nhập một phần cookie",
-		cookieFixSteps:
-			"**Cách khắc phục:**\n1. Lấy lại cookie từ HoYoLAB theo hướng dẫn trên\n2. Copy đầy đủ cookie (bao gồm cả `ltuid_v2` và `ltoken_v2`)\n3. Nhập từng giá trị vào option tương ứng trong lệnh `/genshin bind`",
+		cookieWarning: "• KHÔNG BAO GIỜ chia sẻ cookie với người khác\n• Cookie có thể hết hạn và cần cập nhật định kỳ\n• Chỉ sử dụng cookie từ tài khoản của chính bạn",
+		cookieExample: "**Ví dụ Cookie hợp lệ:**\n```\nltuid_v2: 123456789\nltoken_v2: v2_abcdef1234567890abcdef1234567890abcdef12\ncookie_token_v2: v2_xyz7890123456789xyz7890123456789xyz789\n```",
+		cookieInvalidReasons: "**Nguyên nhân Cookie không hợp lệ:**\n• LTUID quá ngắn (dưới 5 ký tự)\n• LTOKEN quá ngắn (dưới 10 ký tự)\n• Thiếu `ltuid_v2` hoặc `ltoken_v2` (bắt buộc)\n• Format không đúng chuẩn",
+		cookieEmptyReasons: "**Nguyên nhân Cookie trống:**\n• Bạn chưa nhập cookie vào lệnh\n• Cookie bị xóa nhầm khi copy/paste\n• Chỉ nhập một phần cookie",
+		cookieFixSteps: "**Cách khắc phục:**\n1. Lấy lại cookie từ HoYoLAB theo hướng dẫn trên\n2. Copy đầy đủ cookie (bao gồm cả `ltuid_v2` và `ltoken_v2`)\n3. Nhập từng giá trị vào option tương ứng trong lệnh `/genshin bind`",
 		cookieFooter: "Nếu vẫn gặp vấn đề, hãy liên hệ admin server để được hỗ trợ.",
 		notLoggedIn: "Không đăng nhập",
 		notLoggedInTitle: "🔐 Cookie đã hết hạn hoặc không hợp lệ",
 		notLoggedInDescription: "Cookie HoYoLAB của bạn đã hết hạn hoặc không hợp lệ. Bạn cần cập nhật cookie mới.",
-		notLoggedInReasons:
-			"**Nguyên nhân có thể:**\n• Cookie đã hết hạn (thường sau 30 ngày)\n• Tài khoản HoYoLAB đã đăng xuất\n• Cookie bị thay đổi do đăng nhập lại\n• Tài khoản bị khóa tạm thời",
-		notLoggedInFixSteps:
-			"**Cách khắc phục:**\n1. Truy cập https://www.hoyolab.com/ và đăng nhập lại\n2. Lấy cookie mới theo hướng dẫn trên\n3. Dùng `/genshin bind` để cập nhật cookie mới\n4. Thử `/genshin claim` lại",
+		notLoggedInReasons: "**Nguyên nhân có thể:**\n• Cookie đã hết hạn (thường sau 30 ngày)\n• Tài khoản HoYoLAB đã đăng xuất\n• Cookie bị thay đổi do đăng nhập lại\n• Tài khoản bị khóa tạm thời",
+		notLoggedInFixSteps: "**Cách khắc phục:**\n1. Truy cập https://www.hoyolab.com/ và đăng nhập lại\n2. Lấy cookie mới theo hướng dẫn trên\n3. Dùng `/genshin bind` để cập nhật cookie mới\n4. Thử `/genshin claim` lại",
 	},
 	role: {
 		noReason: "Không có lý do",
