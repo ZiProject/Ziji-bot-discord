@@ -3,7 +3,7 @@ const router = express.Router();
 
 const { getManager } = require("ziplayer");
 const { useHooks } = require("zihooks");
-
+const Logger = useHooks.get("logger");
 const fs = require("fs");
 const path = require("path");
 const { pipeline } = require("stream/promises");
@@ -47,7 +47,7 @@ class CacheManager {
 						try {
 							fs.unlinkSync(info.path);
 							this.map.delete(id);
-							console.log("[Cache] GC deleted:", id);
+							Logger.debug("[Cache] GC deleted:", id);
 						} catch {}
 					}
 				}
@@ -73,7 +73,7 @@ router.get("/play", async (req, res) => {
 	cacheManager.touch(trackData.id, filePath);
 
 	if (!fs.existsSync(filePath)) {
-		console.log("[Stream] Download:", trackData.title);
+		Logger.debug("[Stream] Download:", trackData.title);
 
 		const player = await getManager().create("webid");
 		const stream = await player.save(trackData);
@@ -117,15 +117,22 @@ router.get("/play", async (req, res) => {
 	}
 });
 
-const deleteCacheFile = async (fileName) => {
+const clearCacheDirectory = async () => {
 	const cacheDir = path.join(process.cwd(), "cache");
-	const filePath = path.join(cacheDir, fileName);
 
 	try {
-		await fs.unlink(filePath);
-		console.log(`[Cache] Deleted: ${fileName}`);
+		const files = await fs.readdir(cacheDir);
+
+		const deletePromises = files.map((file) => {
+			const filePath = path.join(cacheDir, file);
+			return fs.rm(filePath, { recursive: true, force: true });
+		});
+
+		await Promise.all(deletePromises);
+
+		Logger.debug("[Cache] Clear");
 	} catch (error) {
-		console.error("Delete failed:", error.message);
+		Logger.error("[Cache] Delete failed:", error.message);
 	}
 };
 
@@ -136,7 +143,7 @@ module.exports.data = {
 	enable: true,
 };
 module.exports.execute = () => {
-	deleteCacheFile();
+	clearCacheDirectory();
 	const server = useHooks.get("server");
 	server.use("/api/stream", router);
 	return;
