@@ -4,138 +4,131 @@ const router = express.Router();
 const { getManager } = require("ziplayer");
 const { useHooks } = require("zihooks");
 
+const fs = require("fs");
+const path = require("path");
+const { pipeline } = require("stream/promises");
+
+
+class CacheManager {
+	constructor(dir, ttl = 30 * 60 * 1000) {
+		this.dir = dir;
+		this.ttl = ttl;
+		this.map = new Map(); // id -> { path, lastAccess, ref }
+
+		if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+		this.startGC();
+	}
+
+	touch(id, path) {
+		const entry = this.map.get(id) || { path, ref: 0 };
+		entry.lastAccess = Date.now();
+		this.map.set(id, entry);
+	}
+
+	lock(id) {
+		const entry = this.map.get(id);
+		if (entry) entry.ref++;
+	}
+
+	unlock(id) {
+		const entry = this.map.get(id);
+		if (entry) entry.ref = Math.max(0, entry.ref - 1);
+	}
+
+	startGC() {
+		setInterval(
+			() => {
+				const now = Date.now();
+
+				for (const [id, info] of this.map.entries()) {
+					if (info.ref > 0) continue; // đang stream
+
+					if (now - info.lastAccess > this.ttl) {
+						try {
+							fs.unlinkSync(info.path);
+							this.map.delete(id);
+							console.log("[Cache] GC deleted:", id);
+						} catch {}
+					}
+				}
+			},
+			5 * 60 * 1000,
+		);
+	}
+}
+
+const cacheManager = new CacheManager(path.join(process.cwd(), "cache"));
+
 router.get("/play", async (req, res) => {
+	let trackData;
+
 	try {
-		const trackData = JSON.parse(req.query.trackData);
+		trackData = JSON.parse(req.query.trackData);
+	} catch {
+		return res.sendStatus(400);
+	}
 
-		if (!trackData) {
-			return res.status(400).json({ error: "Track data required" });
-		}
+	const filePath = path.join(cacheManager.dir, `${trackData.id}.webm`);
 
-		const cacheKey = trackData.id || trackData.url;
-		console.log("[Stream] Request for:", trackData.title);
+	cacheManager.touch(trackData.id, filePath);
+
+	if (!fs.existsSync(filePath)) {
+		console.log("[Stream] Download:", trackData.title);
 
 		const player = await getManager().create("webid");
-		const streamInfo = await player.save(trackData);
+		const stream = await player.save(trackData);
 
-		if (!streamInfo) {
-			return res.status(404).json({ error: "Stream not available" });
-		}
+		await pipeline(stream, fs.createWriteStream(filePath));
+	}
 
-		const range = req.headers.range;
+	const stat = fs.statSync(filePath);
+	const range = req.headers.range;
+	const fileSize = stat.size;
 
-		if (!range) {
-			console.log("[Stream] Streaming from beginning");
+	cacheManager.lock(trackData.id);
 
-			res.setHeader("Content-Type", "audio/webm");
-			res.setHeader("Accept-Ranges", "bytes");
-			res.setHeader("Cache-Control", "public, max-age=3600");
-			res.setHeader("Connection", "keep-alive");
+	res.on("close", () => {
+		cacheManager.unlock(trackData.id);
+	});
 
-			streamInfo.pipe(res);
+	if (range) {
+		const parts = range.replace(/bytes=/, "").split("-");
+		const start = parseInt(parts[0], 10);
+		const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
 
-			streamInfo.on("error", (error) => {
-				console.error("[Stream] Stream error:", error);
-				if (!res.headersSent) {
-					res.status(500).end();
-				}
-			});
+		res.writeHead(206, {
+			"Content-Range": `bytes ${start}-${end}/${fileSize}`,
+			"Accept-Ranges": "bytes",
+			"Content-Length": end - start + 1,
+			"Content-Type": "audio/webm",
+			"Access-Control-Allow-Origin": "*",
+		});
 
-			req.on("close", () => {
-				console.log("[Stream] Client disconnected");
-				streamInfo.destroy();
-			});
-		} else {
-			console.log("[Stream] Range request:", range);
-			res.setHeader("Content-Type", "audio/webm");
-			res.setHeader("Accept-Ranges", "bytes");
-			res.setHeader("Cache-Control", "public, max-age=3600");
+		fs.createReadStream(filePath, { start, end }).pipe(res);
+	} else {
+		res.writeHead(200, {
+			"Content-Length": fileSize,
+			"Content-Type": "audio/webm",
+			"Accept-Ranges": "bytes",
+			"Access-Control-Allow-Origin": "*",
+		});
 
-			streamInfo.pipe(res);
-
-			streamInfo.on("error", (error) => {
-				console.error("[Stream] Stream error:", error);
-				if (!res.headersSent) {
-					res.status(500).end();
-				}
-			});
-
-			req.on("close", () => {
-				streamInfo.destroy();
-			});
-		}
-	} catch (error) {
-		console.error("[Stream] Error:", error);
-		if (!res.headersSent) {
-			res.status(500).json({ error: "Stream failed" });
-		}
+		fs.createReadStream(filePath).pipe(res);
 	}
 });
 
-router.post("/play", async (req, res) => {
-	const { track } = req.body;
-
-	if (!track) {
-		return res.status(400).json({ error: "Track required" });
-	}
+const deleteCacheFile = async (fileName) => {
+	const cacheDir = path.join(process.cwd(), "cache");
+	const filePath = path.join(cacheDir, fileName);
 
 	try {
-		console.log("[Stream] POST request for:", track.title);
-
-		const player = await getManager().create("default");
-		const streamInfo = await player.save(track);
-
-		if (!streamInfo) {
-			return res.status(404).json({ error: "Stream not available" });
-		}
-
-		const chunks = [];
-
-		streamInfo.on("data", (chunk) => {
-			chunks.push(chunk);
-		});
-
-		streamInfo.on("end", () => {
-			const buffer = Buffer.concat(chunks);
-			const totalLength = buffer.length;
-
-			const range = req.headers.range;
-
-			if (!range) {
-				res.setHeader("Content-Type", "audio/webm");
-				res.setHeader("Content-Length", totalLength);
-				res.setHeader("Accept-Ranges", "bytes");
-				res.setHeader("Cache-Control", "public, max-age=3600");
-				res.send(buffer);
-			} else {
-				const parts = range.replace(/bytes=/, "").split("-");
-				const start = parseInt(parts[0], 10);
-				const end = parts[1] ? parseInt(parts[1], 10) : totalLength - 1;
-				const chunksize = end - start + 1;
-
-				console.log(`[Stream] Range: ${start}-${end}/${totalLength}`);
-
-				res.status(206);
-				res.setHeader("Content-Type", "audio/webm");
-				res.setHeader("Content-Range", `bytes ${start}-${end}/${totalLength}`);
-				res.setHeader("Accept-Ranges", "bytes");
-				res.setHeader("Content-Length", chunksize);
-				res.setHeader("Cache-Control", "public, max-age=3600");
-				res.send(buffer.slice(start, end + 1));
-			}
-		});
-
-		streamInfo.on("error", (error) => {
-			console.error("[Stream] Stream error:", error);
-			if (!res.headersSent) {
-				res.status(500).json({ error: "Stream failed" });
-			}
-		});
+		await fs.unlink(filePath);
+		console.log(`[Cache] Deleted: ${fileName}`);
 	} catch (error) {
-		console.error("[Stream] Error:", error);
-		res.status(500).json({ error: "Stream failed" });
+		console.error("Delete failed:", error.message);
 	}
-});
+};
 
 module.exports.data = {
 	name: "streamRoutes",
@@ -144,6 +137,7 @@ module.exports.data = {
 	enable: true,
 };
 module.exports.execute = () => {
+	deleteCacheFile();
 	const server = useHooks.get("server");
 	server.use("/api/stream", router);
 	return;
