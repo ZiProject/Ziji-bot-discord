@@ -8,7 +8,6 @@ const fs = require("fs");
 const path = require("path");
 const { pipeline } = require("stream/promises");
 
-
 class CacheManager {
 	constructor(dir, ttl = 30 * 60 * 1000) {
 		this.dir = dir;
