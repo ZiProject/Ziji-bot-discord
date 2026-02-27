@@ -38,7 +38,7 @@ class StartupManager {
 
 		app.use(
 			cors({
-				origin: process.env.CORS ?? "*",
+				origin: getAllowedOrigins(),
 				methods: ["GET", "POST"],
 				credentials: true,
 			}),
@@ -89,5 +89,21 @@ class StartupManager {
 		useHooks.set("icon", zzicon); // Icon
 	}
 }
+
+const getAllowedOrigins = () => {
+	const raw = process.env.CORS_ORIGIN;
+
+	// 1. Trường hợp không định nghĩa hoặc là '*'
+	if (!raw || raw === "*") return "*";
+
+	// 2. Trường hợp là một mảng giả lập (chuỗi cách nhau bởi dấu phẩy)
+	// Ví dụ: CORS_ORIGIN=http://localhost:3000,https://ziji.world
+	if (raw.includes(",")) {
+		return raw.split(",").map((origin) => origin.trim());
+	}
+
+	// 3. Trường hợp là một String duy nhất
+	return raw;
+};
 
 module.exports = { StartupManager };
