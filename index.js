@@ -39,8 +39,8 @@ const client = new Client({
 });
 
 const ytbplg = new YouTubePlugin({
-	debug: true,
-	fallbackStream: new YTexec().getStream,
+	// debug: console.log,
+	fistStream: new YTexec().getStream,
 	clientType: "WEB_REMIX",
 	searchClientType: "WEB",
 });

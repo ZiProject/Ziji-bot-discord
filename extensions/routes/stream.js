@@ -121,18 +121,22 @@ const clearCacheDirectory = async () => {
 	const cacheDir = path.join(process.cwd(), "cache");
 
 	try {
-		const files = await fs.readdir(cacheDir);
+		const files = await fs.promises.readdir(cacheDir);
 
-		const deletePromises = files.map((file) => {
+		const webmFiles = files.filter((file) => file.endsWith(".webm"));
+
+		const deletePromises = webmFiles.map((file) => {
 			const filePath = path.join(cacheDir, file);
-			return fs.rm(filePath, { recursive: true, force: true });
+			return fs.promises.unlink(filePath);
 		});
 
 		await Promise.all(deletePromises);
 
-		Logger.debug("[Cache] Clear");
+		Logger.debug(`[Cache] Clear: Deleted ${webmFiles.length} .webm files`);
 	} catch (error) {
-		Logger.error("[Cache] Delete failed:", error.message);
+		if (error.code !== "ENOENT") {
+			Logger.error("[Cache] Delete failed: " + error.message);
+		}
 	}
 };
 
