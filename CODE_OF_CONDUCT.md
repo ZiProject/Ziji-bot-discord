@@ -6,7 +6,9 @@
 
 ## Our Pledge
 
-We as contributors and maintainers of **Zibot** pledge to make participation in our project and community a harassment-free experience for everyone — regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, nationality, personal appearance, race, religion, or sexual identity and orientation.
+We as contributors and maintainers of **Zibot** pledge to make participation in our project and community a harassment-free
+experience for everyone — regardless of age, body size, disability, ethnicity, gender identity and expression, level of
+experience, nationality, personal appearance, race, religion, or sexual identity and orientation.
 
 We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.
 
@@ -35,15 +37,20 @@ We pledge to act and interact in ways that contribute to an open, welcoming, div
 
 ## Our Responsibilities
 
-Project maintainers are responsible for clarifying the standards of acceptable behavior and are expected to take appropriate and fair corrective action in response to any instances of unacceptable behavior.
+Project maintainers are responsible for clarifying the standards of acceptable behavior and are expected to take appropriate and
+fair corrective action in response to any instances of unacceptable behavior.
 
-Maintainers have the right and responsibility to remove, edit, or reject comments, commits, code, issues, and other contributions that are not aligned with this Code of Conduct, and to temporarily or permanently ban any contributor for behaviors deemed inappropriate, threatening, offensive, or harmful.
+Maintainers have the right and responsibility to remove, edit, or reject comments, commits, code, issues, and other contributions
+that are not aligned with this Code of Conduct, and to temporarily or permanently ban any contributor for behaviors deemed
+inappropriate, threatening, offensive, or harmful.
 
 ---
 
 ## Scope
 
-This Code of Conduct applies within all project spaces — including the GitHub repository, issue tracker, pull requests, and our [Discord support server](https://discord.gg/GQyJkZDtdX) — as well as in public spaces when an individual is representing the project or its community.
+This Code of Conduct applies within all project spaces — including the GitHub repository, issue tracker, pull requests, and our
+[Discord support server](https://discord.gg/GQyJkZDtdX) — as well as in public spaces when an individual is representing the
+project or its community.
 
 ---
 
@@ -54,19 +61,21 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be repor
 - Opening a **private** GitHub issue
 - Contacting the maintainer directly via the [Support Server](https://discord.gg/GQyJkZDtdX)
 
-All complaints will be reviewed and investigated promptly and fairly. The project team is obligated to maintain confidentiality with regard to the reporter of an incident.
+All complaints will be reviewed and investigated promptly and fairly. The project team is obligated to maintain confidentiality
+with regard to the reporter of an incident.
 
-Maintainers who do not follow or enforce the Code of Conduct in good faith may face temporary or permanent repercussions as determined by other members of the project's leadership.
+Maintainers who do not follow or enforce the Code of Conduct in good faith may face temporary or permanent repercussions as
+determined by other members of the project's leadership.
 
 ---
 
 ## Enforcement Guidelines
 
-| Violation | Consequence |
-|-----------|-------------|
+| Violation                                                 | Consequence                                |
+| --------------------------------------------------------- | ------------------------------------------ |
 | Minor — inappropriate language or unprofessional behavior | Private written warning with clarification |
-| Moderate — repeated violations or targeted harassment | Temporary ban from community spaces |
-| Severe — sustained harassment, threats, or doxxing | Permanent ban from all project spaces |
+| Moderate — repeated violations or targeted harassment     | Temporary ban from community spaces        |
+| Severe — sustained harassment, threats, or doxxing        | Permanent ban from all project spaces      |
 
 ---
 
@@ -80,6 +89,7 @@ For answers to common questions about this code of conduct, see the [FAQ](https:
 
 <div align="center">
 
-[Add Bot](https://discord.com/oauth2/authorize?client_id=1005716197259612193) • [Support Server](https://discord.gg/GQyJkZDtdX) • [GitHub](https://github.com/zijipia/Ziji-bot-discord)
+[Add Bot](https://discord.com/oauth2/authorize?client_id=1005716197259612193) • [Support Server](https://discord.gg/GQyJkZDtdX) •
+[GitHub](https://github.com/zijipia/Ziji-bot-discord)
 
 </div>
