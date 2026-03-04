@@ -1,9 +1,15 @@
 const { useHooks } = require("zihooks");
 
 /**
- * This events file run at "Events Helper" event emitted.
+ * This events file run at "Events" event emitted.
  * registered in index, startup/loader
+ * Nowloaded by:
+ 		folder events/client" Discord Client
+		folder events/process" process
+		folder events/console" readline
+		folder events/player" Ziplayer Manager
  */
+
 module.exports = {
 	name: "Events Helper",
 	type: "events",
