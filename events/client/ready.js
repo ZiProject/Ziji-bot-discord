@@ -51,7 +51,7 @@ module.exports = {
 			logger?.info?.("Connected to LocalDB!");
 			client.errorLog("Connected to LocalDB!");
 		} else {
-			useHooks.set("db", require("../../startup/mongoDB"));
+			useHooks.set("db", require("../../models/mongoDB"));
 			logger?.info?.("Connected to MongoDB!");
 			client.errorLog("Connected to MongoDB!");
 		}

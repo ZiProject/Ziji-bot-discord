@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { ZiUser } = require("../startup/mongoDB");
+const { ZiUser } = require("../models/mongoDB");
 
 // ZiGold emoji
 const zigoldEmoji = "🪙";
