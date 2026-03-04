@@ -1,172 +1,148 @@
 <div align="center">
-<a  href="https://discord.com/oauth2/authorize?client_id=1005716197259612193"><img  src="https://img.shields.io/badge/ADD_Bot-Ziji_Bot?style=for-the-badge&label=Ziji%20Bot&color=%237289DA"  alt="Add Ziji bot"></a> <a  href="https://discord.gg/zaskhD7PTW"><img  src="https://img.shields.io/discord/1007597270704869387?style=for-the-badge&color=%237289DA"  alt="Ziji Discord support server"></a>
+  <img src="https://raw.githubusercontent.com/zijipia/zijipia/main/Assets/ZijiAvt.gif" width="80" alt="Ziji Bot"/>
+
+  <h1>Zibot V10</h1>
+  <p>A feature-rich Discord bot built with <a href="https://discord.js.org/">discord.js</a> and <a href="https://player.ziji.world">ziplayer</a></p>
+
+  <a href="https://discord.com/oauth2/authorize?client_id=1005716197259612193">
+    <img src="https://img.shields.io/badge/Add%20to%20Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Add Ziji Bot"/>
+  </a>
+  <a href="https://discord.gg/zaskhD7PTW">
+    <img src="https://img.shields.io/discord/1007597270704869387?style=for-the-badge&color=7289DA&logo=discord&logoColor=white&label=Support" alt="Support Server"/>
+  </a>
+  <a href="./LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License"/>
+  </a>
 </div>
 
-# [<img src="https://raw.githubusercontent.com/zijipia/zijipia/main/Assets/ZijiAvt.gif" width="15"/>](./) Zibot V10
+---
 
-Zibot is a Discord bot developed by [zijipia](https://github.com/zijipia) to enhance your Discord server with various
-functionalities, using [discord.js](https://discord.js.org/) and [ziplayer](https://player.ziji.world)
+## ✨ Features
 
-# Join [Zi bot Playground:](https://discord.gg/32GkbyXtbA) to get icon of bot.
+### 🎵 Music Player
 
-## Features
-
-- **Event Handling**: Respond to various Discord events.
-
-- **Music Player**:
+Full-featured music playback with an interactive player UI, queue management, search, and more.
 
 <table>
 <tr>
-<td width="50%">
-<img  alt="Player"  src="https://raw.githubusercontent.com/zijipia/zijipia/Ziji-Discord-Bot-Image/Assets/Player.png"  /></td>
-<td width="50%">
-<img  alt="Search"  src="https://github.com/zijipia/zijipia/blob/Ziji-Discord-Bot-Image/Assets/search.png"  />
-</td>
+<td width="50%"><img alt="Player" src="https://raw.githubusercontent.com/zijipia/zijipia/Ziji-Discord-Bot-Image/Assets/Player.png"/></td>
+<td width="50%"><img alt="Search" src="https://github.com/zijipia/zijipia/blob/Ziji-Discord-Bot-Image/Assets/search.png"/></td>
 </tr>
 </table>
 
-## Web:
+### 🎤 Voice Commands
 
-| Web Control                                                                                                                          | Web Music                                                                                                                            |
-| :----------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
-| [Ziji-bot-web](https://github.com/zijipia/Ziji-bot-web)                                                                              | [Music-Player ](https://github.com/zijipia/Music-Player)                                                                             |
-| <img width="1909" height="1115" alt="image" src="https://github.com/user-attachments/assets/b2ee308e-2f46-4c20-86a6-c7f95108a86b" /> | <img width="1909" height="1115" alt="image" src="https://github.com/user-attachments/assets/4b7b4988-c61b-4a1b-b424-25a0d103c639" /> |
+- Control music via voice: play, pause, skip, volume, and more
+- Multi-language recognition: **Vietnamese** & **English**
+- Built-in **AI assistant** — talk to the AI directly in voice channels
 
-- **Lyrics**: Using Lrclib
-  - synced Lyrics
+### 📝 Lyrics
 
-  - plain Lyrics
+Powered by [Lrclib](https://lrclib.net) — supports both **synced** (real-time) and **plain** lyrics.
 
-- **Voice command**:
-  - Voice control for music: play, pause, skip, adjust volume, and more.
+### 🎮 Mini-Games
 
-  - Multi-language support: Recognizes and responds in Vietnamese/ English.
+2048 · Blackjack · Coinflip · Slots · Snake · Battle · Tic-Tac-Toe · Wheel · and more
 
-  - Integrated AI assistant: Interact with AI assistant using voice in voice channels.
+### 🛡️ Moderation
 
-- **minigame**:
-  - 2048
-  - blackjack
-  - coinflip
-  - slots
-  - snake
-  - ...
+Ban · Kick · Timeout · Purge · Auto-Responder · Giveaways · Ticket system · Welcomer
 
-# Installation
+### 🌐 Web Interface
 
-## Setup bot
+| Web Control                                                                                                    | Web Music Player                                                                                             |
+| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [Ziji-bot-web](https://github.com/zijipia/Ziji-bot-web)                                                        | [Music-Player](https://github.com/zijipia/Music-Player)                                                      |
+| <img alt="Web Control" src="https://github.com/user-attachments/assets/b2ee308e-2f46-4c20-86a6-c7f95108a86b"/> | <img alt="Web Music" src="https://github.com/user-attachments/assets/4b7b4988-c61b-4a1b-b424-25a0d103c639"/> |
 
-Go to [discord.dev](https://discord.dev/) create your applications
+---
 
-![image](https://github.com/user-attachments/assets/6f846a76-eb0c-4bdd-bda2-b23e0390f782) ↗
-![image](https://github.com/user-attachments/assets/c1498103-e22e-43d2-b4d0-bf19de872a5d)
+## 🚀 Installation
 
-Enable Privileged Gateway Intents: ![image](https://github.com/user-attachments/assets/e4212b5d-6932-4160-831e-e30b212db3da) ↴
+### 1. Create a Discord Application
 
-![image](https://github.com/user-attachments/assets/17cf92bf-76d4-43e0-8cb0-ff901f9e8f78)
+1. Go to [discord.dev](https://discord.com/developers/applications) and create a new application.
+2. Navigate to **Installation** → enable all **Installation Contexts**:
+   - Default Install Settings:
+     - User Install → enable **applications.commands**
+     - Guild Install → enable **applications.commands** and **bot**, Permissions optional
+   - link add bot at **Install Link** → https://discord.com/oauth2/authorize?client_id=1005716197259612193
 
-Reset token and add this to setp 3 below.
+3. Navigate to **Bot** → enable all **Privileged Gateway Intents**:
+   - Presence Intent
+   - Server Members Intent
+   - Message Content Intent
 
-## Setup project
+4. Reset your bot token and save it for the next step.
 
-1. Clone the repository or download project:
-
-```bash
-
-git  clone  https://github.com/zijipia/Zibot.git
-
-cd  Zibot
-
-```
-
-2. Install dependencies:
+### 2. Clone & Install
 
 ```bash
-
-npm  install
-
+git clone https://github.com/ZiProject/Ziji-bot-discord.git
+cd Zibot
+npm install
 ```
 
-3. Set up your environment variables (e.g., TOKEN, MONGO), config:
+### 3. Configure Environment
 
-- Rename file .env.example to .env:
+Rename `.env.example` → `.env` and fill in your values:
 
-```bash
-
-TOKEN  =  "Your Bot Token"  # required
-
-MONGO  =  "Your Bot Mongo URI"  # optional
-
-...
-
+```env
+TOKEN  = "Your Bot Token"       # required
+MONGO  = "Your MongoDB URI"     # optional
 ```
 
-- Rename file config.js.example to config.js
+Rename `config.js.example` → `config.js`:
 
 ```js
-
-module.exports  =  {
-
-
-
-deploy:  true,
-
-
-
-defaultCooldownDuration:  5000,
-
-
-
-ImageSearch:  true,
-
-
-
-}
-
-...
-
+module.exports = {
+	deploy: true,
+	defaultCooldownDuration: 5000,
+	ImageSearch: true,
+	// ...
+};
 ```
 
-4. Start the bot:
+### 4. Start the Bot
 
 ```bash
-
-node  .
-
-#or
-
-npm  run  start
-
-#or for dev ( using nodemon)
-
-npm  run  dev
-
+node .          # standard
+npm run start   # via npm
+npm run dev     # development (nodemon)
 ```
 
-## Using ngrok
+---
 
-1. Visit [ngrok's dashboard](https://dashboard.ngrok.com) and log in with your account or create it if you don't have.
-2. Go to [Your Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken) in the sidebar, copy the token and paste into
-   `.env` -> `NGROK_AUTHTOKEN`
-3. Go to [Domain](https://dashboard.ngrok.com/domains), generate a domain if you don't have and copy it
-4. Copy the domain and paste it into `.env` -> `NGROK_DOMAIN` _(The domain is look like `something.ngrok-free.app`)_
+## 🌍 ngrok Setup (Optional)
 
-> [!IMPORTANT] Don't create Edges or it won't work, you can delete it after creating, enable webapp in config!
+Expose the bot's web server to the internet using [ngrok](https://ngrok.com).
 
-<img  alt="ngrok"  src="https://files.catbox.moe/dqc3z6.png"  />
+1. Log in at [ngrok dashboard](https://dashboard.ngrok.com) and copy your **Authtoken** → paste into `.env` as `NGROK_AUTHTOKEN`
+2. Go to [Domains](https://dashboard.ngrok.com/domains), generate a free domain → paste into `.env` as `NGROK_DOMAIN` _(format:
+   `something.ngrok-free.app`)_
+3. Enable `webapp` in `config.js`
 
-## Contributing
+> [!IMPORTANT] Do **not** create Edges in the ngrok dashboard — it will break the tunnel. Delete any existing Edges before
+> starting.
 
-Contributions are welcome!
+<img alt="ngrok example" src="https://files.catbox.moe/dqc3z6.png"/>
 
-If you made some changes that you think should make it into the project, send a Pull Request on GitHub
+---
 
-## License
+## 🤝 Contributing
 
-This project is licensed under the MIT License. See the [LICENSE](./blob/main/LICENSE) file for details.
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before submitting a pull request.
 
-## Contact
+---
 
-For more information, visit the [project page](https://github.com/zijipia/Ziji-bot-discord)
+## 📄 License
 
-[Support sever](https://discord.gg/GQyJkZDtdX).
+This project is licensed under the **MIT License** — see [LICENSE](./LICENSE) for details.
+
+---
+
+## 📬 Contact
+
+- 🐙 GitHub: [ZiProject/Ziji-bot-discord](https://github.com/ZiProject/Ziji-bot-discord)
+- 💬 Support Server: [discord.gg/GQyJkZDtdX](https://discord.gg/GQyJkZDtdX)
+- 🎮 Bot Playground: [discord.gg/32GkbyXtbA](https://discord.gg/32GkbyXtbA) _(get the bot icon here)_
