@@ -9,8 +9,9 @@
 // CombatEngine (combat.js) is called separately for combat phases.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const Character   = require("../../models/Character");
-const DungeonRun  = require("../../models/DungeonRun");
+const { useHooks } = require("zihooks");
+const { Character, DungeonRun } = useHooks.get("db");
+
 const SeededRNG   = require("./seededRng");
 const { getDungeonConfig, generateFloorPlan } = require("../../data/dungeons");
 const { getNormalMonsters, getEliteMonsters, getBossForTier, scaleMonster } = require("../../data/monsters");

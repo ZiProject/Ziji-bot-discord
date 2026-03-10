@@ -16,9 +16,10 @@
 //   S_GACHA_SHOP_BUY                    → stardust shop purchase
 // ─────────────────────────────────────────────────────────────────────────────
 
-const Character   = require("../../models/Character");
-const GachaBanner = require("../../models/GachaBanner");
-const GachaPlayer = require("../../models/GachaPlayer");
+const { useHooks } = require("zihooks");
+const { Character, GachaBanner, GachaPlayer } = useHooks.get("db");
+
+
 const GachaEngine = require("./gachaEngine");
 const {
   buildBannerListEmbed, buildBannerDetailEmbed, buildPullResultEmbed,

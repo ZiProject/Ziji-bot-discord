@@ -6,9 +6,12 @@
 
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle,
         ModalBuilder, TextInputBuilder, TextInputStyle, EmbedBuilder } = require("discord.js");
-const { useHooks }    = require("zihooks");
-const Character       = require("../../models/Character");
-const DungeonRun      = require("../../models/DungeonRun");
+
+
+const { useHooks } = require("zihooks");
+const { Character, DungeonRun } = useHooks.get("db");
+
+
 const DungeonEngine   = require("./dungeon");
 const { CombatEngine } = require("./combat");
 const { CLASSES }     = require("../../data/classes");
