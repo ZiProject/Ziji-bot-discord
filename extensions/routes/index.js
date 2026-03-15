@@ -5,6 +5,7 @@ module.exports.data = {
 	description: "Index of all route modules",
 	version: "1.0.0",
 	enable: true,
+	priority: 9,
 };
 
 module.exports.execute = (client) => {

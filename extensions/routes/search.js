@@ -6,6 +6,7 @@ module.exports.data = {
 	description: "Search route for querying tracks",
 	version: "1.0.0",
 	enable: true,
+	priority: 9,
 };
 
 module.exports.execute = () => {

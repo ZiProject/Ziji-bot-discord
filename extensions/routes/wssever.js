@@ -6,6 +6,7 @@ module.exports.data = {
 	description: "WebSocket server",
 	version: "1.0.0",
 	enable: true,
+	priority: 9,
 };
 
 module.exports.execute = () => {

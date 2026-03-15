@@ -148,6 +148,7 @@ module.exports.data = {
 	description: "Hybrid progressive streaming route",
 	version: "2.0.0",
 	enable: true,
+	priority: 9,
 };
 
 module.exports.execute = () => {

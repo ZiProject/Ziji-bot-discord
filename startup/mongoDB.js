@@ -39,6 +39,23 @@ const ZiUser = Schema({
 	// Quest system
 	dailyQuests: { type: Array, default: [] },
 	lastQuestReset: { type: Date },
+	// Discord session & guild cache (used by Bot API)
+	discordAccessToken: { type: String, default: null },
+	userInfo: { type: Schema.Types.Mixed, default: {} },
+	guilds: {
+		type: [
+			{
+				id: { type: String },
+				name: { type: String },
+				icon: { type: String, default: null },
+				owner: { type: Boolean, default: false },
+				permissions: { type: String, default: null },
+				permissionsNew: { type: String, default: null },
+			},
+		],
+		default: [],
+	},
+	updatedAt: { type: Date },
 });
 
 const ZiAutoresponder = Schema(
@@ -61,7 +78,7 @@ const ZiWelcome = Schema(
 		channel: { type: String, required: true },
 		content: { type: String, required: true },
 		Bchannel: { type: String, required: true },
-		Bcontent: { type: String }, // Corrected duplicate
+		Bcontent: { type: String },
 	},
 	{
 		timestamps: true,
@@ -91,6 +108,7 @@ const ZiGuild = Schema({
 		enabled: { type: Boolean, default: false },
 		roleIds: { type: [String], default: [] },
 	},
+	updatedAt: { type: Date },
 });
 
 const ZiConfess = Schema({
