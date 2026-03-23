@@ -278,16 +278,6 @@ module.exports = {
 			value: " ",
 			inline: true,
 		});
-		// if (!!queue?.filters?.ffmpeg?.toArray().length) {
-		// 	embed.addFields({
-		// 		name: ` `,
-		// 		value: `**${lang?.playerFunc?.Fields?.Filter || "Filter"}: ${queue?.filters?.ffmpeg?.getFiltersEnabled()}**`.slice(
-		// 			0,
-		// 			1020,
-		// 		),
-		// 		inline: false,
-		// 	});
-		// }
 		code.embeds = [embed];
 		code.files = [];
 
