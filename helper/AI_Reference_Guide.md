@@ -2,55 +2,6 @@
 
 ---
 
-## 0. Project Structure
-
-```
-ziji-bot/
-├── commands/           # Slash & context menu commands
-│   ├── config/         # User/guild settings (language)
-│   ├── context/        # Right-click context menus (play, quote, translate)
-│   ├── fun/            # Fun commands (ai, anime, avatar, quote, userinfo)
-│   ├── games/          # Mini-games (2048, blackjack, slots, snake, zoo…)
-│   ├── moderation/     # Mod tools (ban, kick, purge, ticket, welcomer…)
-│   ├── music/          # Music commands (play, filter, lyrics, tts, volume…)
-│   ├── owner/          # Bot owner only (eval, shutdown, dev-ban…)
-│   ├── random/         # Random media (cat, dog)
-│   └── utility/        # General utilities (help, profile, translate, weather…)
-│
-├── events/             # Event listeners (loaded by startup/loader)
-│   ├── client/         # Discord client events (ready, interactionCreate…)
-│   ├── console/        # readline events (line, close)
-│   ├── player/         # Ziplayer events (trackStart, queueEnd, ttsStart…)
-│   └── process/        # Node.js process events (uncaughtException…)
-│
-├── extensions/         # Run once at startup (services, routes, AI init…)
-│   └── routes/         # Express/WS routes (lyrics, search, stream…)
-│
-├── functions/          # Interaction handlers (indexed by customId)
-│   ├── ai/             # AI runners (runAI, runVoice)
-│   ├── button/         # Button handlers (B_*)
-│   ├── modal/          # Modal submit handlers (M_*)
-│   ├── other/          # Misc (joinToCreate, Variable)
-│   ├── player/         # Music UI logic (Queue, Search, TTS, player_func)
-│   ├── ranksys/        # ZiRank — XP + language resolution
-│   ├── SelectMenu/     # Select menu handlers (S_*)
-│   └── utils/          # Shared embeds (errorEmbed, successEmbed)
-│
-├── helper/             # Template files for devs (commands/events/functions/extensions)
-├── lang/               # Language files (en.js, vi.js, ja.js)
-├── startup/            # Boot sequence (loader, deploy, mongoDB, logger…)
-├── utility/            # Canvas cards & image generators (rank, welcome, music…)
-├── utils/              # Standalone helpers (hoyolab, lootbox, zigoldManager)
-└── data/               # Static data (animals.json)
-```
-
----
-
-> This document describes the architecture, file structure, and behavior of Ziji Bot — a Discord bot built with Node.js and
-> Discord.js. Last updated to reflect the full project tree.
-
----
-
 ## 1. Architecture Overview
 
 Ziji Bot uses a custom hook system called **`zihooks`** to share global state across all modules via a singleton `Map` named
@@ -85,7 +36,7 @@ const logger = useHooks.get("logger");
 
 ---
 
-## 2. Event Loader Structure
+## 2. Create Event
 
 The bot loads events from 4 directories:
 
@@ -128,7 +79,7 @@ module.exports = {
 
 ---
 
-## 4. File Template: `commands.js`
+## 4. Create commands: `commands.js`
 
 Slash commands and context menu commands. Stored in `useHooks.get("commands")`, indexed by `name`.
 
@@ -190,7 +141,7 @@ module.exports.run = async ({ message, args, lang }) => {
 
 ---
 
-## 5. File Template: `functions.js`
+## 5. Add functions: `functions.js`
 
 Functions handle **message components** (buttons, select menus), **modals**, and any interaction identified by a `customId`.
 Stored in `useHooks.get("functions")`, indexed by `name` (which must match the `customId`).
@@ -224,7 +175,7 @@ await useHooks.get("functions").get("Functions Helper").execute(args);
 
 ---
 
-## 6. File Template: `extensions.js`
+## 6. Add extensions: `extensions.js`
 
 Extensions run **once at bot startup**. Used to initialize services, register external connections, patch global behavior, etc.
 
@@ -250,75 +201,7 @@ module.exports.execute = async (client) => {
 
 ---
 
-## 7. Core Event: `interactionCreate` — Main Execution Flow
-
-This event handles all Discord interactions. Full flow:
-
-```
-Interaction received
-  │
-  ├─ isChatInputCommand / isAutocomplete / isMessageContextMenuCommand
-  │     → look up in commands Collection by commandName
-  │
-  └─ isMessageComponent / isModalSubmit
-        → look up in functions Collection by customId
-         │
-         ▼
-   Not found? → logger.debug, return early
-         │
-         ▼
-   Call ZiRank function
-     → returns lang object for user's language
-     → adds XP to user (XpADD: 0 if autocomplete)
-         │
-         ▼
-   isAutocomplete?
-     → call command.autocomplete({ interaction, lang }), return
-         │
-         ▼
-   checkStatus()
-     1. Does bot have SendMessages + ViewChannel permission in channel?
-     2. Is the user banned? (checked in jsons/developer.json)
-     3. Is the user an OwnerID? → skip all further checks
-     4. isModalSubmit? → skip cooldown
-     5. Is the user on cooldown? (default: 3000ms)
-        → reply with remaining time if so
-         │
-         ▼
-   command.data.category === "musix"?
-     → checkMusicstat():
-         - Must be in a guild
-         - lock=true → user must be the current music host (requestedBy)
-         - ckeckVoice=true → user must be in same voice channel as bot
-         │
-         ▼
-   command.execute({ interaction, lang, ...cmdops })
-```
-
----
-
-## 8. Language System (`lang`)
-
-- Retrieved via the `ZiRank` function inside the `functions` collection.
-- Returns a language object based on the user's saved language preference.
-- Default language file: `lang/vi.js`.
-- Also awards XP to the user on each interaction (set `XpADD: 0` to skip).
-
-### Common `lang` Keys
-
-| Key                       | Description                                                    |
-| ------------------------- | -------------------------------------------------------------- |
-| `lang.until.NOPermission` | Bot lacks permission in the channel                            |
-| `lang.until.banned`       | User is banned from using the bot                              |
-| `lang.until.cooldown`     | Cooldown message (supports `{command}`, `{time}` placeholders) |
-| `lang.until.noGuild`      | Command can only be used in a guild                            |
-| `lang.until.noPermission` | User lacks permission due to lock                              |
-| `lang.music.NoPlaying`    | No music is currently playing                                  |
-| `lang.music.NOvoiceMe`    | User is not in the bot's voice channel                         |
-
----
-
-## 9. Music System (Musix / Ziplayer)
+## 9. Music System (Ziplayer)
 
 Uses the **`ziplayer`** library. Retrieve a guild's player instance:
 
@@ -340,31 +223,6 @@ const player = getPlayer(interaction.guild.id);
 - `checkMusicstat()` runs automatically before `execute`.
 - If checks pass, `player` is injected into `execute` args.
 - If checks fail, the interaction is replied to with an error and execution stops.
-
----
-
-## 10. Error Handling
-
-```js
-try {
-	await command.execute({ interaction, lang, ...cmdops });
-} catch (error) {
-	client.errorLog(`**${error.message}**`);
-	client.errorLog(error.stack);
-
-	const response = { content: "There was an error while executing this command!", ephemeral: true };
-
-	if (interaction.replied || interaction.deferred) {
-		await interaction.followUp(response).catch(() => {});
-	} else {
-		await interaction.reply(response).catch(() => {});
-	}
-}
-```
-
-- All errors are logged via `client.errorLog()`.
-- The user always receives an ephemeral error message.
-- Uses `followUp` if the interaction was already replied/deferred, otherwise `reply`.
 
 ---
 
