@@ -3,10 +3,7 @@ const client = useHooks.get("client");
 const logger = useHooks.get("logger");
 const { exec } = require("child_process");
 
-const blockedCommands = [
-	"rm", "chmod", "sudo", "su", "reboot",
-	"shutdown", "poweroff", "halt", "dd", "mkfs", "mount", "umount"
-];
+const blockedCommands = ["rm", "chmod", "sudo", "su", "reboot", "shutdown", "poweroff", "halt", "dd", "mkfs", "mount", "umount"];
 
 // ✅ Graceful shutdown handler
 let shuttingDown = false;
@@ -29,8 +26,8 @@ const shutdown = async (signal) => {
 };
 
 // ✅ Handle signals
-process.on("SIGINT", shutdown);   // Ctrl+C
-process.on("SIGTERM", shutdown);  // kill / Docker stop
+process.on("SIGINT", shutdown); // Ctrl+C
+process.on("SIGTERM", shutdown); // kill / Docker stop
 
 module.exports = {
 	name: "line",
@@ -68,8 +65,7 @@ module.exports = {
 				const cmd = args.join(" ");
 
 				if (!cmd) return console.log("❌ Vui lòng nhập lệnh hệ thống!");
-				if (blockedCommands.some((b) => cmd.includes(b)))
-					return console.log(`🚫 Lệnh "${cmd}" bị cấm vì lý do bảo mật!`);
+				if (blockedCommands.some((b) => cmd.includes(b))) return console.log(`🚫 Lệnh "${cmd}" bị cấm vì lý do bảo mật!`);
 
 				exec(cmd, (error, stdout, stderr) => {
 					if (error) return console.error(`❌ Lỗi: ${error.message}`);
@@ -80,9 +76,7 @@ module.exports = {
 
 			case "help":
 			case "h":
-				logger.info(
-					`Danh sách các lệnh:\n- help\n- ping\n- stop\n- status`
-				);
+				logger.info(`Danh sách các lệnh:\n- help\n- ping\n- stop\n- status`);
 				break;
 
 			default:
