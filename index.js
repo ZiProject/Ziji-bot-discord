@@ -45,11 +45,9 @@ const ytbplg = new YouTubePlugin({
 	searchClientType: "WEB",
 });
 
-const spotiplg = new SpotifyPlugin();
-spotiplg.getStream = ytbplg.getFallback; // use ytbplg's getStream function to play spotify links, since spotify doesn't provide audio streams directly, it needs to search for the corresponding youtube video and play it instead. So we can just use ytbplg's getStream function to play spotify links.
 //create Player Manager
 const manager = new PlayerManager({
-	plugins: [new TTSPlugin(), ytbplg, new SoundCloudPlugin(), spotiplg, new AttachmentsPlugin()],
+	plugins: [new TTSPlugin(), ytbplg, new SoundCloudPlugin(), new SpotifyPlugin(), new AttachmentsPlugin()],
 	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
 });
 manager.create("search");
