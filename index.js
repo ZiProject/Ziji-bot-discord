@@ -43,7 +43,7 @@ const config = startup.getConfig();
 
 // Player
 const ytbplg = new YouTubePlugin({
-	debug: logger.debug,
+	// debug: console.log,
 	fistStream: new YTexec().getStream,
 	clientType: "WEB_REMIX",
 	searchClientType: "WEB",
