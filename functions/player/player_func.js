@@ -62,7 +62,7 @@ module.exports = {
 
 		const embed = new EmbedBuilder()
 			.setAuthor({
-				name: `${track?.metadata?.author} - ${track?.title}`.slice(0, 256),
+				name: `${track?.metadata?.author ? `${track.metadata.author} - ` : ""}${track?.title}`.slice(0, 256),
 				iconURL: `${queryTypeIcon}`,
 				url: track?.url,
 			})
@@ -91,7 +91,7 @@ module.exports = {
 		const trackOptions = filteredTracks.map((track, i) => {
 			return new StringSelectMenuOptionBuilder()
 				.setLabel(`${i + 1}: ${track.title}`.slice(0, 99))
-				.setDescription(`Duration: ${track.duration} source: ${track.queryType}`)
+				.setDescription(`Duration: ${track.duration} source: ${track.source}`)
 				.setValue(`${track.url}`)
 				.setEmoji(`${ZiIcons.Playbutton}`);
 		});

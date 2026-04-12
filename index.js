@@ -37,9 +37,13 @@ const client = new Client({
 		repliedUser: false,
 	},
 });
+const startup = new StartupManager(client);
+const logger = startup.getLogger();
+const config = startup.getConfig();
 
+// Player
 const ytbplg = new YouTubePlugin({
-	// debug: console.log,
+	debug: logger.debug,
 	fistStream: new YTexec().getStream,
 	clientType: "WEB_REMIX",
 	searchClientType: "WEB",
@@ -51,10 +55,6 @@ const manager = new PlayerManager({
 	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
 });
 manager.create("search");
-
-const startup = new StartupManager(client);
-const logger = startup.getLogger();
-const config = startup.getConfig();
 
 const rl = readline.createInterface({
 	input: process.stdin,
