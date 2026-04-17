@@ -12,6 +12,8 @@ const { default: PlayerManager } = require("ziplayer");
 const { TTSPlugin, YTSRPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin, AttachmentsPlugin } = require("@ziplayer/plugin");
 const { lyricsExt, voiceExt } = require("@ziplayer/extension");
 const { YTexec } = require("@ziplayer/ytexecplug");
+const { InfinityPlugin } = require("@ziplayer/infinity");
+
 const client = new Client({
 	rest: [{ timeout: 60_000 }],
 	intents: [
@@ -51,7 +53,7 @@ const ytbplg = new YouTubePlugin({
 
 //create Player Manager
 const manager = new PlayerManager({
-	plugins: [new TTSPlugin(), ytbplg, new SoundCloudPlugin(), new SpotifyPlugin(), new AttachmentsPlugin()],
+	plugins: [new TTSPlugin(), ytbplg, new SoundCloudPlugin(), new SpotifyPlugin(), new InfinityPlugin(), new AttachmentsPlugin()],
 	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
 });
 manager.create("search");
