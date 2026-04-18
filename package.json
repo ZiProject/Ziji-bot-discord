@@ -33,7 +33,7 @@
 		"@zibot/db": "^0.0.2",
 		"@zibot/ziencryptor": "^0.0.1",
 		"@ziplayer/extension": "^0.1.1",
-		"@ziplayer/infinity": "^0.0.1",
+		"@ziplayer/infinity": "^0.0.2",
 		"@ziplayer/plugin": "^0.2.6",
 		"@ziplayer/ytexecplug": "^0.0.2",
 		"axios": "^1.13.5",
