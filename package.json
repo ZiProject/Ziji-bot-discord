@@ -34,12 +34,12 @@
 		"@zibot/ziencryptor": "^0.0.1",
 		"@ziplayer/extension": "^0.1.1",
 		"@ziplayer/infinity": "^0.0.2",
-		"@ziplayer/plugin": "^0.2.6",
+		"@ziplayer/plugin": "^0.2.7",
 		"@ziplayer/ytexecplug": "^0.0.2",
 		"axios": "^1.13.5",
 		"axios-cookiejar-support": "^6.0.4",
 		"canvacord": "^6.0.2",
-		"canvacord-gif": "^1.0.0",
+		"canvacord-gif": "^1.0.1",
 		"chalk": "^4.1.2",
 		"cloudflared": "^0.7.1",
 		"cors": "^2.8.5",
@@ -72,5 +72,13 @@
 		"cross-env": "^10.0.0",
 		"nodemon": "^3.1.14",
 		"prettier": "^3.3.2"
+	},
+	"overrides": {
+		"@iamtraction/google-translate": {
+			"undici": "^6.25.0"
+		},
+		"discord-giveaways": {
+			"serialize-javascript": "^7.0.5"
+		}
 	}
 }
