@@ -373,8 +373,13 @@ async function sendSearchResults(interaction, query, tracks, lang) {
 			})),
 		);
 	logger.debug("Search results sent");
-	return interaction.editReply({ embeds: [embed], components: [row] }).catch(() => {
+	return interaction.editReply({ embeds: [embed], components: [row] }).catch(async () => {
 		logger.debug("Failed to edit reply with search results");
+		await interaction.followUp({ embeds: [embed], components: [row], ephemeral: true }).catch(async () => {
+			await interaction.channel.send({ embeds: [embed], components: [row] }).catch(() => {
+				logger.error("Failed to send search results in channel");
+			});
+		});
 	});
 }
 //#endregion Search Track
