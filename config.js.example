@@ -153,10 +153,10 @@ module.exports = {
 	 */
 	webAppConfig: {
 		/**
-		 * Tùy chọn tắt, mở
-		 * Toggle on/off
+		 * Link cài đặt người dùng cho bot
+		 * User-setting for bot link
 		 */
-		enabled: false,
+		dashboardUrl: "https://bot.ziji.best",
 		/**
 		 * Link điều khiển nhạc
 		 * Music controller link
@@ -167,11 +167,6 @@ module.exports = {
 		 * Bot status page
 		 */
 		statusUrl: 'https://garretapp.betteruptime.com/',
-		/**
-		 * Link cài đặt người dùng cho bot
-		 * User-setting for bot link
-		 */
-		dashboardUrl: 'https://zibot-dashboard.vercel.app/'
 	},
 
 	ticket: {

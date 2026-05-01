@@ -10,7 +10,8 @@ class GreetingsCard extends Builder {
 			message: "",
 			BGimage: "",
 		});
-		if (!FontFactory.size) Font.loadDefault();
+		// if (!FontFactory.size) Font.loadDefault();
+		if (!FontFactory.size) Font.fromFileSync("./utility/SVN-Avo.ttf");
 	}
 
 	setDisplayName(value) {

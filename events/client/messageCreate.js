@@ -111,7 +111,9 @@ const reqTTS = async (message, lang) => {
 		return null;
 	};
 	const tts = await Functions.get("TextToSpeech");
-	if (player?.userdata) await message.react(useHooks.get("icon").yess);
+	try {
+		if (player?.userdata) await message.react(useHooks.get("icon").yess);
+	} catch (error) {}
 	const context = message.content.replace(`<@${message.client.user.id}>`, "").trim();
 
 	await tts.execute(message, context, lang, { player });
