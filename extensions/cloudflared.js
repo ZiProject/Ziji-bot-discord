@@ -10,7 +10,6 @@ module.exports.data = {
 };
 
 module.exports.execute = async (client) => {
-	if (!useHooks.get("config")?.webAppConfig?.enabled) return;
 	if (!process.env.CloudflaredToken) return;
 	if (process.env.CloudflaredToken == "") return;
 
