@@ -78,9 +78,8 @@ Ban · Kick · Timeout · Purge · Auto-Responder · Giveaways · Ticket system 
 ### 2. Clone & Install
 
 ```bash
-git clone https://github.com/ZiProject/Ziji-bot-discord.git
-cd Zibot
-npm install
+git clone https://github.com/ZiProject/Ziji-bot-discord.git .
+npm install --force
 ```
 
 ### 3. Configure Environment
