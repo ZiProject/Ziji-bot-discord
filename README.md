@@ -50,10 +50,10 @@ Ban · Kick · Timeout · Purge · Auto-Responder · Giveaways · Ticket system 
 
 ### 🌐 Web Interface
 
-| Web Control                                                                                                    | Web Music Player                                                                                             |
+| Web Control                                                                                                  | Web Music Player                                                                                             |
 | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [Ziji-bot-web](https://github.com/zijipia/Ziji-bot-web)                                                        | [Music-Player](https://github.com/zijipia/Music-Player)                                                      |
-| <img alt="Web Control" src="https://github.com/user-attachments/assets/b2ee308e-2f46-4c20-86a6-c7f95108a86b"/> | <img alt="Web Music" src="https://github.com/user-attachments/assets/4b7b4988-c61b-4a1b-b424-25a0d103c639"/> |
+| [Ziji-bot-web](https://github.com/zijipia/Zibot-Web)                                                        | [Preview](https://bot.ziji.best/#/)                                                      |
+| <img width="1310" height="945" alt="image" src="https://github.com/user-attachments/assets/fb28bae0-c0a6-497c-8be8-732cb6881448" /> | <img width="1837" height="931" alt="image" src="https://github.com/user-attachments/assets/5840b123-6de2-48d0-91fa-e3ddbc720cf5" /> |
 
 ---
 
@@ -89,6 +89,7 @@ Rename `.env.example` → `.env` and fill in your values:
 ```env
 TOKEN  = "Your Bot Token"       # required
 MONGO  = "Your MongoDB URI"     # optional
+# ...
 ```
 
 Rename `config.js.example` → `config.js`:
@@ -112,21 +113,6 @@ npm run dev     # development (nodemon)
 
 ---
 
-## 🌍 ngrok Setup (Optional)
-
-Expose the bot's web server to the internet using [ngrok](https://ngrok.com).
-
-1. Log in at [ngrok dashboard](https://dashboard.ngrok.com) and copy your **Authtoken** → paste into `.env` as `NGROK_AUTHTOKEN`
-2. Go to [Domains](https://dashboard.ngrok.com/domains), generate a free domain → paste into `.env` as `NGROK_DOMAIN` _(format:
-   `something.ngrok-free.app`)_
-3. Enable `webapp` in `config.js`
-
-> [!IMPORTANT] Do **not** create Edges in the ngrok dashboard — it will break the tunnel. Delete any existing Edges before
-> starting.
-
-<img alt="ngrok example" src="https://files.catbox.moe/dqc3z6.png"/>
-
----
 
 ## 🤝 Contributing
 
