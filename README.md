@@ -50,9 +50,9 @@ Ban · Kick · Timeout · Purge · Auto-Responder · Giveaways · Ticket system 
 
 ### 🌐 Web Interface
 
-| Web Control                                                                                                  | Web Music Player                                                                                             |
-| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [Ziji-bot-web](https://github.com/zijipia/Zibot-Web)                                                        | [Preview](https://bot.ziji.best/#/)                                                      |
+| Web Control                                                                                                                         | Web Music Player                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [Ziji-bot-web](https://github.com/zijipia/Zibot-Web)                                                                                | [Preview](https://bot.ziji.best/#/)                                                                                                 |
 | <img width="1310" height="945" alt="image" src="https://github.com/user-attachments/assets/fb28bae0-c0a6-497c-8be8-732cb6881448" /> | <img width="1837" height="931" alt="image" src="https://github.com/user-attachments/assets/5840b123-6de2-48d0-91fa-e3ddbc720cf5" /> |
 
 ---
@@ -112,7 +112,6 @@ npm run dev     # development (nodemon)
 ```
 
 ---
-
 
 ## 🤝 Contributing
 
