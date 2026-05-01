@@ -8,6 +8,7 @@ const {
 	ButtonStyle,
 } = require("discord.js");
 const { useHooks } = require("zihooks");
+const config = useHooks.get("config");
 
 /**
  * Ticket Button Handler
@@ -34,7 +35,11 @@ module.exports = {
 };
 
 /* ===================== CREATE ===================== */
-
+/**
+ * Handle ticket creation
+ * @param { import("discord.js").Interaction } interaction
+ * @returns
+ */
 async function handleCreate(interaction) {
 	const logger = useHooks.get("logger");
 	const guild = interaction.guild;
@@ -50,6 +55,7 @@ async function handleCreate(interaction) {
 	const channel = await guild.channels.create({
 		name: `ticket-${user.username ?? user.tag}`,
 		type: ChannelType.GuildText,
+		parent: config?.ticket?.categoryId || null,
 		permissionOverwrites: [
 			{
 				id: guild.id,

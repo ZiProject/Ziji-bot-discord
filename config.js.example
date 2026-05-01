@@ -49,7 +49,7 @@ module.exports = {
 
 		/**
 		 * Loại hoạt động của bot
-		 * Bot's activity type (PLAYING, WATCHING, LISTENING, STREAMING)
+		 * Bot's activity type (PLAYING, WATCHING, LISTENING, STREAMING, Custom)
 		 */
 		ActivityType: "PLAYING",
 
@@ -175,7 +175,10 @@ module.exports = {
 	},
 
 	ticket: {
+		
 		logChannelId: "1468618088558760086",
+
+		categoryId: ""
 	},
 	
 	/**
