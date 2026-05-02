@@ -50,7 +50,7 @@ module.exports.execute = async (message) => {
 	const player = getPlayer(message.guild.id);
 
 	message.editReply = (content) => {
-		return message.channel.send({ content }).catch(() => {});
+		return message.channel.send(content).catch(() => {});
 	};
 
 	modinteraction(message);
@@ -59,7 +59,7 @@ module.exports.execute = async (message) => {
 		return null;
 	};
 	message.reply = (content) => {
-		return message.followUp({ content }).catch(() => {});
+		return message.channel.send(content).catch(() => {});
 	};
 
 	if (playerMessage && !player?.userdata) {
