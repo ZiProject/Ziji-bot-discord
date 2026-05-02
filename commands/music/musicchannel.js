@@ -54,7 +54,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 	if (!channel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.SendMessages)) {
 		return interaction.reply({ content: lang.music.missing_permissions, ephemeral: true });
 	}
-	
+
 	if (enableOption === false) {
 		useHooks.get("temp").delete(`music_channel_${interaction.guild.id}`);
 		await db.ZiGuild.findOneAndUpdate({ guildId: interaction.guild.id }, { $unset: { music_channel: "" } });
