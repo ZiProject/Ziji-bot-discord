@@ -170,9 +170,14 @@ module.exports = {
 	},
 
 	ticket: {
-		
-		logChannelId: "1468618088558760086",
 
+		/**
+		 * ID log channel ticket
+	 	*/
+		logChannelId: "1468618088558760086",
+		/**
+		 * ID category ticket create in
+	 	*/
 		categoryId: ""
 	},
 	
