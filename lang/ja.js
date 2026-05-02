@@ -171,6 +171,10 @@ module.exports = {
 		filterApplied: "✅ | フィルターを適用しました",
 		NoActiveFilters: "❌ | 有効なフィルターはありません",
 		filterCleared: "✅ | すべてのフィルターを解除しました",
+		invalid_channel: "❌ | 無効なチャンネルです。Bot がメッセージを送信できるテキストチャンネルを選択してください。",
+		missing_permissions: "❌ | Bot が選択したチャンネルでメッセージを送信する権限がありません。権限を調整して再試行してください。",
+		setup_channel_success: "✅ | 音楽チャンネルが {channel} に設定されました。",
+		setup_channel_desc: "これからこのチャンネルにメッセージを送信して音楽を再生できます。例えば、曲名や YouTube のリンクを送信してみてください！\n **注意:** このチャンネルに送信されたすべてのメッセージは、チャンネルを清潔に保つために 50 秒後に削除されます。",
 	},
 	voiceCommands: {
 		Play: "再生",

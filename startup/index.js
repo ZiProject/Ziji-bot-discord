@@ -79,6 +79,7 @@ class StartupManager {
 		useHooks.set("welcome", new Collection()); // Welcome messages
 		useHooks.set("cooldowns", new Collection()); // Cooldowns
 		useHooks.set("responder", new Collection()); // Auto Responder
+		useHooks.set("temp", new Collection()); // Temporary storage for various purposes
 		useHooks.set("commands", new Collection()); // Slash Commands
 		useHooks.set("Mcommands", new Collection()); // Message Commands
 		useHooks.set("functions", new Collection()); // Functions

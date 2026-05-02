@@ -171,6 +171,10 @@ module.exports = {
 		filterApplied: "✅ | Đã áp dụng bộ lọc",
 		NoActiveFilters: "❌ | Không có bộ lọc nào đang áp dụng",
 		filterCleared: "✅ | Đã xóa tất cả bộ lọc",
+		invalid_channel: "❌ | Kênh không hợp lệ. Vui lòng chọn một kênh văn bản mà bot có thể gửi tin nhắn.",
+		missing_permissions: "❌ | Bot không có quyền gửi tin nhắn trong kênh đã chọn. Vui lòng điều chỉnh quyền và thử lại.",
+		setup_channel_success: "✅ | Kênh nhạc đã được thiết lập thành {channel}.",
+		setup_channel_desc: "Từ bây giờ, bạn có thể gửi tin nhắn trong kênh này để phát nhạc. Ví dụ, hãy thử gửi tên một bài hát hoặc một liên kết YouTube!\n **Lưu ý:** Mọi tin nhắn gửi trong kênh này sẽ bị xóa sau 50 giây để giữ cho kênh sạch sẽ.",
 	},
 	voiceCommands: {
 		Play: "Phát nhạc",

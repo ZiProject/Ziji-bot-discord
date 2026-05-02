@@ -65,14 +65,6 @@ module.exports.data = {
  */
 
 module.exports.execute = async ({ interaction, lang }) => {
-	// Check if useHooks is available
-	if (!useHooks) {
-		console.error("useHooks is not available");
-		return (
-			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
-			console.error("No interaction available")
-		);
-	}
 	const commandtype = interaction.options?.getSubcommand();
 	const query = interaction.options?.getString("query");
 	const command = useHooks.get("functions").get("Search");

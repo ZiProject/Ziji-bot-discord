@@ -108,6 +108,7 @@ const ZiGuild = Schema({
 		enabled: { type: Boolean, default: false },
 		roleIds: { type: [String], default: [] },
 	},
+	music_channel: { type: String, default: null },
 	updatedAt: { type: Date },
 });
 
