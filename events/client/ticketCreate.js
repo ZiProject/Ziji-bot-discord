@@ -20,24 +20,63 @@ module.exports = {
 	enable: true,
 
 	/**
-	 * @param { import("discord.js").Interaction } interaction
+	 * @param { import("discord.js").ButtonInteraction } interaction
 	 */
 	execute: async (interaction) => {
 		if (!interaction.isButton()) return;
 
 		const id = interaction.customId;
 
-		if (id === "ticket:create") return handleCreate(interaction);
+		if (id === "ticket:create") return handleShowModal(interaction);
 		if (id === "ticket:close") return handleAskClose(interaction);
 		if (id === "ticket:close:yes") return handleConfirmClose(interaction);
 		if (id === "ticket:close:no") return handleCancelClose(interaction);
+		if (id === "ticket:create:modal") return handleCreate(interaction);
 	},
 };
+/* ===================== SHOW MODAL ===================== */
+/**
+ * Handle ticket creation
+ * @param { import("discord.js").ButtonInteraction } interaction
+ * @returns
+ */
+async function handleShowModal(interaction) {
+	const guild = interaction.guild;
+	const user = interaction.user;
 
+	const existed = guild.channels.cache.find((c) => c.name === `ticket-${user.id}`);
+	if (existed)
+		return interaction.reply({
+			content: "⚠️ Bạn đã có ticket rồi.",
+			ephemeral: true,
+		});
+
+	await interaction.showModal({
+		title: "Tạo Ticket",
+		customId: "ticket:create:modal",
+		components: [
+			new ActionRowBuilder().addComponents(
+				new TextInputBuilder().setCustomId("name").setLabel("Tên của bạn").setStyle(TextInputStyle.Short).setRequired(true),
+				new TextInputBuilder().setCustomId("tag").setLabel("Tag của bạn").setStyle(TextInputStyle.Short).setRequired(true),
+				new TextInputBuilder()
+					.setCustomId("reason")
+					.setLabel("Lý do tạo ticket")
+					.setStyle(TextInputStyle.Paragraph)
+					.setRequired(true),
+				new TextInputBuilder()
+					.setCustomId("description")
+					.setLabel("Mô tả chi tiết vấn đề của bạn")
+					.setStyle(TextInputStyle.Paragraph)
+					.setRequired(false),
+			),
+		],
+	});
+	return;
+}
 /* ===================== CREATE ===================== */
 /**
  * Handle ticket creation
- * @param { import("discord.js").Interaction } interaction
+ * @param { import("discord.js").ModalSubmitInteraction } interaction
  * @returns
  */
 async function handleCreate(interaction) {
@@ -52,10 +91,15 @@ async function handleCreate(interaction) {
 			ephemeral: true,
 		});
 
+	const name = interaction.fields.getTextInputValue("name");
+	const tag = interaction.fields.getTextInputValue("tag");
+	const reason = interaction.fields.getTextInputValue("reason");
+	const description = interaction.fields.getTextInputValue("description");
+
 	const channel = await guild.channels.create({
 		name: `ticket-${user.username ?? user.tag}`,
 		type: ChannelType.GuildText,
-		parent: config?.ticket?.categoryId || null,
+		parent: config?.ticket?.categoryId || interaction.channel.parentId || null,
 		permissionOverwrites: [
 			{
 				id: guild.id,
@@ -82,12 +126,13 @@ async function handleCreate(interaction) {
 	);
 
 	const embed = new EmbedBuilder()
-		.setTitle("🎫 Ticket Support")
-		.setDescription(`Xin chào ${user}\nHãy mô tả vấn đề của bạn.\n\n🔒 Khi xong, nhấn **Đóng Ticket**.`)
+		.setTitle("🎫 Ticket Support: " + name)
+		.setDescription(`${user} có vấn đề: ${reason}\n\n🔒 Khi xong, nhấn **Đóng Ticket**.`)
 		.setColor("Green");
+	const def = new EmbedBuilder().setDescription(description).setColor("Green");
 
-	await channel.send({ embeds: [embed], components: [row] });
-	logger.info(`[TICKET] Created ticket for ${user.tag}`);
+	await channel.send({ embeds: [embed, def], components: [row] });
+	logger.debug(`[TICKET] Created ticket for ${user.tag}`);
 }
 
 /* ===================== ASK CONFIRM ===================== */
