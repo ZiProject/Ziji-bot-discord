@@ -221,7 +221,7 @@ async function getQueueMetadata(player, interaction, options, lang) {
 			voiceAssistance: options.assistant && config?.DevConfig?.VoiceExtractor,
 			lang: lang || langdef,
 			listeners: [interaction?.user],
-			lyrcsActive: true,
+			lyrcsActive: false,
 			focus: options?.focus,
 			mess: interaction?.customId !== "S_player_Search" ? tempmess : interaction?.message,
 		}

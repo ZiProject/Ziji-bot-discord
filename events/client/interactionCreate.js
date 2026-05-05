@@ -154,10 +154,14 @@ module.exports.execute = async (interaction) => {
 			);
 
 			const status = await checkStatus(interaction, client, lang);
+			logger.debug(`Status check for ${interaction?.commandName || interaction?.customId}: ${status ? "Failed" : "Passed"}`);
 			if (status) return;
 
 			if (command?.data.category == "musix") {
 				const sts = await checkMusicstat({ interaction, command, lang });
+				logger.debug(
+					`Music status check for ${interaction?.commandName || interaction?.customId}: ${sts.status ? "Passed" : "Failed"}`,
+				);
 				if (!sts.status) return;
 				cmdops = sts;
 			}

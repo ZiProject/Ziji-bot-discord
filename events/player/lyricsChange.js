@@ -35,7 +35,11 @@ module.exports = {
 		embed.setDescription(msg);
 		try {
 			if (player?.userdata?.lrcmess) {
-				player.userdata.lrcmess.edit({ embeds: [embed] });
+				player.userdata.lrcmess.edit({ embeds: [embed] }).catch(async (e) => {
+					const lrcmess = await player?.userdata?.mess?.reply({ embeds: [embed] }).catch(async (e) => {
+						return await player?.userdata?.channel?.send({ embeds: [embed] });
+					});
+				});
 			} else {
 				const lrcmess = await player.userdata.mess.reply({ embeds: [embed] });
 				player.userdata.lrcmess = lrcmess;
