@@ -75,7 +75,22 @@ module.exports.execute = async (message) => {
 	await Search.execute(message, context, lang, { player });
 
 	await setTimeout(() => {
-		message.delete().catch(() => {});
+		purgeChannel(message);
 	}, 50000);
 	return;
 };
+
+async function purgeChannel(message) {
+	const Player = getPlayer(message.guild.id);
+	if (!Player?.userdata?.mess) return;
+	if (Player.userdata.mess.channel?.id !== message.channel.id) return;
+
+	let PlayerMess = Player.userdata?.mess;
+
+	const messages = await message.channel.messages.fetch({ limit: 100 });
+	//delete all messages - except messages of player
+	messages.forEach((msg) => {
+		if (msg.id === PlayerMess.id) return;
+		msg.delete().catch(() => {});
+	});
+}

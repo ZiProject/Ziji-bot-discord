@@ -74,7 +74,7 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 					ephemeral: true,
 				});
 			}
-			player.userdata.LockStatus = !player.userdata.LockStatus;
+			player.userdata.LockStatus = !(player.userdata?.LockStatus ?? false);
 			await Update_Player(player);
 			return;
 		}
