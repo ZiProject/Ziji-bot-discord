@@ -13,7 +13,11 @@ module.exports.data = {
 	enable: true,
 	priority: 9,
 };
-
+/**
+ *
+ * @param { import ("discord.js").Client} client
+ * @returns
+ */
 module.exports.execute = (client) => {
 	const server = useHooks.get("server");
 
@@ -55,8 +59,33 @@ module.exports.execute = (client) => {
 
 			const userData = userResponse.data;
 
-			// In a real app, you'd find/create the user in MongoDB here
-			// const user = await ZiUser.findOneAndUpdate({ userID: userData.id }, { ... }, { upsert: true });
+			//put guids to db
+			const guild = await axios.get("https://discord.com/api/users/@me/guilds", {
+				headers: { Authorization: `Bearer ${access_token}` },
+			});
+
+			const guildss = guild.data;
+
+			const db = useHooks.get("db");
+			await db.ZiUser.findOneAndUpdate(
+				{ userID: userData.id },
+				{
+					userID: userData.id,
+					username: userData.username,
+					avatar: userData.avatar,
+					guilds: guildss.map((g) => ({
+						id: g.id,
+						name: g.name,
+						permissions: g.permissions,
+						permissionsNew: g.permissions_new,
+						owner: g.owner,
+					})),
+					lastLogin: new Date(),
+					$inc: { loginCount: 1 },
+					$setOnInsert: { createdAt: new Date() },
+				},
+				{ upsert: true },
+			);
 
 			const token = jwt.sign(
 				{ id: userData.id, username: userData.username, avatar: userData.avatar }, //aaaaa
