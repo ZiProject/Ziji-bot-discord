@@ -1,3 +1,4 @@
+const { EmbedBuilder } = require("discord.js");
 const { useHooks } = require("zihooks");
 
 module.exports.data = {
