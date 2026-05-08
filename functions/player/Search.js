@@ -166,7 +166,7 @@ async function handlePlayRequest(interaction, query, lang, options, player) {
 		let reqPlayOK = false;
 		if (!!query) reqPlayOK = await Player.play(query, interaction?.user);
 
-		if (!reqPlayOK) throw new Error("Play request failed");
+		if (!!query && !reqPlayOK) throw new Error("Play request failed");
 
 		await cleanUpInteraction(interaction, player);
 		logger.debug("Track played successfully");
