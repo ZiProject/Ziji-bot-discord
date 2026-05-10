@@ -81,7 +81,7 @@ module.exports = {
 		 * Link mời bot
 		 * Bot's invite link
 		 */
-		InviteBot: "https://discord.com/oauth2/authorize?client_id=1005716197259612193",
+		InviteBot: "https://discord.com/oauth2/authorize?client_id=1501197759754272928",
 
 		/**
 		 * Link ảnh banner
@@ -137,7 +137,7 @@ module.exports = {
 		 * Thời gian chờ bot sẽ rời khi hết bài hát (ms)
 		 * Cooldown before bot leaves after song ends (ms)
 		 */
-		leaveOnEndCooldown: 50_0000,
+		leaveOnEndCooldown: 50_000,
 
 		/**
 		 * Đổi trạng thái của kênh thoại thành tên bài hát (true | false)
@@ -185,7 +185,7 @@ module.exports = {
 	 * Ngôn ngữ mặc định của bot (vi, en, ...)
 	 * Default bot language (vi, en, ...)
 	 */
-	DeafultLang: "vi",
+	DefaultLang: "vi",
 
 	/**
 	 * Danh sách ID của chủ sở hữu bot (người dùng có thể thực hiện lệnh owner) ["ID admin", "ID admin", ...]

@@ -1,0 +1,177 @@
+const fs = require("node:fs");
+const fsPromises = fs.promises;
+const os = require("node:os");
+const path = require("node:path");
+const assert = require("node:assert");
+const { test } = require("node:test");
+const { EventEmitter } = require("node:events");
+const { Collection } = require("discord.js");
+const { useHooks } = require("zihooks");
+
+const { StartupLoader } = require("../startup/loader.js");
+const { StartupManager } = require("../startup/index.js");
+
+const createTempModule = async (dir, name, content) => {
+	const filePath = path.join(dir, `${name}.js`);
+	await fsPromises.writeFile(filePath, content, "utf8");
+	return filePath;
+};
+
+const removeTempDir = async (dir) => {
+	if (fs.existsSync(dir)) {
+		await fsPromises.rm(dir, { recursive: true, force: true });
+	}
+};
+
+const buildCommandModules = async (dir) => {
+	await createTempModule(
+		dir,
+		"validCommand",
+		`module.exports = {
+			data: { name: "foo" },
+			execute: async () => {
+				return "ok";
+			},
+		};`,
+	);
+
+	await createTempModule(
+		dir,
+		"disabledCommand",
+		`module.exports = {
+			data: { name: "bar", enable: false },
+			execute: async () => {
+				return "should not load";
+			},
+		};`,
+	);
+
+	await createTempModule(
+		dir,
+		"messageCommand",
+		`module.exports = {
+			data: { name: "baz", alias: ["bz"] },
+			execute: async () => {
+				return "ok";
+			},
+			run: async () => {
+				return "message";
+			},
+		};`,
+	);
+};
+
+const buildEventModules = async (dir) => {
+	await createTempModule(
+		dir,
+		"onEvent",
+		`module.exports = {
+			name: "testOn",
+			once: false,
+			execute: async () => {
+				process.__ziji_test_on_count = (process.__ziji_test_on_count || 0) + 1;
+			},
+		};`,
+	);
+
+	await createTempModule(
+		dir,
+		"onceEvent",
+		`module.exports = {
+			name: "testOnce",
+			once: true,
+			execute: async () => {
+				process.__ziji_test_once_count = (process.__ziji_test_once_count || 0) + 1;
+			},
+		};`,
+	);
+};
+
+const createLoader = () => new StartupLoader(useHooks.get("config"), console);
+
+test("StartupLoader.loadFiles loads valid commands and registers Mcommands aliases", async () => {
+	const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "ziji-startup-test-"));
+	try {
+		useHooks.set("config", { disabledCommands: [] });
+		const commands = new Collection();
+		const mcommands = new Collection();
+		useHooks.set("commands", commands);
+		useHooks.set("Mcommands", mcommands);
+
+		await buildCommandModules(tempDir);
+
+		const loader = createLoader();
+		await loader.loadFiles(tempDir, commands);
+
+		assert.strictEqual(commands.has("foo"), true, "Expected valid command to be loaded");
+		assert.strictEqual(commands.has("bar"), false, "Disabled command should not be loaded");
+		assert.strictEqual(mcommands.has("baz"), true, "Message command should be registered");
+		assert.strictEqual(mcommands.has("bz"), true, "Alias should be registered in Mcommands");
+		assert.strictEqual(mcommands.get("bz").data.name, "baz");
+	} finally {
+		await removeTempDir(tempDir);
+	}
+});
+
+test("StartupLoader.loadFiles loads actual command modules from commands folder", async () => {
+	useHooks.set("config", require("../startup/defaultconfig"));
+	const commands = new Collection();
+	const mcommands = new Collection();
+	useHooks.set("commands", commands);
+	useHooks.set("Mcommands", mcommands);
+	useHooks.set("functions", new Collection());
+
+	const loader = createLoader();
+	await loader.loadFiles(path.join(__dirname, "..", "commands"), commands);
+
+	assert.ok(commands.size > 0, "Expected at least one actual command to be loaded");
+	assert.ok(commands.has("ping"), "Expected actual ping command to be loaded");
+});
+
+test("StartupLoader.loadEvents attaches event handlers and executes fake events", async () => {
+	const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "ziji-startup-event-test-"));
+	try {
+		process.__ziji_test_on_count = 0;
+		process.__ziji_test_once_count = 0;
+
+		await buildEventModules(tempDir);
+
+		const emitter = new EventEmitter();
+		const loader = createLoader();
+		await loader.loadEvents(tempDir, emitter);
+
+		emitter.emit("testOn");
+		emitter.emit("testOn");
+		emitter.emit("testOnce");
+		emitter.emit("testOnce");
+
+		assert.strictEqual(process.__ziji_test_on_count, 2, "Expected on event to fire twice");
+		assert.strictEqual(process.__ziji_test_once_count, 1, "Expected once event to fire only once");
+	} finally {
+		delete process.__ziji_test_on_count;
+		delete process.__ziji_test_once_count;
+		await removeTempDir(tempDir);
+	}
+});
+
+test("StartupManager.initHooks initializes hooks and exposes config/logger", async () => {
+	class TestStartupManager extends StartupManager {
+		initWeb() {
+			return { server: null, wss: null };
+		}
+
+		createFile() {
+			return null;
+		}
+	}
+
+	const fakeClient = { id: "fake-client" };
+	const manager = new TestStartupManager(fakeClient);
+	manager.initHooks();
+
+	assert.strictEqual(useHooks.get("client"), fakeClient, "Client hook should be initialized");
+	assert.ok(useHooks.get("commands") instanceof Collection, "Commands hook should be a Collection");
+	assert.ok(useHooks.get("functions") instanceof Collection, "Functions hook should be a Collection");
+	assert.ok(useHooks.get("logger"), "Logger hook should be available");
+	assert.deepStrictEqual(manager.getConfig(), useHooks.get("config"));
+});

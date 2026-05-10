@@ -1,6 +1,5 @@
 const Encryptor = require("@zibot/ziencryptor");
 const { useHooks } = require("zihooks");
-const fetch = require("node-fetch");
 
 module.exports.data = {
 	name: "Play / Add music",

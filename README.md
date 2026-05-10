@@ -4,7 +4,7 @@
   <h1>Zibot V10</h1>
   <p>A feature-rich Discord bot built with <a href="https://discord.js.org/">discord.js</a> and <a href="https://player.ziji.world">ziplayer</a></p>
 
-  <a href="https://discord.com/oauth2/authorize?client_id=1005716197259612193">
+  <a href="https://discord.com/oauth2/authorize?client_id=1501197759754272928">
     <img src="https://img.shields.io/badge/Add%20to%20Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Add Ziji Bot"/>
   </a>
   <a href="https://discord.gg/zaskhD7PTW">
@@ -66,7 +66,7 @@ Ban · Kick · Timeout · Purge · Auto-Responder · Giveaways · Ticket system 
    - Default Install Settings:
      - User Install → enable **applications.commands**
      - Guild Install → enable **applications.commands** and **bot**, Permissions optional
-   - link add bot at **Install Link** → https://discord.com/oauth2/authorize?client_id=1005716197259612193
+   - link add bot at **Install Link** → https://discord.com/oauth2/authorize?client_id=1501197759754272928
 
 3. Navigate to **Bot** → enable all **Privileged Gateway Intents**:
    - Presence Intent
@@ -109,6 +109,12 @@ module.exports = {
 node .          # standard
 npm run start   # via npm
 npm run dev     # development (nodemon)
+```
+
+### 5. Run tests
+
+```bash
+npm test
 ```
 
 ---

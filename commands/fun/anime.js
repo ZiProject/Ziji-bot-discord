@@ -1,5 +1,4 @@
 const { EmbedBuilder } = require("discord.js");
-const fetch = require("node-fetch");
 
 function removeVietnameseTones(str) {
 	if (!str) return "";

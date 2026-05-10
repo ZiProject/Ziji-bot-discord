@@ -51,12 +51,12 @@ module.exports.execute = async ({ user, XpADD = 1, CoinADD = 0 }) => {
 			},
 			{ upsert: true },
 		);
-		const langdef = require(`./../../lang/${lang || config?.DeafultLang}`);
+		const langdef = require(`./../../lang/${lang || config?.DefaultLang}`);
 		langdef.color = color;
 		return langdef;
 	} else {
 		// If the database is not available, just increment the user's XP and Coin
-		const langdef = require(`./../../lang/${config?.DeafultLang}`);
+		const langdef = require(`./../../lang/${config?.DefaultLang}`);
 		return langdef;
 	}
 };

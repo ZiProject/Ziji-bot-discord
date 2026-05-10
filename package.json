@@ -7,7 +7,7 @@
 		"start": "cross-env NODE_ENV=production node index.js",
 		"dev": "cross-env NODE_ENV=development nodemon index.js",
 		"deploy": "node ./deploy.js",
-		"test": "echo \"Error: no test specified\" && exit 1",
+		"test": "node --test ./test/startup.test.js",
 		"check": "prettier --ignore-path .gitignore --check .",
 		"format": "prettier --ignore-path .gitignore --write ."
 	},
@@ -21,7 +21,7 @@
 		"zibot"
 	],
 	"author": "Ziji",
-	"license": "ISC",
+	"license": "MIT",
 	"bugs": {
 		"url": "https://github.com/zijipia/Ziji-bot-discord/issues"
 	},
@@ -55,7 +55,6 @@
 		"mediaplex": "^1.0.0",
 		"mongoose": "^9.0.1",
 		"node-cron": "^4.1.0",
-		"node-fetch": "^2.7.0",
 		"opusscript": "^0.0.8",
 		"prism-media": "^1.3.5",
 		"readline": "^1.3.0",
