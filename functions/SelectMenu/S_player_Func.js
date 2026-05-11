@@ -6,7 +6,10 @@ module.exports.data = {
 	name: "S_player_Func",
 	type: "SelectMenu",
 	category: "musix",
+	lock: true,
+	ckeckVoice: true,
 };
+
 async function Update_Player(player) {
 	const player_func = useHooks.get("functions").get("player_func");
 	if (!player_func) return;

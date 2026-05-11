@@ -85,18 +85,23 @@ async function checkMusicstat({ interaction, command, lang }) {
 	}
 	const player = getPlayer(interaction.guild.id);
 	ops.player = player;
-	if (command?.lock) {
+
+	if (command.data?.lock) {
 		if (!player?.connection) {
-			await interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
+			await interaction
+				.reply({ content: lang.music.NoPlaying, ephemeral: true })
+				.catch((e) => interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true }));
 			return ops;
 		}
 		// Kiểm tra xem có khóa player không
 		if (player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id) {
-			await interaction.followUp({ content: lang.until.noPermission, ephemeral: true });
+			await interaction
+				.reply({ content: lang.until.noPermission, ephemeral: true })
+				.catch((e) => interaction.followUp({ content: lang.until.noPermission, ephemeral: true }));
 			return ops;
 		}
 	}
-	if (command?.ckeckVoice) {
+	if (command.data?.ckeckVoice) {
 		const botVoiceChannel = interaction.guild.members.me.voice.channel;
 		const userVoiceChannel = interaction.member.voice.channel;
 		if (!botVoiceChannel || botVoiceChannel.id !== userVoiceChannel?.id) {
