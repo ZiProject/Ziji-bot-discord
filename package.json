@@ -37,7 +37,7 @@
 		"@ziplayer/plugin": "^0.3.2",
 		"@ziplayer/ytexecplug": "^0.0.2",
 		"axios": "^1.13.5",
-		"axios-cookiejar-support": "^6.0.4",
+		"axios-cookiejar-support": "^7.0.0",
 		"canvacord": "^6.0.2",
 		"canvacord-gif": "^1.0.1",
 		"chalk": "^4.1.2",
