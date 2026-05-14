@@ -27,7 +27,7 @@ module.exports.execute = async (interaction, context, lang, options = { assistan
 	}
 	try {
 		const query = `tts:${lang?.name ?? "vi"}: ${context}`;
-		useHooks.get("functions").get("Search").execute(interaction, query, lang, options);
+		useHooks.get("functions").get("playerController").execute(interaction, query, lang, options);
 		return;
 	} catch (e) {
 		console.error(e);

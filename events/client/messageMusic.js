@@ -70,7 +70,7 @@ module.exports.execute = async (message) => {
 		player.userdata.channel = playerMessage.channel;
 	}
 
-	const Search = await Functions.get("Search");
+	const Search = await Functions.get("playerController");
 
 	await Search.execute(message, context, lang, { player });
 

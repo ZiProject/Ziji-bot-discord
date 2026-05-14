@@ -22,6 +22,6 @@ module.exports.execute = async ({ interaction, lang }) => {
 	}
 	const { guild, client, fields } = interaction;
 	const query = fields.getTextInputValue("search-input");
-	const command = useHooks.get("functions").get("Search");
+	const command = useHooks.get("functions").get("playerController");
 	await command.execute(interaction, query, lang);
 };

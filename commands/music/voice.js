@@ -51,7 +51,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const commandtype = interaction.options?.getSubcommand();
 
 	if (commandtype === "join") {
-		const command = useHooks.get("functions").get("Search");
+		const command = useHooks.get("functions").get("playerController");
 		await command.execute(interaction, null, lang, { assistant: true });
 		return;
 	} else if (commandtype === "leave") {

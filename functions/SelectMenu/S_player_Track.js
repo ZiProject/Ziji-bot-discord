@@ -23,7 +23,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 	// track Selec from text search command | search modal | search context | etc...
 	const query = interaction.values?.at(0);
 	if (query === "cancel") return interaction.message.delete().catch((e) => {});
-	const command = useHooks.get("functions").get("Search");
+	const command = useHooks.get("functions").get("playerController");
 	await command.execute(interaction, query, lang);
 	return;
 };

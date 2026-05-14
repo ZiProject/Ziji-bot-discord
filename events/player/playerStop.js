@@ -10,7 +10,7 @@ module.exports = {
 	execute: async (player) => {
 		const player_func = useHooks.get("functions").get("player_func");
 		if (!player_func) return;
-		const res = await player_func.execute({ queue });
+		const res = await player_func.execute({ player });
 		if (player.userdata.mess) return player.userdata.mess.edit(res).catch((e) => {});
 	},
 };

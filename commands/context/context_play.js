@@ -37,7 +37,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 			return;
 		}
 
-		const searchCommand = useHooks.get("functions").get("Search");
+		const searchCommand = useHooks.get("functions").get("playerController");
 		await searchCommand.execute(interaction, query, lang);
 	} catch (error) {
 		console.error("Error executing command:", error);

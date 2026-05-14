@@ -22,7 +22,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 	}
 	const query = interaction.values?.at(0);
 	if (query === "B_cancel") return interaction.message.delete().catch((e) => {});
-	const command = useHooks.get("functions").get("Search");
+	const command = useHooks.get("functions").get("playerController");
 	await command.execute(interaction, query, lang);
 	return;
 };
