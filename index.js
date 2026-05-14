@@ -55,6 +55,7 @@ const ytbplg = new YouTubePlugin({
 const manager = new PlayerManager({
 	plugins: [new TTSPlugin(), ytbplg, new SoundCloudPlugin(), new SpotifyPlugin(), new InfinityPlugin(), new AttachmentsPlugin()],
 	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
+	enableStatsCollection: true,
 });
 
 const rl = readline.createInterface({
