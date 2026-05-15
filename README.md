@@ -7,7 +7,7 @@
   <a href="https://discord.com/oauth2/authorize?client_id=1501197759754272928">
     <img src="https://img.shields.io/badge/Add%20to%20Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Add Ziji Bot"/>
   </a>
-  <a href="https://discord.gg/zaskhD7PTW">
+  <a href="https://discord.gg/yHsbXkEuwN">
     <img src="https://img.shields.io/discord/1007597270704869387?style=for-the-badge&color=7289DA&logo=discord&logoColor=white&label=Support" alt="Support Server"/>
   </a>
   <a href="./LICENSE">
