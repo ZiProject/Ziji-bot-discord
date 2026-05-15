@@ -7,7 +7,7 @@
   <a href="https://discord.com/oauth2/authorize?client_id=1501197759754272928">
     <img src="https://img.shields.io/badge/Add%20to%20Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Add Ziji Bot"/>
   </a>
-  <a href="https://discord.gg/yHsbXkEuwN">
+  <a href="https://discord.gg/wbhBExpMNj">
     <img src="https://img.shields.io/discord/1007597270704869387?style=for-the-badge&color=7289DA&logo=discord&logoColor=white&label=Support" alt="Support Server"/>
   </a>
   <a href="./LICENSE">
@@ -134,5 +134,5 @@ This project is licensed under the **MIT License** — see [LICENSE](./LICENSE) 
 ## 📬 Contact
 
 - 🐙 GitHub: [ZiProject/Ziji-bot-discord](https://github.com/ZiProject/Ziji-bot-discord)
-- 💬 Support Server: [discord.gg/GQyJkZDtdX](https://discord.gg/GQyJkZDtdX)
+- 💬 Support Server: [discord.gg/wbhBExpMNj](https://discord.gg/wbhBExpMNj)
 - 🎮 Bot Playground: [discord.gg/32GkbyXtbA](https://discord.gg/32GkbyXtbA) _(get the bot icon here)_
