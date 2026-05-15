@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/zijipia/zijipia/main/Assets/ZijiAvt.gif" width="80" alt="Ziji Bot"/>
 
   <h1>Zibot V10</h1>
-  <p>A feature-rich Discord bot built with <a href="https://discord.js.org/">discord.js</a> and <a href="https://player.ziji.world">ziplayer</a></p>
+  <p>A feature-rich Discord bot built with <a href="https://discord.js.org/">discord.js</a> and <a href="https://player.ziji.best">ziplayer</a></p>
 
   <a href="https://discord.com/oauth2/authorize?client_id=1501197759754272928">
     <img src="https://img.shields.io/badge/Add%20to%20Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Add Ziji Bot"/>
