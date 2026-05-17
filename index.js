@@ -10,7 +10,7 @@ const readline = require("readline");
 //music player
 const { default: PlayerManager } = require("ziplayer");
 const { TTSPlugin, YTSRPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin, AttachmentsPlugin } = require("@ziplayer/plugin");
-const { lyricsExt, voiceExt } = require("@ziplayer/extension");
+const { lyricsExt, voiceExt, lavalinkExt } = require("@ziplayer/extension");
 const { YTexec } = require("@ziplayer/ytexecplug");
 const { InfinityPlugin } = require("@ziplayer/infinity");
 
@@ -47,14 +47,25 @@ const config = startup.getConfig();
 const ytbplg = new YouTubePlugin({
 	// debug: console.log,
 	fistStream: new YTexec().getStream,
-	clientType: "WEB_REMIX",
-	searchClientType: "WEB",
 });
 
 //create Player Manager
 const manager = new PlayerManager({
 	plugins: [new TTSPlugin(), ytbplg, new SoundCloudPlugin(), new SpotifyPlugin(), new InfinityPlugin(), new AttachmentsPlugin()],
-	extensions: [new lyricsExt(), new voiceExt(null, { client, minimalVoiceMessageDuration: 1 })],
+	extensions: [
+		// new lavalinkExt(null, {
+		// 	nodes: [
+		// 		{ host: "lavalinkv4.serenetia.com", port: 443, password: "https://seretia.link/discord", secure: true },
+		// 		// { host: "lavalinkv4.serenetia.com", port: 80, password: "https://seretia.link/discord", secure: false },
+		// 		// { host: "sg1-nodelink.nyxbot.app", port: 3000, password: "nyxbot.app/support", secure: false },
+		// 		// { host: "lavalink.triniumhost.com", port: 4333, password: "free", secure: false },
+		// 	],
+		// 	client: client,
+		// 	debug: true,
+		// }),
+		new lyricsExt(),
+		new voiceExt(null, { client, minimalVoiceMessageDuration: 1 }),
+	],
 	enableStatsCollection: true,
 });
 

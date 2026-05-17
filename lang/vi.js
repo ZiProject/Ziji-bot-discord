@@ -175,6 +175,8 @@ module.exports = {
 		missing_permissions: "❌ | Bot không có quyền gửi tin nhắn trong kênh đã chọn. Vui lòng điều chỉnh quyền và thử lại.",
 		setup_channel_success: "✅ | Kênh nhạc đã được thiết lập thành {channel}.",
 		setup_channel_desc: "Từ bây giờ, bạn có thể gửi tin nhắn trong kênh này để phát nhạc. Ví dụ, hãy thử gửi tên một bài hát hoặc một liên kết YouTube!\n **Lưu ý:** Mọi tin nhắn gửi trong kênh này sẽ bị xóa sau 50 giây để giữ cho kênh sạch sẽ.",
+		broadcast_suss: "✅ | Đã broadcast thành công từ {guildID}",
+		broadcast_err: "❌ | Không thể broadcast từ {guildID}",
 	},
 	voiceCommands: {
 		Play: "Phát nhạc",

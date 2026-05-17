@@ -34,6 +34,8 @@ module.exports = {
 		Note: "メモ:",
 		MessCommands: "プレフィックスコマンド",
 		MessCommandsDescription: "サーバーで使用可能なプレフィックスコマンド一覧を表示",
+		broadcast_suss: "✅ | {guildID} からのブロードキャストが成功しました。",
+		broadcast_err: "❌ | {guildID} からブロードキャストできません",
 	},
 	BotStats: {
 		Description: "Bot の統計情報",

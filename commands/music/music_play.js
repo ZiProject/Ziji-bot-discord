@@ -83,6 +83,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const query = interaction.options?.getString("query");
 	const command = useHooks.get("functions").get("playerController");
 	const player = getPlayer(interaction.guildId);
+
 	if (commandtype === "next") {
 		if (player.connection) {
 			const res = await player.search(query, interaction.user);
@@ -102,15 +103,34 @@ module.exports.execute = async ({ interaction, lang }) => {
 		await command.execute(interaction, query, lang, { assistant: true, focus });
 	} else if (commandtype === "broadcast") {
 		const leaderGuild = interaction.options?.getString("guild");
-		await interaction.deferReply().catch((e) => {});
+
+		const sendResponse = async (content) => {
+			try {
+				if (interaction.deferred || interaction.replied) {
+					return await interaction.editReply({ content, ephemeral: true });
+				}
+				return await interaction.reply({ content, ephemeral: true });
+			} catch (e) {
+				return interaction.followUp({ content, ephemeral: true }).catch(() => {});
+			}
+		};
+
 		const player = await useHooks.get("functions").get("playerCreate")?.execute({ interaction, lang, options: {} });
-		if (!!player?.connection) {
-			await getManager().subscribePlaybackMirror({
-				leaderGuildId: leaderGuild,
-				followerGuildIds: [`${interaction.guild.id}`],
-				mirrorUserId: interaction.user.id,
-				forwardMode: true,
-			});
+		await interaction.deferReply().catch(() => {});
+
+		if (player?.connection) {
+			const leader = getPlayer(leaderGuild);
+
+			if (!leader?.connection) {
+				return sendResponse(lang.music.broadcast_err.replace("{guildID}", leaderGuild));
+			}
+			const suss = await player.subscribeTo(leader);
+
+			const responseMessage =
+				suss ?
+					lang.music.broadcast_suss.replace("{guildID}", leaderGuild)
+				:	lang.music.broadcast_err.replace("{guildID}", leaderGuild);
+			return sendResponse(responseMessage);
 		}
 	} else {
 		await command.execute(interaction, query, lang);
@@ -126,22 +146,20 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 module.exports.autocomplete = async ({ interaction, lang }) => {
 	try {
-		const query = interaction.options.getString("query", true);
-		const guild = interaction.options.getString("guild", true);
+		const query = interaction.options.getString("query");
+		const guild = interaction.options.getString("guild");
 		if (guild) {
 			const players = await getManager().getall();
-			console.log(players);
 			return await interaction
 				.respond(
 					players.map((plr) => ({
-						name: `${plr.guildId} - ${plr?.queue?.currentTrack ?? "No Tracks"}`.slice(0, 100),
+						name: `${plr.guildId} - ${plr?.queue?.currentTrack?.title ?? "No Tracks"}`.slice(0, 100),
 						value: plr.guildId,
 					})),
 				)
-				.catch((e) => {
-					console.log(e);
-				});
+				.catch(() => {});
 		}
+
 		if (!query) return;
 
 		const results = await getManager().search(query);

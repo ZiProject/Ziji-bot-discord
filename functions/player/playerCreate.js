@@ -112,7 +112,10 @@ const DefaultPlayerConfig = {
 	leaveOnEnd: true,
 	leaveOnEndCooldown: 500_000,
 	pauseOnEmpty: true,
-	extensions: ["lyricsExt"],
+	extensions: [
+		"lyricsExt",
+		// "lavalinkExt"
+	],
 };
 
 async function getPlayerConfig(options, interaction) {

@@ -176,6 +176,8 @@ module.exports = {
 		missing_permissions: "❌ | Bot does not have permission to send messages in the selected channel. Please adjust the permissions and try again.",
 		setup_channel_success: "✅ | Music channel has been set to {channel}.",
 		setup_channel_desc: "From now on, you can send messages in this channel to play music. For example, try sending the name of a song or a YouTube link!\n **Note:** All messages sent in this channel will be deleted after 50 seconds to keep the channel clean.",
+		broadcast_suss: "✅ | Broadcast successful from {guildID}",
+		broadcast_err: "❌ | Cannot broadcast from {guildID}",
 	},
 	voiceCommands: {
 		Play: "Play",

@@ -3,7 +3,7 @@ const { useHooks } = require("zihooks");
 const { ButtonStyle, StringSelectMenuOptionBuilder, StringSelectMenuBuilder } = require("discord.js");
 const { Worker } = require("worker_threads");
 const ZiIcons = require("../../utility/icon");
-const { getManager } = require("ziplayer");
+const { getManager, getPlayer } = require("ziplayer");
 const config = useHooks.get("config");
 const logger = useHooks.get("logger");
 //====================================================================//
@@ -63,7 +63,9 @@ async function buildImageInWorker(searchPlayer, query) {
  * @param { import ("../../lang/vi") } playerSearch.lang
  */
 module.exports.execute = async ({ interaction, query, lang }) => {
-	const results = await getManager().search(query, interaction.user);
+	const results =
+		(await getPlayer(interaction.guild.id)).search(query, interaction.user) ||
+		(await getManager().search(query, interaction.user));
 	logger.debug(`Search results:  ${results?.tracks?.length}`);
 	const tracks = filterTracks(results?.tracks);
 	logger.debug(`Filtered tracks:  ${tracks?.length}`);
