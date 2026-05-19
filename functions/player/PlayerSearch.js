@@ -63,12 +63,29 @@ async function buildImageInWorker(searchPlayer, query) {
  * @param { import ("../../lang/vi") } playerSearch.lang
  */
 module.exports.execute = async ({ interaction, query, lang }) => {
-	const results =
-		(await getPlayer(interaction.guild.id)).search(query, interaction.user) ||
-		(await getManager().search(query, interaction.user));
-	logger.debug(`Search results:  ${results?.tracks?.length}`);
+	const player = getPlayer(interaction.guild.id);
+
+	const searchWithFallback = async () => {
+		if (player) {
+			try {
+				const results = await player.search(query, interaction.user);
+
+				if (results?.tracks?.length) {
+					return results;
+				}
+			} catch (error) {
+				logger.warn("[Search Fallback]", error);
+			}
+		}
+
+		return getManager().search(query, interaction.user);
+	};
+
+	const results = await searchWithFallback();
+
 	const tracks = filterTracks(results?.tracks);
-	logger.debug(`Filtered tracks:  ${tracks?.length}`);
+
+	logger.debug(`Search results:  ${tracks?.length}`);
 
 	if (!tracks?.length) {
 		logger.debug("No tracks found");
