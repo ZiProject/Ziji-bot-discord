@@ -34,7 +34,7 @@ class MusicSearchCard extends Builder {
 		return this;
 	}
 
-	async renderDefaultPlayer({ index, image, displayName, time }) {
+	async renderDefaultPlayer({ index, image, displayName, time, source }) {
 		return JSX.createElement(
 			"div",
 			{
@@ -102,7 +102,7 @@ class MusicSearchCard extends Builder {
 								color: "rgb(209, 213, 219)",
 							},
 						},
-						time,
+						time + " - " + source,
 					),
 				),
 			),

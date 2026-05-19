@@ -13,6 +13,12 @@ module.exports.data = {
 	type: "player",
 };
 
+function msToTime(s) {
+	if (typeof s !== "number") return s;
+	// Pad to 2 or 3 digits, default is 2
+	var pad = (n, z = 2) => ("00" + n).slice(-z);
+	return pad((s / 3.6e6) | 0) + ":" + pad(((s % 3.6e6) / 6e4) | 0) + ":" + pad(((s % 6e4) / 1000) | 0);
+}
 //====================================================================//
 
 async function buildImageInWorker(searchPlayer, query) {
@@ -123,7 +129,7 @@ async function sendSearchResults(interaction, query, tracks, lang) {
 	const creator_Track = tracks.map((track, i) => {
 		return new StringSelectMenuOptionBuilder()
 			.setLabel(`${i + 1}: ${track.title}`.slice(0, 99))
-			.setDescription(`Duration: ${track.duration} source: ${track.queryType}`)
+			.setDescription(`Duration: ${msToTime(track.duration)} source: ${track.source}`)
 			.setValue(`${track.url}`)
 			.setEmoji(`${ZiIcons.Playbutton}`);
 	});
@@ -149,7 +155,8 @@ async function sendSearchResults(interaction, query, tracks, lang) {
 			index: i + 1,
 			avatar: track?.thumbnail,
 			displayName: track.title.slice(0, tracks.length > 1 ? 30 : 80),
-			time: track.duration,
+			time: msToTime(track.duration),
+			source: track.source,
 		}));
 
 		try {
@@ -166,7 +173,7 @@ async function sendSearchResults(interaction, query, tracks, lang) {
 		.setColor(lang?.color || "Random")
 		.addFields(
 			tracks.map((track, i) => ({
-				name: `${i + 1}: ${track?.metadata?.author} - ${track.title.slice(0, 50 - track?.metadata?.author.length)} \`[${track.duration}]\``.slice(
+				name: `${i + 1}: ${track?.metadata?.author} - ${track.title.slice(0, 50 - track?.metadata?.author.length)} \`[${msToTime(track.duration)}]\``.slice(
 					0,
 					99,
 				),
