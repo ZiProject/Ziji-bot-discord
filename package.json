@@ -45,7 +45,7 @@
 		"cors": "^2.8.5",
 		"discord-gamecord": "^4.4.2",
 		"discord-giveaways": "^6.0.1",
-		"discord.js": "^14.26.3",
+		"discord.js": "^14.26.4",
 		"dotenv": "^17.0.0",
 		"express": "^5.1.0",
 		"ffmpeg-static": "^5.2.0",
