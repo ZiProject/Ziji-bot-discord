@@ -1,6 +1,6 @@
 const { useHooks } = require("zihooks");
 const simpleGit = require("simple-git");
-const config = useHooks.get("config")
+const config = useHooks.get("config");
 const path = require("path");
 
 // Khởi tạo simple-git tại thư mục gốc của project
@@ -41,9 +41,9 @@ module.exports.execute = async (client) => {
 			const status = await git.status();
 			const log = await git.log({ maxCount: 1 });
 			const remotes = await git.getRemotes(true);
-			
+
 			// Lấy URL repo từ remote "origin" (nếu có) và format lại từ git@ sang https nếu cần
-			let url = remotes.find(r => r.name === 'origin')?.refs?.fetch || "#";
+			let url = remotes.find((r) => r.name === "origin")?.refs?.fetch || "#";
 			if (url.startsWith("git@")) {
 				url = url.replace(":", "/").replace("git@", "https://").replace(".git", "");
 			}
@@ -51,7 +51,7 @@ module.exports.execute = async (client) => {
 			repoInfo = {
 				branch: status.current,
 				latestCommit: log.latest ? log.latest.hash.substring(0, 7) : "N/A",
-				repoUrl: url
+				repoUrl: url,
 			};
 		} catch (err) {
 			console.error("Git error:", err.message);
@@ -67,7 +67,7 @@ module.exports.execute = async (client) => {
 			// Trả về JSON thuần túy như cũ nếu gọi qua curl
 			return res.json({
 				...clientData,
-				repo: repoInfo
+				repo: repoInfo,
 			});
 		}
 
