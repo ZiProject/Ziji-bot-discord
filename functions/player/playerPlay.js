@@ -26,6 +26,7 @@ module.exports.execute = async ({ interaction, query, lang, options = {} }) => {
 	logger.debug("Handling play request");
 	if (!player?.connection) {
 		player = await useHooks.get("functions").get("playerCreate")?.execute({ interaction, lang, options });
+		if (!player?.connection) return;
 		createNewPlayer = true;
 	}
 
