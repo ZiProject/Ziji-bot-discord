@@ -370,7 +370,7 @@ module.exports.execute = async (client) => {
 
 				<div class="action-bar">
 					<span class="badge-status">Đang hoạt động</span>
-					<a href="#" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Thêm vào Server</a>
+					<a href="${config.botConfig.InviteBot || `https://discord.com/oauth2/authorize?client_id=${client.user.id}`}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Thêm vào Server</a>
 					<a href="${repoInfo.repoUrl}" target="_blank" class="btn btn-secondary">
 						<i class="fa-brands fa-git-alt"></i> Xem repo (${repoInfo.branch} @ ${repoInfo.latestCommit})
 					</a>
