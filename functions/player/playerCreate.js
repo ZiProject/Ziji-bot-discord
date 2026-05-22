@@ -21,7 +21,7 @@ module.exports.data = {
 module.exports.execute = async ({ interaction, lang, options = {} }) => {
 	const { client, guild, user } = interaction;
 	const voiceChannel = interaction?.member?.voice?.channel ?? options.voice;
-	
+
 	await interaction.deferReply({ withResponse: true }).catch(() => {
 		logger.warn("Failed to defer reply");
 	});
@@ -29,7 +29,6 @@ module.exports.execute = async ({ interaction, lang, options = {} }) => {
 	if (!isUserInVoiceChannel(voiceChannel, interaction, lang)) return;
 	if (!isBotInSameVoiceChannel(guild, voiceChannel, interaction, lang)) return;
 	if (!hasVoiceChannelPermissions(voiceChannel, client, interaction, lang)) return;
-
 
 	const player = getPlayer(guild.id);
 	return handleCreatePlayer({ interaction, lang, options, player });
@@ -203,7 +202,7 @@ async function handleError(interaction, lang) {
 		logger.debug("Replying to interaction");
 		await interaction.editReply(response).catch(() => {
 			logger.error("Failed to editReply to interaction");
-			await interaction.reply(response).catch(()=> {})
+			interaction.reply(response).catch(() => {});
 		});
 	}
 	logger.debug("Exiting handleError");
