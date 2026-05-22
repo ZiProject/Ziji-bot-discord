@@ -87,7 +87,7 @@ async function handleCreatePlayer({ interaction, lang, options, player }) {
 	try {
 		if (!player?.userdata)
 			tempmess = await interaction?.editReply({ content: "<a:loading:1151184304676819085> Loading..." }).catch((e) => {
-				logger.debug(`Fall for edit loading reply:  ${JSON.stringify(playerConfig)}`);
+				logger.debug(`Fall for edit loading reply`);
 			});
 		const playerConfig = await getPlayerConfig(options, interaction);
 		logger.debug(`Player configuration retrieved:  ${JSON.stringify(playerConfig)}`);
