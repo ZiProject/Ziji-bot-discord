@@ -38,7 +38,7 @@ module.exports.execute = async ({ interaction, lang, options = {} }) => {
 function isUserInVoiceChannel(voiceChannel, interaction, lang) {
 	if (!voiceChannel) {
 		logger.debug("User is not in a voice channel");
-		interaction.reply({
+		interaction.editReply({
 			content: lang?.music?.NOvoiceChannel ?? "Bạn chưa tham gia vào kênh thoại",
 			ephemeral: true,
 		});
@@ -52,7 +52,7 @@ function isBotInSameVoiceChannel(guild, voiceChannel, interaction, lang) {
 	if (voiceMe && voiceMe.id !== voiceChannel.id) {
 		logger.debug("Bot is not in the same voice channel");
 
-		interaction.reply({
+		interaction.editReply({
 			content: lang?.music?.NOvoiceMe ?? "Bot đã tham gia một kênh thoại khác",
 			ephemeral: true,
 		});
@@ -65,7 +65,7 @@ function hasVoiceChannelPermissions(voiceChannel, client, interaction, lang) {
 	const permissions = voiceChannel.permissionsFor(client.user);
 	if (!permissions.has("Connect") || !permissions.has("Speak")) {
 		logger.debug("Bot lacks necessary permissions in the voice channel");
-		interaction.reply({
+		interaction.editReply({
 			content: lang?.music?.NoPermission ?? "Bot không có quyền tham gia hoặc nói trong kênh thoại này",
 			ephemeral: true,
 		});
@@ -199,8 +199,9 @@ async function handleError(interaction, lang) {
 		}
 	} else {
 		logger.debug("Replying to interaction");
-		await interaction.reply(response).catch(() => {
-			logger.error("Failed to reply to interaction");
+		await interaction.editReply(response).catch(() => {
+			logger.error("Failed to editReply to interaction");
+			await interaction.reply(response).catch(()=> {})
 		});
 	}
 	logger.debug("Exiting handleError");
