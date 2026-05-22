@@ -33,6 +33,13 @@ module.exports.execute = async ({ interaction, lang }) => {
 		}
 
 		if (!query) {
+			const links = extractLinksFromComponents(interaction.targetMessage.components);
+
+			if (links.length) {
+				query = links[0];
+			}
+		}
+		if (!query) {
 			console.error("No valid query found.");
 			return;
 		}
@@ -91,4 +98,55 @@ async function handleSaveQueue(interaction, lang) {
 		console.error("Error restoring tracks:", error);
 		return null;
 	}
+}
+
+function extractLinksFromComponents(components = []) {
+	const urls = [];
+
+	const walk = (items) => {
+		for (const item of items || []) {
+			// URL button
+			if (item?.data?.url) {
+				urls.push(item.data.url);
+			}
+
+			// Markdown links in text content
+			if (typeof item?.data?.content === "string") {
+				const matches = [...item.data.content.matchAll(/\((https?:\/\/[^\s)]+)\)/g)];
+
+				for (const match of matches) {
+					urls.push(match[1]);
+				}
+			}
+
+			// Select menu option values
+			if (Array.isArray(item?.options)) {
+				for (const option of item.options) {
+					if (typeof option?.data?.value === "string" && /^https?:\/\//.test(option.data.value)) {
+						urls.push(option.data.value);
+					}
+				}
+			}
+
+			// Nested components
+			if (Array.isArray(item?.components)) {
+				walk(item.components);
+			}
+
+			// Media gallery
+			if (Array.isArray(item?.items)) {
+				for (const media of item.items) {
+					const mediaUrl = media?.data?.media?.url;
+
+					if (mediaUrl) {
+						urls.push(mediaUrl);
+					}
+				}
+			}
+		}
+	};
+
+	walk(components);
+
+	return [...new Set(urls)];
 }
