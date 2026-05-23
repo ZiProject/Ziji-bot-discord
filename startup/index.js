@@ -39,7 +39,7 @@ class StartupManager {
 			server,
 			path: "/ws",
 		});
-		
+
 		app.use(
 			cors({
 				origin: getAllowedOrigins(),
