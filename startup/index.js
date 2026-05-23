@@ -1,7 +1,7 @@
 const { StartupLoader } = require("./loader.js");
 const { LoggerFactory } = require("./logger.js");
 const { useHooks } = require("zihooks");
-const { Collection } = require("discord.js");
+const { GatewayIntentBits, Client, Collection } = require("discord.js");
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
@@ -16,6 +16,7 @@ class StartupManager {
 		this.loader = new StartupLoader(this.config, this.logger);
 		this.createFile("./jsons");
 		this.web = this.initWeb();
+		this.initPlayerNet();
 	}
 
 	initCongig() {
@@ -34,8 +35,11 @@ class StartupManager {
 		this.logger.debug?.("Starting web...");
 		const app = express();
 		const server = http.createServer(app);
-		const wss = new WebSocket.Server({ server });
-
+		const wss = new WebSocket.Server({
+			server,
+			path: "/ws",
+		});
+		
 		app.use(
 			cors({
 				origin: getAllowedOrigins(),
@@ -51,6 +55,34 @@ class StartupManager {
 		});
 
 		return { server: app, wss };
+	}
+
+	initPlayerNet() {
+		if (!process.env.MULTI_PLAYER_TOKEN) return;
+
+		const playerNetTOKENs = process.env.MULTI_PLAYER_TOKEN.split(",");
+		const playerNetClient = [this.client];
+		try {
+			playerNetTOKENs.forEach((TOKEN) => {
+				const PlayerClient = new Client({
+					intents: [
+						GatewayIntentBits.Guilds, // for guild related things
+						GatewayIntentBits.GuildVoiceStates, // for voice related things]
+					],
+				});
+				PlayerClient.login(TOKEN);
+				PlayerClient.once("ready", (cle) => {
+					this.logger.info(`Connected to ${cle?.user?.displayName}`);
+				});
+				playerNetClient.push(PlayerClient);
+			});
+		} catch (e) {
+			this.logger.warn("Create bot PlayerNet Fall:");
+			this.logger.warn(e);
+		} finally {
+			if (!playerNetClient.length) return;
+			useHooks.set("playerNetClient", playerNetClient); //playerNetClient
+		}
 	}
 
 	getConfig() {
