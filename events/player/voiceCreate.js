@@ -11,10 +11,10 @@ module.exports = {
 	 */
 	execute: async (player, events) => {
 		const lowerContent = events.content.toLowerCase();
-		const { channel } = player.userdata;
+		const { channel, useAI } = player.userdata;
 		let messsend = null;
 		const commands = {
-			"skip|bỏ qua|next": () => {
+			"skip|bỏ qua bài hát|next": () => {
 				player.skip();
 				console.log("Đã bỏ qua bài hát hiện tại");
 				messsend = channel.send("⏭ | Skipped the current track");
@@ -56,8 +56,8 @@ module.exports = {
 				console.log("auto plays on");
 				messsend = channel.send(`🔁 | Autoplay is now: **${player.queue.autoPlay() ? "Enabled" : "Disabled"}**`);
 			},
-			"play|tìm|phát|hát": async () => {
-				const query = lowerContent.replace(/play|tìm|phát|hát/g, "").trim();
+			"play|phát bài hát": async () => {
+				const query = lowerContent.replace(/play|phát bài hát/g, "").trim();
 				const suss = await player.play(query);
 
 				messsend = channel.send(suss ? `✅ | **${query}**` : `❌ | **${query}**`);
@@ -78,6 +78,8 @@ module.exports = {
 				return;
 			}
 		}
+
+		if (!useAI) return;
 		const voice = useHooks.get("client").channels.cache.get(player.connection.joinConfig.channelId);
 		const aifunc = await useHooks.get("functions").get("runVoiceAI");
 		if (aifunc.checkStatus) {

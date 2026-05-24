@@ -205,6 +205,7 @@ async function getQueueMetadata(player, interaction, options, lang, PlayerClient
 			requestedBy: interaction.user,
 			LockStatus: false,
 			voiceAssistance: options.assistant && config?.DevConfig?.VoiceExtractor,
+			useAI: options?.useAI || false,
 			lang: lang || langdef,
 			listeners: [interaction?.user],
 			lyrcsActive: false,
