@@ -58,7 +58,10 @@ class StartupManager {
 	}
 
 	initPlayerNet() {
-		if (!process.env.MULTI_PLAYER_TOKEN) return;
+		if (!process.env.MULTI_PLAYER_TOKEN) {
+			useHooks.set("playerNetClient", [this.client]);
+			return;
+		}
 
 		const playerNetTOKENs = process.env.MULTI_PLAYER_TOKEN.split(",");
 		const playerNetClient = [this.client];
