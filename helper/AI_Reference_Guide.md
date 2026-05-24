@@ -207,8 +207,8 @@ Uses the **`ziplayer`** library. Retrieve a guild's player instance:
 
 ```js
 const { getPlayer } = require("ziplayer");
-	const voiceChannel = interaction.member?.voice?.channel;
-	const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
+const voiceChannel = interaction.member?.voice?.channel;
+const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
 ```
 
 ### Key Player Properties
@@ -241,4 +241,3 @@ const { getPlayer } = require("ziplayer");
 | `category: "musix"`             | Triggers music pre-checks and injects `player` into execute |
 | `lock: true`                    | Restricts command to the current music host only            |
 | `ckeckVoice: true`              | User must share the bot's active voice channel              |
-
