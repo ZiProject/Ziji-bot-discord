@@ -105,7 +105,9 @@ const reqreponser = async (message) => {
  */
 
 const reqTTS = async (message, lang) => {
-	const player = getPlayer(message.guild.id);
+	const voiceChannel = message.member?.voice?.channel;
+	const player = getPlayer(`${message.guild.id}::${voiceChannel?.id}`);
+
 	modinteraction(message);
 	message.fetchReply = () => {
 		return null;

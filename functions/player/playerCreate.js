@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, BaseInteraction, AttachmentBuilder } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, Client, ButtonBuilder, BaseInteraction, AttachmentBuilder } = require("discord.js");
 const { useHooks } = require("zihooks");
 const { ButtonStyle, StringSelectMenuOptionBuilder, StringSelectMenuBuilder } = require("discord.js");
 const langdef = require("../../lang/vi");
@@ -14,9 +14,10 @@ module.exports.data = {
 };
 
 /**
- * @param { BaseInteraction } interaction
- * @param { langdef } lang
- * @param { object } options
+ * @param { object } base
+ * @param { BaseInteraction } base.interaction
+ * @param { langdef } base.lang
+ * @param { object } base.options
  */
 module.exports.execute = async ({ interaction, lang, options = {} }) => {
 	const { client, guild, user } = interaction;
@@ -27,14 +28,66 @@ module.exports.execute = async ({ interaction, lang, options = {} }) => {
 	});
 
 	if (!isUserInVoiceChannel(voiceChannel, interaction, lang)) return;
-	if (!isBotInSameVoiceChannel(guild, voiceChannel, interaction, lang)) return;
-	if (!hasVoiceChannelPermissions(voiceChannel, client, interaction, lang)) return;
+	// if (!isBotInSameVoiceChannel(guild, voiceChannel, interaction, lang)) return;
 
-	const player = getPlayer(guild.id);
-	return handleCreatePlayer({ interaction, lang, options, player });
+	const PlayerClient = await getBot({ interaction, voiceChannel, lang });
+	if (!PlayerClient) return;
+
+	const voiceChannel2 = await PlayerClient.channels.fetch(voiceChannel.id);
+
+	if (!hasVoiceChannelPermissions(voiceChannel2, PlayerClient, interaction, lang)) return;
+
+	const player = getPlayer(`${guild.id}::${voiceChannel2.id}`);
+	return handleCreatePlayer({
+		interaction,
+		lang,
+		options,
+		player,
+		PlayerClient,
+		voiceChannel: voiceChannel2,
+	});
 };
 
 //====================================================================//
+
+/**
+ * @param { object } base
+ * @param { BaseInteraction } base.interaction
+ * @param { langdef } base.lang
+ * @param { object } base.options
+ * @returns { Client }
+ */
+async function getBot({ interaction, voiceChannel, lang }) {
+	const playerNetClient = useHooks.get("playerNetClient");
+
+	if (!playerNetClient?.length) return false;
+
+	const guildMembers = interaction.guild.members.cache;
+
+	for (const bot of playerNetClient) {
+		let member = guildMembers.get(bot.user.id);
+
+		if (!member) {
+			try {
+				member = await interaction.guild.members.fetch(bot.user.id);
+			} catch {
+				continue;
+			}
+		}
+
+		const channelId = member.voice?.channelId;
+
+		if (!channelId) return bot;
+		if (channelId === voiceChannel.id) return bot;
+	}
+
+	await interaction.editReply({
+		content: lang?.music?.NOvoiceMe ?? "Bot đã tham gia một kênh thoại khác",
+		ephemeral: true,
+	});
+
+	return false;
+}
 
 function isUserInVoiceChannel(voiceChannel, interaction, lang) {
 	if (!voiceChannel) {
@@ -83,7 +136,7 @@ function hasVoiceChannelPermissions(voiceChannel, client, interaction, lang) {
  * @param { object } CreatePlayer.options
  * @param { Player } CreatePlayer.player
  */
-async function handleCreatePlayer({ interaction, lang, options, player }) {
+async function handleCreatePlayer({ interaction, lang, options, player, PlayerClient, voiceChannel }) {
 	try {
 		if (!player?.userdata)
 			tempmess = await interaction?.editReply({ content: "<a:loading:1151184304676819085> Loading..." }).catch((e) => {
@@ -91,15 +144,15 @@ async function handleCreatePlayer({ interaction, lang, options, player }) {
 			});
 		const playerConfig = await getPlayerConfig(options, interaction);
 		logger.debug(`Player configuration retrieved:  ${JSON.stringify(playerConfig)}`);
-		const Player = await getManager().create(interaction.guild.id, {
+		const Player = await getManager().create(`${interaction.guild.id}::${voiceChannel?.id}`, {
 			...playerConfig,
-			userdata: await getQueueMetadata(player, interaction, options, lang),
+			group: PlayerClient.user.id,
+			userdata: await getQueueMetadata(player, interaction, options, lang, PlayerClient, voiceChannel),
 		});
 
-		if (!Player.connection) await Player.connect(interaction?.member?.voice?.channel ?? options?.voice);
+		if (!Player.connection) await Player.connect(voiceChannel, { group: PlayerClient.user.id });
 		return Player;
 	} catch (e) {
-		console.log(e);
 		logger.error(`Error in handleCreatePlayer:  ${JSON.stringify(e)}`);
 		await handleError(interaction, lang);
 	}
@@ -143,10 +196,12 @@ async function getPlayerConfig(options, interaction) {
 	return playerConfig;
 }
 
-async function getQueueMetadata(player, interaction, options, lang) {
+async function getQueueMetadata(player, interaction, options, lang, PlayerClient, voiceChannel) {
 	return (
 		player?.userdata ?? {
 			channel: interaction.channel,
+			voiceChannel: voiceChannel,
+			client: PlayerClient,
 			requestedBy: interaction.user,
 			LockStatus: false,
 			voiceAssistance: options.assistant && config?.DevConfig?.VoiceExtractor,

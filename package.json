@@ -1,6 +1,6 @@
 {
 	"name": "ziji-bot-discord",
-	"version": "10.0.2",
+	"version": "10.0.3",
 	"description": "Ziji bot discord",
 	"main": "index.js",
 	"scripts": {
@@ -66,7 +66,7 @@
 		"winston": "^3.17.0",
 		"ws": "^8.18.0",
 		"zihooks": "^2.0.0",
-		"ziplayer": "^0.3.6"
+		"ziplayer": "^0.3.7"
 	},
 	"devDependencies": {
 		"cross-env": "^10.0.0",

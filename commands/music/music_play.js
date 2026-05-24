@@ -60,7 +60,7 @@ module.exports.data = {
 			options: [
 				{
 					name: "guild",
-					description: "guildID",
+					description: "guildID::voiceChannelID",
 					required: true,
 					autocomplete: true,
 					type: 3,
@@ -82,7 +82,9 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const commandtype = interaction.options?.getSubcommand();
 	const query = interaction.options?.getString("query");
 	const command = useHooks.get("functions").get("playerController");
-	const player = getPlayer(interaction.guildId);
+
+	const voiceChannel = interaction.member?.voice?.channel;
+	const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
 
 	if (commandtype === "next") {
 		if (player.connection) {

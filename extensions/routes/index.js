@@ -16,6 +16,7 @@ module.exports.data = {
 
 module.exports.execute = async (client) => {
 	const app = useHooks.get("server");
+	const playerNetClient = useHooks.get("playerNetClient");
 
 	app.get("/", async (req, res) => {
 		// 1. Kiểm tra trạng thái client
@@ -33,6 +34,7 @@ module.exports.execute = async (client) => {
 			clientName: client?.user?.displayName || "HaKaZe Bot",
 			clientId: client?.user?.id || "N/A",
 			avatars: client?.user?.displayAvatarURL({ size: 1024 }) || "https://i.imgur.com/w39R973.png",
+			playerNetClient: [playerNetClient.map((client) => client.user.id)],
 		};
 
 		// 2. Thu thập thông tin từ Repo bằng simple-git để hiển thị hoặc trả về

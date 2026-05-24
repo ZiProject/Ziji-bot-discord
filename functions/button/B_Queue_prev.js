@@ -22,7 +22,8 @@ module.exports.execute = async ({ interaction, lang }) => {
 			console.error("No interaction available")
 		);
 	}
-	const player = getPlayer(interaction.guild.id);
+	const voiceChannel = interaction.member?.voice?.channel;
+	const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
 	if (!player) return interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
 
 	const QueueTrack = useHooks.get("functions").get("Queue");

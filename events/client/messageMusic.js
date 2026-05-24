@@ -47,7 +47,8 @@ module.exports.execute = async (message) => {
 			)
 			.first();
 	});
-	const player = getPlayer(message.guild.id);
+	const voiceChannel = message.member?.voice?.channel;
+	const player = getPlayer(`${message.guild.id}::${voiceChannel?.id}`);
 
 	message.editReply = (content) => {
 		return message.channel.send(content).catch(() => {});
@@ -81,7 +82,8 @@ module.exports.execute = async (message) => {
 };
 
 async function purgeChannel(message) {
-	const Player = getPlayer(message.guild.id);
+	const voiceChannel = message.member?.voice?.channel;
+	const player = getPlayer(`${message.guild.id}::${voiceChannel?.id}`);
 	if (!Player?.userdata?.mess) return;
 	if (Player.userdata.mess.channel?.id !== message.channel.id) return;
 

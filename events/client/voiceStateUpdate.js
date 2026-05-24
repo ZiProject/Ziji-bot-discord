@@ -52,11 +52,14 @@ const Voicelogmode = async (oldState, newState, guildSetting) => {
 		logChannel.send(`${message}\n-# Toggle voice log by using /voice log`).catch(() => {});
 	}
 };
-
+/**
+ * @param { import('discord.js').VoiceState } oldState
+ */
 const playerQueue = async (oldState) => {
 	const client = oldState.client;
 
-	const player = getPlayer(oldState?.guild?.id);
+	const voiceChannel = oldState?.channel?.id;
+	const player = getPlayer(`${oldState?.guild?.id}::${voiceChannel}`);
 
 	if (!player || !player.connection) return;
 

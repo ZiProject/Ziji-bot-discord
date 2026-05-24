@@ -76,7 +76,8 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 };
 
 module.exports.autocomplete = async ({ interaction }) => {
-	const player = getPlayer(interaction.guild.id);
+	const voiceChannel = interaction.member?.voice?.channel;
+	const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
 	if (!player) return [];
 	const choice = interaction.options.getFocused();
 	const availableFilters = player?.filter.getAvailableFilters();

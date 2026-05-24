@@ -27,7 +27,8 @@ module.exports.data = {
 
 module.exports.execute = async ({ interaction, lang }) => {
 	const { guild, client, fields } = interaction;
-	const player = getPlayer(guild.id);
+	const voiceChannel = interaction.member?.voice?.channel;
+	const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
 	const input = fields.getTextInputValue("del-input");
 	const trackIndices = removeDuplicates(input.split(/[\s,;.+-]+/));
 

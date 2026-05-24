@@ -17,6 +17,7 @@ module.exports.data = {
 module.exports.execute = async ({ interaction, lang }) => {
 	await interaction.deferUpdate().catch(() => {});
 	interaction.message.edit({ components: [] }).catch((e) => {});
-	const player = getPlayer(interaction.guild.id);
+	const voiceChannel = interaction.member?.voice?.channel;
+	const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
 	player?.destroy?.();
 };

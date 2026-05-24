@@ -83,7 +83,8 @@ async function checkMusicstat({ interaction, command, lang }) {
 		await interaction.reply({ embeds: [new EmbedBuilder().setColor("Red").setDescription(`${lang.until.noGuild} `)] });
 		return ops;
 	}
-	const player = getPlayer(interaction.guild.id);
+	const voiceChannel = interaction.member?.voice?.channel;
+	const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
 	ops.player = player;
 
 	if (command.data?.lock) {
@@ -104,7 +105,8 @@ async function checkMusicstat({ interaction, command, lang }) {
 	if (command.data?.ckeckVoice) {
 		const botVoiceChannel = interaction.guild.members.me.voice.channel;
 		const userVoiceChannel = interaction.member.voice.channel;
-		if (!botVoiceChannel || botVoiceChannel.id !== userVoiceChannel?.id) {
+		if (!userVoiceChannel) {
+			//!botVoiceChannel || botVoiceChannel.id !== userVoiceChannel?.id) {
 			await interaction.followUp({ content: lang.music.NOvoiceMe, ephemeral: true });
 			return ops;
 		}

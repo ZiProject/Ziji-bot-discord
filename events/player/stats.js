@@ -21,7 +21,7 @@ module.exports = {
 		useHooks
 			.get("logger")
 			.debug(
-				`Saved ${stats.totalPlayers} total players, ` +
+				`${stats.totalPlayers} total players, ` +
 					`${stats.activePlayers} active players,` +
 					`${stats.pausedPlayers} paused players,` +
 					`${stats.connectedPlayers} connected players,` +

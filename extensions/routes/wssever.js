@@ -50,15 +50,8 @@ module.exports.execute = (client) => {
 
 		const sendStatistics = async () => {
 			try {
-				if (!authenticated) {
-					logger.debug("[Statistics] Skipped: not authenticated.");
-					return;
-				}
-
-				if (!player?.connection) {
-					logger.debug("[Statistics] Skipped: no player connection.");
-					return;
-				}
+				if (!authenticated) return;
+				if (!player?.connection) return;
 
 				const queueTracks =
 					player.queue?.tracks?.map((track) => ({
@@ -82,7 +75,7 @@ module.exports.execute = (client) => {
 
 				safeSend({
 					event: "statistics",
-					timestamp: player.currentResource?.playbackDuration ?? player.getTime(),
+					timestamp: player.getTime()?.current ?? player.currentResource?.playbackDuration,
 					listeners: player.userdata?.channel?.members?.filter((mem) => !mem.user.bot).size ?? 0,
 					tracks: queueTracks.length,
 					volume: player.volume,

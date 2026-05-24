@@ -21,7 +21,8 @@ module.exports.execute = async ({ interaction, query, lang, options = {} }) => {
 	logger.debug(`Executing command with query: ${JSON.stringify(query)}`);
 	const { client, guild, user } = interaction;
 
-	let player = getPlayer(guild.id);
+	const voiceChannel = interaction.member?.voice?.channel;
+	let player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
 	let createNewPlayer = false;
 	logger.debug("Handling play request");
 	if (!player?.connection) {

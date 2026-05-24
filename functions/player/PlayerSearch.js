@@ -69,8 +69,8 @@ async function buildImageInWorker(searchPlayer, query) {
  * @param { import ("../../lang/vi") } playerSearch.lang
  */
 module.exports.execute = async ({ interaction, query, lang }) => {
-	const player = getPlayer(interaction.guild.id);
-
+	const voiceChannel = interaction.member?.voice?.channel;
+	const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
 	const searchWithFallback = async () => {
 		if (player) {
 			try {

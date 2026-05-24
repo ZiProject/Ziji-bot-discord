@@ -55,11 +55,13 @@ module.exports.execute = async ({ interaction, lang }) => {
 		await command.execute(interaction, null, lang, { assistant: true });
 		return;
 	} else if (commandtype === "leave") {
-		const player = getPlayer(interaction.guild.id);
+		const voiceChannel = interaction.member?.voice?.channel;
+		const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
+
 		await interaction.deferReply({ withResponse: true });
 		if (!player?.connection) {
-			await interaction?.guild?.members?.me?.voice?.disconnect();
-			await interaction.editReply(lang.music.Disconnect);
+			// await interaction?.guild?.members?.me?.voice?.disconnect();
+			// await interaction.editReply(lang.music.Disconnect);
 			return;
 		}
 		if (player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id) return;
