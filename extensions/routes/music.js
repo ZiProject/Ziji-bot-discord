@@ -77,7 +77,8 @@ router.post("/music/join", authenticate, async (req, res) => {
 			return res.status(400).json({ error: "User is not in a voice channel" });
 		}
 		// console.log(voiceChannel);
-		const manager = getManager(); const client = useHooks.get("client");
+		const manager = getManager();
+		const client = useHooks.get("client");
 		const userd = await client.users.fetch(req.user.id);
 		let player = null;
 		const userData = manager.getall().find((node) => node?.userdata?.listeners?.some((l) => l.id === user.id));
