@@ -1,6 +1,7 @@
 const { getManager } = require("ziplayer");
 const { useHooks } = require("zihooks");
 const { lyricsExt } = require("@ziplayer/extension");
+const { joinVoiceChannel } = require("@discordjs/voice");
 const jwt = require("jsonwebtoken");
 const express = require("express");
 const router = express.Router();
@@ -45,6 +46,52 @@ router.get("/music/lyrics", authenticate, async (req, res) => {
 		const lyricsext = new lyricsExt();
 		const lyrics = await lyricsext.fetch({ title: q });
 		res.json(lyrics);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+	}
+});
+
+router.post("/music/join", authenticate, async (req, res) => {
+	try {
+		const userId = req.user?.id;
+		if (!userId) return res.status(401).json({ error: "Unauthorized: Invalid user data" });
+		let voiceChannel = null;
+		const voiceStates = useHooks.get("voiceStates");
+		if (voiceStates && voiceStates.has(userId)) {
+			const vs = voiceStates.get(userId);
+			voiceChannel = vs.channel;
+		}
+		if (!voiceChannel) {
+			const client = useHooks.get("client");
+			if (client) {
+				for (const [guildId, guild] of client.guilds.cache) {
+					const member = guild.members.cache.get(userId);
+					if (member && member.voice && member.voice.channel) {
+						voiceChannel = member.voice.channel;
+						break;
+					}
+				}
+			}
+		}
+		if (!voiceChannel) {
+			return res.status(400).json({ error: "User is not in a voice channel" });
+		}
+		// console.log(voiceChannel);
+		const manager = getManager(); const client = useHooks.get("client");
+		const userd = await client.users.fetch(req.user.id);
+		let player = null;
+		const userData = manager.getall().find((node) => node?.userdata?.listeners?.some((l) => l.id === user.id));
+		if (userData) {
+			player = userData;
+			useHooks.get("logger").debug(`[Player] Found active player for ${userd.username}`);
+		} else {
+			player = await manager.create(voiceChannel.guildId, {
+				leaveOnEnd: true,
+				userdata: { channel: voiceChannel, voiceChannel: voiceChannel, client: client, listeners: [userd] },
+			});
+			useHooks.get("logger").debug(`[Player] Created new player for ${userd.username}`);
+		}
+		if (!player.connection) await player.connect(voiceChannel);
 	} catch (error) {
 		res.status(500).json({ error: error.message });
 	}

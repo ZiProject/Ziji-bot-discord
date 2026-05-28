@@ -14,6 +14,18 @@ module.exports = {
 	execute: async (oldState, newState) => {
 		if (!oldState.client.isReady()) return;
 
+		// Save user's voice state using zihooks
+		let voiceStates = useHooks.get("voiceStates");
+		if (!voiceStates) {
+			voiceStates = new Map();
+			useHooks.set("voiceStates", voiceStates);
+		}
+		if (newState.channel) {
+			voiceStates.set(newState.member.id, newState);
+		} else {
+			voiceStates.delete(newState.member.id);
+		}
+
 		const guildId = newState.guild.id;
 		const guildSetting = await useHooks.get("db")?.ZiGuild.findOne({ guildId });
 
