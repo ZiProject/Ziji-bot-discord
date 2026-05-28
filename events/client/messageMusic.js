@@ -84,10 +84,10 @@ module.exports.execute = async (message) => {
 async function purgeChannel(message) {
 	const voiceChannel = message.member?.voice?.channel;
 	const player = getPlayer(`${message.guild.id}::${voiceChannel?.id}`);
-	if (!Player?.userdata?.mess) return;
-	if (Player.userdata.mess.channel?.id !== message.channel.id) return;
+	if (!player?.userdata?.mess) return;
+	if (player.userdata.mess.channel?.id !== message.channel.id) return;
 
-	let PlayerMess = Player.userdata?.mess;
+	let PlayerMess = player.userdata?.mess;
 
 	const messages = await message.channel.messages.fetch({ limit: 100 });
 	//delete all messages - except messages of player
