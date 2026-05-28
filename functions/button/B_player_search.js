@@ -5,7 +5,6 @@ module.exports.data = {
 	name: "B_player_search",
 	type: "button",
 	category: "musix",
-	ckeckVoice: true,
 };
 
 /**
@@ -16,10 +15,7 @@ module.exports.data = {
  * @returns
  */
 
-module.exports.execute = async ({ interaction, lang, player }) => {
-	await interaction.deferUpdate().catch(() => {});
-	if (!player?.connection) return interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
-
+module.exports.execute = async ({ interaction, lang }) => {
 	const modal = new ModalBuilder()
 		.setTitle("Search")
 		.setCustomId("M_player_search")
