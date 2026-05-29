@@ -74,44 +74,46 @@ module.exports.execute = async ({ interaction, lang }) => {
 		],
 	});
 
-	const player_func = useHooks.get("functions").get("player_func");
-	if (!player_func) return;
+	const playerGui = useHooks.get("functions").get("playerGui");
+	if (!playerGui) return;
 
-	const playerGui = await player_func.execute({
-		player: {
-			volume: 999,
-			repeatMode: "OFF",
-			autoPlay: false,
-			isPaused: true,
-			isPlaying: false,
-			queue: [],
-			previousTrack: null,
-			loop: () => {
-				return false;
-			},
-			autoPlay: () => {
-				return false;
-			},
-			getProgressBar: () => {
-				return "▇▇▇▇▇▇▇▇▇▇";
-			},
-			relatedTracks: [],
-			userdata: {
-				lyrcsActive: false,
-				LockStatus: true,
-				requestedBy: interaction.client.user,
-			},
-		},
-		tracks: {
-			title: "Send messages in this channel to play music",
-			requestedBy: interaction.client.user,
-			thummail: config.botConfig.Banner,
-			source: "youtube",
-			url: "https://discord.com/oauth2/authorize?client_id=" + interaction.client.user.id,
-		},
-	});
-
-	channel.send(playerGui).catch(() => {});
+	channel
+		.send(
+			await playerGui.execute({
+				player: {
+					volume: 999,
+					repeatMode: "OFF",
+					autoPlay: false,
+					isPaused: true,
+					isPlaying: false,
+					queue: [],
+					previousTrack: null,
+					loop: () => {
+						return false;
+					},
+					autoPlay: () => {
+						return false;
+					},
+					getProgressBar: () => {
+						return "▇▇▇▇▇▇▇▇▇▇";
+					},
+					relatedTracks: [],
+					userdata: {
+						lyrcsActive: false,
+						LockStatus: true,
+						requestedBy: interaction.client.user,
+					},
+				},
+				tracks: {
+					title: "Send messages in this channel to play music",
+					requestedBy: interaction.client.user,
+					thummail: config.botConfig.Banner,
+					source: "youtube",
+					url: "https://discord.com/oauth2/authorize?client_id=" + interaction.client.user.id,
+				},
+			}),
+		)
+		.catch(() => {});
 
 	return interaction.reply({ content: lang.music.setup_channel_success.replace("{channel}", channel.name), ephemeral: true });
 };

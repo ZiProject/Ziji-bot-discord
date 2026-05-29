@@ -33,8 +33,8 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 
 	player.userdata.mess = await interaction.fetchReply();
 
-	const player_func = useHooks.get("functions").get("player_func");
-	if (!player_func) return;
-	const res = await player_func.execute({ player });
+	const playerGui = useHooks.get("functions").get("playerGui");
+	if (!playerGui) return;
+	const res = await playerGui.execute({ player });
 	await interaction.editReply(res);
 };

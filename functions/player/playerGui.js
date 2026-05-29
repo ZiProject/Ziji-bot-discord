@@ -56,7 +56,7 @@ const repeatMode = (loop, auto) => {
 
 module.exports = {
 	data: {
-		name: "player_func",
+		name: "playerGui",
 		type: "player",
 	},
 
@@ -83,6 +83,7 @@ module.exports = {
 			flags: MessageFlags.IsComponentsV2,
 			components: [],
 			files: [],
+			content: "",
 		};
 
 		const randomRGB = () => [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)];
@@ -269,7 +270,7 @@ module.exports = {
 
 			const functionRow = new ActionRowBuilder().addComponents(
 				new StringSelectMenuBuilder()
-					.setCustomId("S_player_Func")
+					.setCustomId("S_playerGui")
 					.setPlaceholder(lang?.playerFunc?.RowFunc ?? "▶ | Player Functions")
 					.addOptions(functionOptions)
 					.setMaxValues(1)

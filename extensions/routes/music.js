@@ -1,6 +1,7 @@
 const { getManager } = require("ziplayer");
 const { useHooks } = require("zihooks");
 const { lyricsExt } = require("@ziplayer/extension");
+const { joinVoiceChannel } = require("@discordjs/voice");
 const jwt = require("jsonwebtoken");
 const express = require("express");
 const router = express.Router();
@@ -47,6 +48,90 @@ router.get("/music/lyrics", authenticate, async (req, res) => {
 		res.json(lyrics);
 	} catch (error) {
 		res.status(500).json({ error: error.message });
+	}
+});
+
+router.post("/music/join", authenticate, async (req, res) => {
+	try {
+		const userId = req.user?.id;
+		if (!userId) return res.status(401).json({ error: "Unauthorized: Invalid user data" });
+		let voiceChannel = null;
+		const voiceStates = useHooks.get("voiceStates");
+
+		if (voiceStates?.has(userId)) voiceChannel = voiceStates.get(userId)?.channel;
+
+		if (!voiceChannel) {
+			const client = useHooks.get("client");
+
+			for (const guild of client.guilds.cache.values()) {
+				try {
+					const member = await guild.members.fetch(userId);
+
+					if (member?.voice?.channel) {
+						voiceChannel = member.voice.channel;
+
+						if (voiceStates) {
+							voiceStates.set(userId, {
+								channelId: member.voice.channel.id,
+								guildId: guild.id,
+								channel: member.voice.channel,
+							});
+						}
+
+						break;
+					}
+				} catch {
+					continue;
+				}
+			}
+		}
+
+		if (!voiceChannel) {
+			return res.status(400).json({
+				error: "User is not in a voice channel",
+			});
+		}
+
+		const client = useHooks.get("client");
+		const user = await client.users.fetch(userId);
+
+		const playerCreate = useHooks.get("functions").get("playerCreate");
+
+		if (!playerCreate?.createPlayer) return res.status(500).json({ error: "playerCreate function not found" });
+
+		const lang = await useHooks.get("functions").get("ZiRank").execute({ user, XpADD: 0 });
+
+		const player = await playerCreate.createPlayer({
+			guildId: voiceChannel.guild.id,
+			voiceChannelId: voiceChannel.id,
+
+			textChannel: voiceChannel,
+
+			requestedBy: user,
+
+			reply: null,
+			message: null,
+			customId: null,
+
+			lang,
+
+			options: {
+				assistant: false,
+			},
+		});
+
+		res.status(200).json({
+			status: "ok",
+			channel: voiceChannel.name,
+			user: user.username,
+			playerId: player?.id,
+		});
+	} catch (error) {
+		useHooks.get("logger").error(`[API] /music/join ${error.stack || error}`);
+
+		res.status(500).json({
+			error: error.message,
+		});
 	}
 });
 

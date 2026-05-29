@@ -44,8 +44,8 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 	if (DataBase) {
 		await DataBase.ZiUser.updateOne({ userID: interaction.user.id }, { $set: { volume: volume }, $upsert: true });
 	}
-	const player_func = useHooks.get("functions").get("player_func");
-	if (!player_func) return;
-	const res = await player_func.execute({ player });
+	const playerGui = useHooks.get("functions").get("playerGui");
+	if (!playerGui) return;
+	const res = await playerGui.execute({ player });
 	return player.userdata.mess.edit(res);
 };

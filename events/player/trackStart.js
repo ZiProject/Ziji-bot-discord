@@ -10,15 +10,16 @@ module.exports = {
 	 * @param {import('ziplayer').Track} track
 	 */
 	execute: async (player, track) => {
-		const player_func = useHooks.get("functions").get("player_func");
-		if (!player_func) return;
+		const playerGui = useHooks.get("functions").get("playerGui");
+		if (!playerGui) return;
 
-		const playerGui = await player_func.execute({ player, tracks: track });
+		const Gui = await playerGui.execute({ player, tracks: track });
 
 		try {
-			await player.userdata.mess.edit(playerGui);
-		} catch {
-			player.userdata.mess = await player.userdata.channel.send(playerGui);
+			await player.userdata.mess.edit(Gui);
+		} catch (e) {
+			console.log(e);
+			player.userdata.mess = await player.userdata.channel.send(Gui);
 		}
 
 		// Status of voice channel

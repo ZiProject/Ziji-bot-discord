@@ -25,8 +25,8 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 	await interaction.deferUpdate().catch(() => {});
 	if (!player?.connection) return interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true });
 
-	const player_func = useHooks.get("functions").get("player_func");
-	if (!player_func) return;
-	const res = await player_func.execute({ player });
+	const playerGui = useHooks.get("functions").get("playerGui");
+	if (!playerGui) return;
+	const res = await playerGui.execute({ player });
 	player.userdata.mess.edit(res);
 };
