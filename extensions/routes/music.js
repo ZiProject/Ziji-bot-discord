@@ -99,10 +99,10 @@ router.post("/music/join", authenticate, async (req, res) => {
 					// "lavalinkExt"
 				],
 				group: client.user.id,
-				userdata: { 
-					channel: voiceChannel, 
-					voiceChannel: voiceChannel, 
-					client: client, 
+				userdata: {
+					channel: voiceChannel,
+					voiceChannel: voiceChannel,
+					client: client,
 					listeners: [userd],
 					LockStatus: false,
 					requestedBy: userd,
