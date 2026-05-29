@@ -5,13 +5,6 @@ const langdef = require("../../lang/vi");
 const { getPlayer, Player, getManager } = require("ziplayer");
 const config = useHooks.get("config");
 const logger = useHooks.get("logger");
-let tempmess = null;
-//====================================================================//
-
-module.exports.data = {
-	name: "playerCreate",
-	type: "player",
-};
 
 /**
  * @param { object } base
@@ -19,7 +12,7 @@ module.exports.data = {
  * @param { langdef } base.lang
  * @param { object } base.options
  */
-module.exports.execute = async ({ interaction, lang, options = {} }) => {
+async function execute({ interaction, lang, options = {} }) {
 	const { client, guild, user } = interaction;
 	const voiceChannel = interaction?.member?.voice?.channel ?? options.voice;
 
@@ -30,23 +23,27 @@ module.exports.execute = async ({ interaction, lang, options = {} }) => {
 	if (!isUserInVoiceChannel(voiceChannel, interaction, lang)) return;
 	// if (!isBotInSameVoiceChannel(guild, voiceChannel, interaction, lang)) return;
 
-	const PlayerClient = await getBot({ interaction, voiceChannel, lang });
-	if (!PlayerClient) return;
+	const player = getPlayer(`${guild.id}::${voiceChannel.id}`);
+	let tempmess = null;
 
-	const voiceChannel2 = await PlayerClient.channels.fetch(voiceChannel.id);
-
-	if (!hasVoiceChannelPermissions(voiceChannel2, PlayerClient, interaction, lang)) return;
-
-	const player = getPlayer(`${guild.id}::${voiceChannel2.id}`);
-	return handleCreatePlayer({
-		interaction,
+	if (!player?.userdata)
+		tempmess = await interaction?.editReply({ content: "<a:loading:1151184304676819085> Loading..." }).catch((e) => {
+			logger.debug(`Fall for edit loading reply`);
+		});
+	const messs = await interaction.channel.messages.fetch(tempmess);
+	// console.log(messs);
+	return await createPlayer({
+		guildId: interaction.guild.id,
+		voiceChannelId: interaction.member.voice.channel.id,
+		textChannel: interaction.channel,
+		requestedBy: interaction.user,
 		lang,
 		options,
-		player,
-		PlayerClient,
-		voiceChannel: voiceChannel2,
+		reply: interaction,
+		message: messs ?? player?.userdata?.mess,
+		customId: interaction.customId,
 	});
-};
+}
 
 //====================================================================//
 
@@ -57,34 +54,47 @@ module.exports.execute = async ({ interaction, lang, options = {} }) => {
  * @param { object } base.options
  * @returns { Client }
  */
-async function getBot({ interaction, voiceChannel, lang }) {
+async function getBot({ guildId, voiceChannelId, reply, lang }) {
 	const playerNetClient = useHooks.get("playerNetClient");
 
 	if (!playerNetClient?.length) return false;
 
-	const guildMembers = interaction.guild.members.cache;
-
 	for (const bot of playerNetClient) {
-		let member = guildMembers.get(bot.user.id);
+		try {
+			const guild = await bot.guilds.fetch(guildId).catch(() => null);
 
-		if (!member) {
-			try {
-				member = await interaction.guild.members.fetch(bot.user.id);
-			} catch {
-				continue;
+			if (!guild) continue;
+
+			let member = guild.members.me;
+
+			if (!member) {
+				member = await guild.members.fetchMe().catch(() => null);
 			}
+
+			if (!member) continue;
+
+			const joinedChannelId = member.voice?.channelId;
+
+			if (!joinedChannelId) {
+				return bot;
+			}
+
+			if (joinedChannelId === voiceChannelId) {
+				return bot;
+			}
+		} catch (e) {
+			logger.debug(`getBot fail: ${e.message}`);
 		}
-
-		const channelId = member.voice?.channelId;
-
-		if (!channelId) return bot;
-		if (channelId === voiceChannel.id) return bot;
 	}
 
-	await interaction.editReply({
-		content: lang?.music?.NOvoiceMe ?? "Bot đã tham gia một kênh thoại khác",
-		ephemeral: true,
-	});
+	if (reply?.editReply) {
+		await reply
+			.editReply({
+				content: lang?.music?.NOvoiceMe ?? "Bot đã tham gia một kênh thoại khác",
+				ephemeral: true,
+			})
+			.catch(() => {});
+	}
 
 	return false;
 }
@@ -136,28 +146,58 @@ function hasVoiceChannelPermissions(voiceChannel, client, interaction, lang) {
  * @param { object } CreatePlayer.options
  * @param { Player } CreatePlayer.player
  */
-async function handleCreatePlayer({ interaction, lang, options, player, PlayerClient, voiceChannel }) {
+async function createPlayer({ guildId, voiceChannelId, textChannel, requestedBy, lang, options = {}, reply, message, customId }) {
 	try {
-		if (!player?.userdata)
-			tempmess = await interaction?.editReply({ content: "<a:loading:1151184304676819085> Loading..." }).catch((e) => {
-				logger.debug(`Fall for edit loading reply`);
-			});
-		const playerConfig = await getPlayerConfig(options, interaction);
-		logger.debug(`Player configuration retrieved:  ${JSON.stringify(playerConfig)}`);
-		const Player = await getManager().create(`${interaction.guild.id}::${voiceChannel?.id}`, {
-			...playerConfig,
-			group: PlayerClient.user.id,
-			userdata: await getQueueMetadata(player, interaction, options, lang, PlayerClient, voiceChannel),
+		const PlayerClient = await getBot({
+			guildId,
+			voiceChannelId,
+			reply,
+			lang,
 		});
 
-		if (!Player.connection) await Player.connect(voiceChannel, { group: PlayerClient.user.id });
-		return Player;
+		if (!PlayerClient) return;
+
+		const voiceChannel = await PlayerClient.channels.fetch(voiceChannelId);
+
+		if (!hasVoiceChannelPermissions(voiceChannel, PlayerClient, reply, lang)) {
+			return;
+		}
+
+		const player = getPlayer(`${guildId}::${voiceChannelId}`);
+
+		const playerConfig = await getPlayerConfig(options, requestedBy.id);
+
+		const PlayerInstance = await getManager().create(`${guildId}::${voiceChannelId}`, {
+			...playerConfig,
+			group: PlayerClient.user.id,
+			userdata: player?.userdata ?? {
+				channel: textChannel,
+				voiceChannel,
+				client: PlayerClient,
+				requestedBy,
+				LockStatus: false,
+				voiceAssistance: options.assistant && config?.DevConfig?.VoiceExtractor,
+				useAI: options?.useAI || false,
+				lang: lang || langdef,
+				listeners: [requestedBy],
+				lyrcsActive: false,
+				focus: options?.focus,
+				mess: message,
+			},
+		});
+
+		if (!PlayerInstance.connection) {
+			await PlayerInstance.connect(voiceChannel, {
+				group: PlayerClient.user.id,
+			});
+		}
+
+		return PlayerInstance;
 	} catch (e) {
-		logger.error(`Error in handleCreatePlayer:  ${JSON.stringify(e)}`);
-		await handleError(interaction, lang);
+		logger.error(`Error in createPlayer: ${e.stack || e}`);
+		throw e;
 	}
 }
-
 const DefaultPlayerConfig = {
 	selfDeaf: true,
 	volume: 50,
@@ -172,7 +212,7 @@ const DefaultPlayerConfig = {
 	],
 };
 
-async function getPlayerConfig(options, interaction) {
+async function getPlayerConfig(options, userID) {
 	logger.debug("Starting getPlayerConfig");
 	const playerConfig = { ...DefaultPlayerConfig, ...config?.PlayerConfig };
 
@@ -186,33 +226,12 @@ async function getPlayerConfig(options, interaction) {
 		logger.debug("Volume is set to auto, fetching from database");
 		const DataBase = useHooks.get("db");
 		playerConfig.volume =
-			DataBase ?
-				((await DataBase.ZiUser.findOne({ userID: interaction.user.id }))?.volume ?? DefaultPlayerConfig.volume)
-			:	DefaultPlayerConfig.volume;
+			DataBase ? ((await DataBase.ZiUser.findOne({ userID }))?.volume ?? DefaultPlayerConfig.volume) : DefaultPlayerConfig.volume;
 		logger.debug(`Volume set from database or default: ${playerConfig.volume}`);
 	}
 
 	logger.debug(`Exiting getPlayerConfig with playerConfig: ${JSON.stringify(playerConfig)}`);
 	return playerConfig;
-}
-
-async function getQueueMetadata(player, interaction, options, lang, PlayerClient, voiceChannel) {
-	return (
-		player?.userdata ?? {
-			channel: interaction.channel,
-			voiceChannel: voiceChannel,
-			client: PlayerClient,
-			requestedBy: interaction.user,
-			LockStatus: false,
-			voiceAssistance: options.assistant && config?.DevConfig?.VoiceExtractor,
-			useAI: options?.useAI || false,
-			lang: lang || langdef,
-			listeners: [interaction?.user],
-			lyrcsActive: false,
-			focus: options?.focus,
-			mess: interaction?.customId !== "S_player_Search" ? tempmess : interaction?.message,
-		}
-	);
 }
 
 async function cleanUpInteraction(interaction, player) {
@@ -264,3 +283,16 @@ async function handleError(interaction, lang) {
 	logger.debug("Exiting handleError");
 	return;
 }
+
+//====================================================================//
+//====================================================================//
+module.exports = {
+	data: {
+		name: "playerCreate",
+		type: "player",
+	},
+	execute,
+	createPlayer,
+};
+//====================================================================//
+//====================================================================//

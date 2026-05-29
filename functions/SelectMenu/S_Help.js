@@ -197,7 +197,7 @@ module.exports.playerButtons = (lang) => [
 	},
 	{
 		name: lang?.playerButtons?.SelectFunc || "Chức năng",
-		id: "S_player_Func",
+		id: "S_playerGui",
 		description: lang?.playerFunc?.RowFunc || "Chọn các chức năng khác của trình phát",
 		icon: ZiIcons.fillter,
 	},

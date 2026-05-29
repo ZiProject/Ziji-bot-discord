@@ -57,67 +57,69 @@ router.post("/music/join", authenticate, async (req, res) => {
 		if (!userId) return res.status(401).json({ error: "Unauthorized: Invalid user data" });
 		let voiceChannel = null;
 		const voiceStates = useHooks.get("voiceStates");
-		if (voiceStates && voiceStates.has(userId)) {
-			const vs = voiceStates.get(userId);
-			voiceChannel = vs.channel;
-		}
+
+		if (voiceStates?.has(userId)) voiceChannel = voiceStates.get(userId)?.channel;
+
 		if (!voiceChannel) {
 			const client = useHooks.get("client");
-			if (client) {
-				for (const [guildId, guild] of client.guilds.cache) {
-					const member = guild.members.cache.get(userId);
-					if (member && member.voice && member.voice.channel) {
-						voiceChannel = member.voice.channel;
-						break;
-					}
+
+			for (const guild of client.guilds.cache.values()) {
+				const member = guild.members.cache.get(userId);
+
+				if (member?.voice?.channel) {
+					voiceChannel = member.voice.channel;
+					break;
 				}
 			}
 		}
+
 		if (!voiceChannel) {
-			return res.status(400).json({ error: "User is not in a voice channel" });
-		}
-		// console.log(voiceChannel);
-		const manager = getManager();
-		const client = useHooks.get("client");
-		const userd = await client.users.fetch(req.user.id);
-		let player = null;
-		const userData = manager.getall().find((node) => node?.userdata?.listeners?.some((l) => l.id === user.id));
-		if (userData) {
-			player = userData;
-			useHooks.get("logger").debug(`[Player] Found active player for ${userd.username}`);
-		} else {
-			player = await manager.create(voiceChannel.guildId, {
-				selfDeaf: true,
-				volume: 50,
-				leaveOnEmpty: true,
-				leaveOnEmptyCooldown: 50_000,
-				leaveOnEnd: true,
-				leaveOnEndCooldown: 500_000,
-				pauseOnEmpty: true,
-				extensions: [
-					"lyricsExt",
-					// "lavalinkExt"
-				],
-				group: client.user.id,
-				userdata: {
-					channel: voiceChannel,
-					voiceChannel: voiceChannel,
-					client: client,
-					listeners: [userd],
-					LockStatus: false,
-					requestedBy: userd,
-				},
+			return res.status(400).json({
+				error: "User is not in a voice channel",
 			});
-			useHooks.get("logger").debug(`[Player] Created new player for ${userd.username}`);
 		}
-		if (!player.connection) await player.connect(voiceChannel);
+
+		const client = useHooks.get("client");
+
+		const user = await client.users.fetch(userId);
+
+		const playerCreate = useHooks.get("functions").get("playerCreate");
+
+		if (!playerCreate?.createPlayer) return res.status(500).json({ error: "playerCreate function not found" });
+
+		const lang = await useHooks.get("functions").get("ZiRank").execute({ user: user, XpADD: 0 });
+
+		const player = await playerCreate.createPlayer({
+			guildId: voiceChannel.guild.id,
+			voiceChannelId: voiceChannel.id,
+
+			textChannel: voiceChannel,
+
+			requestedBy: user,
+
+			reply: null,
+			message: null,
+			customId: null,
+
+			lang,
+
+			options: {
+				assistant: false,
+			},
+		});
+
 		res.status(200).json({
 			status: "ok",
 			channel: voiceChannel.name,
-			user: userd.username,
+			user: user.username,
+			playerId: player?.id,
 		});
 	} catch (error) {
-		res.status(500).json({ error: error.message });
+		useHooks.get("logger").error(`[API] /music/join ${error.stack || error}`);
+
+		res.status(500).json({
+			error: error.message,
+		});
 	}
 });
 

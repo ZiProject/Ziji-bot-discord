@@ -3,7 +3,7 @@ const { useHooks } = require("zihooks");
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require("discord.js");
 
 module.exports.data = {
-	name: "S_player_Func",
+	name: "S_playerGui",
 	type: "SelectMenu",
 	category: "musix",
 	lock: true,
@@ -11,9 +11,9 @@ module.exports.data = {
 };
 
 async function Update_Player(player) {
-	const player_func = useHooks.get("functions").get("player_func");
-	if (!player_func) return;
-	const res = await player_func.execute({ player });
+	const playerGui = useHooks.get("functions").get("playerGui");
+	if (!playerGui) return;
+	const res = await playerGui.execute({ player });
 	player.userdata.mess.edit(res).catch((e) => {});
 }
 

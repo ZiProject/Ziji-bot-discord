@@ -90,7 +90,24 @@ module.exports.execute = async ({ interaction, lang }) => {
 					},
 					{ new: true, upsert: true },
 				);
+				const guildSettings = useHooks.get("guildSettings");
 
+				const joinToCreateCache = useHooks.get("joinToCreateCache");
+
+				const data = {
+					enabled: true,
+					voiceChannelId: channel.id,
+					categoryId: category.id,
+				};
+
+				if (guildSettings?.has(guildId)) {
+					guildSettings.get(guildId).joinToCreate = data;
+				}
+
+				joinToCreateCache?.set(channel.id, {
+					guildId,
+					...data,
+				});
 				await interaction.followUp({
 					content: `Join-to-create has been successfully set up!\n**Voice Channel:** ${channel.name}\n**Category:** ${category.name}`,
 					ephemeral: true,
@@ -106,6 +123,19 @@ module.exports.execute = async ({ interaction, lang }) => {
 					{ "joinToCreate.enabled": false },
 					{ new: true },
 				);
+				const guildSettings = useHooks.get("guildSettings");
+
+				const joinToCreateCache = useHooks.get("joinToCreateCache");
+
+				const oldData = guildSettings?.get(guildId)?.joinToCreate;
+
+				if (oldData?.voiceChannelId) {
+					joinToCreateCache?.delete(oldData.voiceChannelId);
+				}
+
+				if (guildSettings?.has(guildId)) {
+					guildSettings.get(guildId).joinToCreate.enabled = false;
+				}
 
 				if (updatedGuild) {
 					await interaction.followUp({
