@@ -64,11 +64,24 @@ router.post("/music/join", authenticate, async (req, res) => {
 			const client = useHooks.get("client");
 
 			for (const guild of client.guilds.cache.values()) {
-				const member = guild.members.cache.get(userId);
+				try {
+					const member = await guild.members.fetch(userId);
 
-				if (member?.voice?.channel) {
-					voiceChannel = member.voice.channel;
-					break;
+					if (member?.voice?.channel) {
+						voiceChannel = member.voice.channel;
+
+						if (voiceStates) {
+							voiceStates.set(userId, {
+								channelId: member.voice.channel.id,
+								guildId: guild.id,
+								channel: member.voice.channel,
+							});
+						}
+
+						break;
+					}
+				} catch {
+					continue;
 				}
 			}
 		}
@@ -80,14 +93,13 @@ router.post("/music/join", authenticate, async (req, res) => {
 		}
 
 		const client = useHooks.get("client");
-
 		const user = await client.users.fetch(userId);
 
 		const playerCreate = useHooks.get("functions").get("playerCreate");
 
 		if (!playerCreate?.createPlayer) return res.status(500).json({ error: "playerCreate function not found" });
 
-		const lang = await useHooks.get("functions").get("ZiRank").execute({ user: user, XpADD: 0 });
+		const lang = await useHooks.get("functions").get("ZiRank").execute({ user, XpADD: 0 });
 
 		const player = await playerCreate.createPlayer({
 			guildId: voiceChannel.guild.id,
