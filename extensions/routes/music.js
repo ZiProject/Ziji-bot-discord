@@ -87,8 +87,25 @@ router.post("/music/join", authenticate, async (req, res) => {
 			useHooks.get("logger").debug(`[Player] Found active player for ${userd.username}`);
 		} else {
 			player = await manager.create(voiceChannel.guildId, {
+				selfDeaf: true,
+				volume: 50,
+				leaveOnEmpty: true,
+				leaveOnEmptyCooldown: 50_000,
 				leaveOnEnd: true,
-				userdata: { channel: voiceChannel, voiceChannel: voiceChannel, client: client, listeners: [userd] },
+				leaveOnEndCooldown: 500_000,
+				pauseOnEmpty: true,
+				extensions: [
+					"lyricsExt",
+					// "lavalinkExt"
+				],
+				userdata: { 
+					channel: voiceChannel, 
+					voiceChannel: voiceChannel, 
+					client: client, 
+					listeners: [userd],
+					LockStatus: false,
+					requestedBy: userd,
+				},
 			});
 			useHooks.get("logger").debug(`[Player] Created new player for ${userd.username}`);
 		}
