@@ -93,7 +93,7 @@ router.post("/music/join", authenticate, async (req, res) => {
 			useHooks.get("logger").debug(`[Player] Created new player for ${userd.username}`);
 		}
 		if (!player.connection) await player.connect(voiceChannel);
-		res.status(200).json({ 
+		res.status(200).json({
 			status: "ok",
 			channel: voiceChannel.name,
 			user: userd.username,
