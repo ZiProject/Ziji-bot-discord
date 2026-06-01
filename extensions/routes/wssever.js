@@ -1,6 +1,39 @@
 const { useHooks } = require("zihooks");
-const { getManager } = require("ziplayer");
+const { getPlayer } = require("ziplayer");
 const jwt = require("jsonwebtoken");
+
+async function getPlayerVoiceChannel(user, client) {
+	let voiceChannel = null;
+	const voiceStates = useHooks.get("voiceStates");
+
+	if (voiceStates?.has(user.id)) voiceChannel = voiceStates.get(user.id)?.channel;
+
+	if (!voiceChannel) {
+		for (const guild of client.guilds.cache.values()) {
+			try {
+				const member = await guild.members.fetch(user.id);
+
+				if (member?.voice?.channel) {
+					voiceChannel = member.voice.channel;
+
+					if (voiceStates) {
+						voiceStates.set(user.id, {
+							channelId: member.voice.channel.id,
+							guildId: guild.id,
+							channel: member.voice.channel,
+						});
+					}
+
+					break;
+				}
+			} catch {
+				continue;
+			}
+		}
+	}
+
+	return getPlayer(`${voiceChannel.guild.id}::${voiceChannel.id}`);
+}
 
 module.exports.data = {
 	name: "wssever",
@@ -158,21 +191,15 @@ module.exports.execute = (client) => {
 								username: user.username,
 							},
 						});
-
-						const manager = getManager();
-
-						const userData = manager.getall().find((node) => node?.userdata?.listeners?.some((l) => l.id === user.id));
-
-						if (userData?.connection) {
-							player = userData;
-
+						player = await getPlayerVoiceChannel(user, client);
+						if (player?.connection) {
 							logger.debug(`[Player] Found active player for ${user.username}`);
 
 							safeSend({
 								event: "ReplyVoice",
 								channel: {
-									id: userData.userdata.channel.id,
-									name: userData.userdata.channel.name,
+									id: player.userdata.channel.id,
+									name: player.userdata.channel.name,
 								},
 								guild: {
 									id: player.userdata.channel.guild.id,
@@ -214,25 +241,16 @@ module.exports.execute = (client) => {
 				if (data.event === "GetVoice") {
 					logger.debug(`[Voice] Fetching player for ${user.username}`);
 
-					const manager = getManager();
+					player = await getPlayerVoiceChannel(user, client);
 
-					const userData = manager.getall().find((node) =>
-						node?.userdata?.listeners?.some((l) => {
-							console.log(l);
-							return l.id === user.id;
-						}),
-					);
-
-					if (userData?.connection) {
-						player = userData;
-
+					if (player?.connection) {
 						logger.debug("[Voice] Active voice found.");
 
 						safeSend({
 							event: "ReplyVoice",
 							channel: {
-								id: userData.userdata.channel.id,
-								name: userData.userdata.channel.name,
+								id: player.userdata.channel.id,
+								name: player.userdata.channel.name,
 							},
 							guild: {
 								id: player.userdata.channel.guild.id,
