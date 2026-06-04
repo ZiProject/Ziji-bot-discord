@@ -1,6 +1,6 @@
 {
 	"name": "ziji-bot-discord",
-	"version": "10.0.3",
+	"version": "10.0.4",
 	"description": "Ziji bot discord",
 	"main": "index.js",
 	"scripts": {
@@ -34,8 +34,8 @@
 		"@zibot/ziencryptor": "^0.0.1",
 		"@ziplayer/extension": "^0.3.1",
 		"@ziplayer/infinity": "^0.0.3",
-		"@ziplayer/plugin": "^0.3.3",
-		"@ziplayer/ytexecplug": "^0.0.2",
+		"@ziplayer/plugin": "^0.3.4",
+		"@ziplayer/ytexecplug": "^0.0.4",
 		"axios": "^1.13.5",
 		"axios-cookiejar-support": "^7.0.0",
 		"canvacord": "^6.0.2",
@@ -66,7 +66,7 @@
 		"winston": "^3.17.0",
 		"ws": "^8.18.0",
 		"zihooks": "^2.0.0",
-		"ziplayer": "^0.3.9"
+		"ziplayer": "^0.3.11"
 	},
 	"devDependencies": {
 		"cross-env": "^10.0.0",

@@ -46,7 +46,8 @@ const config = startup.getConfig();
 // Player
 const ytbplg = new YouTubePlugin({
 	// debug: console.log,
-	fistStream: new YTexec().getStream,
+	// fistStream: new YTexec().getStream,
+	fallbackStream: new YTexec().getStream,
 });
 
 //create Player Manager
