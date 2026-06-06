@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/.prisma/client-sqlite"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("SQLITE_DATABASE_URL")
+}
+
+model ZiUser {
+  id                 String    @id @default(cuid())
+  userID             String?
+  name               String?
+  xp                 Int?
+  level              Int?
+  coin               Int?
+  lang               String?
+  volume             Int?
+  color              String?
+  lastDaily          DateTime?
+  dailyStreak        Int?
+  lastHunt           DateTime?
+  totalAnimals       Int?
+  huntStats          String?
+  lootboxes          Int?
+  fabledLootboxes    Int?
+  cookiesGiven       Int?
+  cookiesReceived    Int?
+  lastCookie         DateTime?
+  thankedCookies     String?
+  hoyoCookie         String?
+  genshinAutoClaim   Boolean?
+  lastGenshinClaim   DateTime?
+  petCare            String?
+  lastGive           DateTime?
+  dailyGives         Int?
+  dailyQuests        String?
+  weeklyQuests       String?
+  lastQuestReset     DateTime?
+  lastWeeklyReset    DateTime?
+  discordAccessToken String?
+  userInfo           String?
+  guilds             String?
+  updatedAt          DateTime?
+
+  @@index([userID])
+  @@map("ziusers")
+}
+
+model ZiAutoresponder {
+  id        String   @id @default(cuid())
+  guildId   String
+  trigger   String
+  response  String
+  options   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([guildId])
+  @@map("ziautoresponders")
+}
+
+model ZiWelcome {
+  id        String   @id @default(cuid())
+  guildId   String
+  channel   String?
+  content   String?
+  Bchannel  String?
+  Bcontent  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([guildId])
+  @@map("ziwelcomes")
+}
+
+model ZiGuild {
+  id            String    @id @default(cuid())
+  guildId       String
+  voice         String?
+  joinToCreate  String?
+  autoRole      String?
+  music_channel String?
+  updatedAt     DateTime?
+
+  @@index([guildId])
+  @@map("ziguilds")
+}
+
+model ZiConfess {
+  id              String   @id @default(cuid())
+  enabled         Boolean?
+  guildId         String
+  channelId       String?
+  reviewSystem    Boolean?
+  reviewChannelId String?
+  currentId       Int?
+  confessions     String?
+
+  @@index([guildId])
+  @@map("ziconfesses")
+}

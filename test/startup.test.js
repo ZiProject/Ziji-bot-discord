@@ -8,6 +8,7 @@ const { EventEmitter } = require("node:events");
 const { Collection } = require("discord.js");
 const { useHooks } = require("zihooks");
 
+const { connectPrismaDatabase } = require("../startup/prismaDB.js");
 const { StartupLoader } = require("../startup/loader.js");
 const { StartupManager } = require("../startup/index.js");
 
@@ -174,4 +175,46 @@ test("StartupManager.initHooks initializes hooks and exposes config/logger", asy
 	assert.ok(useHooks.get("functions") instanceof Collection, "Functions hook should be a Collection");
 	assert.ok(useHooks.get("logger"), "Logger hook should be available");
 	assert.deepStrictEqual(manager.getConfig(), useHooks.get("config"));
+});
+
+test("Prisma SQLite adapter exposes Mongoose-like model API", async () => {
+	const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "ziji-prisma-sqlite-test-"));
+	const previousSqliteUrl = process.env.SQLITE_DATABASE_URL;
+	let db;
+
+	try {
+		const sqlitePath = path.join(tempDir, "ziDB.sqlite").replace(/\\/g, "/");
+		process.env.SQLITE_DATABASE_URL = `file:${sqlitePath}`;
+		db = await connectPrismaDatabase("sqlite");
+
+		const user = await db.ZiUser.findOneAndUpdate(
+			{ userID: "adapter-user" },
+			{
+				$set: { name: "Adapter" },
+				$inc: { coin: 10 },
+				$addToSet: { thankedCookies: "cookie-1" },
+			},
+			{ upsert: true },
+		);
+
+		user.huntStats.common = { Cat: { count: 2 } };
+		await user.save();
+
+		const found = await db.ZiUser.findOne({
+			userID: "adapter-user",
+			"huntStats.common.Cat.count": { $gte: 2 },
+		});
+		const leanUsers = await db.ZiUser.find({}, { userID: 1, coin: 1 }).lean();
+
+		assert.strictEqual(found.coin, 10);
+		assert.strictEqual(found.thankedCookies.includes("cookie-1"), true);
+		assert.strictEqual(found.huntStats.common.Cat.count, 2);
+		assert.strictEqual(typeof leanUsers[0].save, "undefined");
+		assert.strictEqual(leanUsers[0].userID, "adapter-user");
+	} finally {
+		if (db) await db.disconnect();
+		if (previousSqliteUrl === undefined) delete process.env.SQLITE_DATABASE_URL;
+		else process.env.SQLITE_DATABASE_URL = previousSqliteUrl;
+		await removeTempDir(tempDir);
+	}
 });
