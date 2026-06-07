@@ -177,78 +177,6 @@ test("StartupManager.initHooks initializes hooks and exposes config/logger", asy
 	assert.deepStrictEqual(manager.getConfig(), useHooks.get("config"));
 });
 
-test("client ready fails startup when both Prisma providers fail", async () => {
-	const prismaDbPath = require.resolve("../startup/prismaDB.js");
-	const readyEventPath = require.resolve("../events/client/ready.js");
-	const previousPrismaCache = require.cache[prismaDbPath];
-	const previousMongo = process.env.MONGO;
-	const logs = { errors: [], infos: [] };
-	let extensionExecuted = false;
-	let statusSet = false;
-	let activitySet = false;
-
-	try {
-		process.env.MONGO = "mongodb://localhost:27017/ziji";
-		useHooks.set("config", { deploy: false, botConfig: {} });
-		useHooks.set("logger", {
-			error: (message) => logs.errors.push(message),
-			info: (message) => logs.infos.push(message),
-			debug: () => {},
-		});
-		useHooks.set("extensions", [
-			{
-				data: { name: "db-extension", enable: true, priority: 1 },
-				execute: async () => {
-					extensionExecuted = true;
-				},
-			},
-		]);
-
-		delete require.cache[readyEventPath];
-		require.cache[prismaDbPath] = {
-			id: prismaDbPath,
-			filename: prismaDbPath,
-			loaded: true,
-			exports: {
-				connectPrismaDatabase: async (provider) => {
-					throw new Error(`${provider} failed`);
-				},
-			},
-		};
-
-		const readyEvent = require("../events/client/ready.js");
-		const fakeClient = {
-			channels: { fetch: async () => null },
-			user: {
-				tag: "Test#0001",
-				setStatus: () => {
-					statusSet = true;
-				},
-				setActivity: () => {
-					activitySet = true;
-				},
-			},
-		};
-
-		await assert.rejects(
-			() => readyEvent.execute(fakeClient),
-			/Database initialization failed\. MongoDB: mongodb failed; SQLite: sqlite failed/,
-		);
-
-		assert.strictEqual(extensionExecuted, false, "Extensions should not load without a db hook");
-		assert.strictEqual(statusSet, false, "Client status should not be set after DB startup failure");
-		assert.strictEqual(activitySet, false, "Client activity should not be set after DB startup failure");
-		assert.ok(logs.errors.some((message) => message.includes("MongoDB Prisma connection failed")));
-		assert.ok(logs.errors.some((message) => message.includes("SQLite Prisma fallback failed")));
-	} finally {
-		delete require.cache[readyEventPath];
-		if (previousPrismaCache) require.cache[prismaDbPath] = previousPrismaCache;
-		else delete require.cache[prismaDbPath];
-		if (previousMongo === undefined) delete process.env.MONGO;
-		else process.env.MONGO = previousMongo;
-	}
-});
-
 test("Prisma SQLite adapter exposes Mongoose-like model API", async () => {
 	const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "ziji-prisma-sqlite-test-"));
 	const previousSqliteUrl = process.env.SQLITE_DATABASE_URL;
@@ -288,6 +216,93 @@ test("Prisma SQLite adapter exposes Mongoose-like model API", async () => {
 		if (previousSqliteUrl === undefined) delete process.env.SQLITE_DATABASE_URL;
 		else process.env.SQLITE_DATABASE_URL = previousSqliteUrl;
 		await removeTempDir(tempDir);
+	}
+});
+
+test("client ready falls back to LocalDB when Prisma providers fail", async () => {
+	const prismaDbPath = require.resolve("../startup/prismaDB.js");
+	const readyEventPath = require.resolve("../events/client/ready.js");
+
+	const previousPrismaCache = require.cache[prismaDbPath];
+	const previousMongo = process.env.MONGO;
+
+	let extensionExecuted = false;
+	let statusSet = false;
+	let activitySet = false;
+
+	try {
+		process.env.MONGO = "mongodb://localhost:27017/ziji";
+
+		useHooks.set("config", {
+			deploy: false,
+			botConfig: {},
+		});
+
+		useHooks.set("logger", {
+			error: () => {},
+			info: () => {},
+			warn: () => {},
+			debug: () => {},
+		});
+
+		useHooks.set("extensions", [
+			{
+				data: {
+					name: "test-extension",
+					enable: true,
+					priority: 1,
+				},
+				execute: async () => {
+					extensionExecuted = true;
+				},
+			},
+		]);
+
+		delete require.cache[readyEventPath];
+
+		require.cache[prismaDbPath] = {
+			id: prismaDbPath,
+			filename: prismaDbPath,
+			loaded: true,
+			exports: {
+				connectPrismaDatabase: async () => {
+					throw new Error("database failed");
+				},
+			},
+		};
+
+		const readyEvent = require("../events/client/ready.js");
+
+		const fakeClient = {
+			channels: {
+				fetch: async () => null,
+			},
+			user: {
+				tag: "Test#0001",
+				setStatus() {
+					statusSet = true;
+				},
+				setActivity() {
+					activitySet = true;
+				},
+			},
+		};
+
+		await readyEvent.execute(fakeClient);
+
+		assert.ok(useHooks.get("db"));
+
+		assert.strictEqual(extensionExecuted, true);
+		assert.strictEqual(statusSet, true);
+		assert.strictEqual(activitySet, true);
+	} finally {
+		delete require.cache[readyEventPath];
+
+		if (previousPrismaCache) require.cache[prismaDbPath] = previousPrismaCache;
+		else delete require.cache[prismaDbPath];
+
+		if (previousMongo === undefined) delete process.env.MONGO;
+		else process.env.MONGO = previousMongo;
 	}
 });
 
