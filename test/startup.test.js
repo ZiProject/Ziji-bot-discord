@@ -225,7 +225,10 @@ test("Prisma Mongo adapter uses appName as database name when URI path is empty"
 	const normalizedUrl = prismaInternals.normalizeMongoUrl(mongoUrl);
 
 	assert.strictEqual(prismaInternals.getMongoDatabaseName(normalizedUrl), "Divahost");
-	assert.strictEqual(normalizedUrl, "mongodb+srv://user:pass@example.mongodb.net/Divahost?retryWrites=true&w=majority&appName=Divahost");
+	assert.strictEqual(
+		normalizedUrl,
+		"mongodb+srv://user:pass@example.mongodb.net/Divahost?retryWrites=true&w=majority&appName=Divahost",
+	);
 });
 
 test("Prisma Mongo adapter rejects connection strings without database name or appName", () => {

@@ -1059,7 +1059,11 @@ const attachPrismaQueryDebug = (prisma, provider, fallbackLogger) => {
 			);
 		});
 	} catch (error) {
-		debugPrisma("[PrismaQuery] failed to attach query logger", { provider, error: error?.message || String(error) }, fallbackLogger);
+		debugPrisma(
+			"[PrismaQuery] failed to attach query logger",
+			{ provider, error: error?.message || String(error) },
+			fallbackLogger,
+		);
 	}
 };
 
