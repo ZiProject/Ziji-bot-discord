@@ -216,6 +216,8 @@ module.exports = {
 		//voiceExtension events debug
 		voiceExt_DEBUG: false,
 
+		//db debug
+		prisma_DEBUG: false,
 		/** ============ Else ============ */
 		//enable Giveaway
 		Giveaway: true,

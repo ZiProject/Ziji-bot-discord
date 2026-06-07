@@ -271,6 +271,7 @@ const stringifyLogDetails = (details) => {
 };
 
 const debugPrisma = (message, details, fallbackLogger) => {
+	if (useHooks.get("config")?.DevConfig?.prisma_DEBUG !== true) return;
 	const logger = getLogger(fallbackLogger);
 	if (!logger?.debug) return;
 	logger.debug(details === undefined ? message : `${message} ${stringifyLogDetails(details)}`);

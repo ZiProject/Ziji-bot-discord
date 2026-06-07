@@ -2,6 +2,20 @@ const { Events, Client, ActivityType } = require("discord.js");
 const deploy = require("../../startup/deploy");
 const { useHooks } = require("zihooks");
 const { connectPrismaDatabase } = require("../../startup/prismaDB");
+const { Database, createModel } = require("@zibot/db");
+
+const createLocalDatabase = () => {
+	const db = new Database("./jsons/ziDB.json");
+
+	return {
+		provider: "localdb",
+		ZiUser: createModel(db, "ZiUser"),
+		ZiAutoresponder: createModel(db, "ZiAutoresponder"),
+		ZiWelcome: createModel(db, "ZiWelcome"),
+		ZiGuild: createModel(db, "ZiGuild"),
+		ZiConfess: createModel(db, "ZiConfess"),
+	};
+};
 
 module.exports = {
 	name: Events.ClientReady,
@@ -47,7 +61,17 @@ module.exports = {
 					client.errorLog("Connected to SQLite with Prisma!");
 				} catch (sqliteError) {
 					logger?.error?.(`SQLite Prisma fallback failed: ${sqliteError.message}`);
-					client.errorLog(`SQLite Prisma fallback failed: ${sqliteError.message}`);
+					try {
+						const db = createLocalDatabase();
+						useHooks.set("db", db);
+						logger?.warn?.("Using LocalDB fallback!");
+						client.errorLog("Using LocalDB fallback!");
+					} catch (localError) {
+						logger?.error?.(`LocalDB fallback failed: ${localError.message}`);
+						throw new Error(
+							[`MongoDB: ${mongoError.message}`, `SQLite: ${sqliteError.message}`, `LocalDB: ${localError.message}`].join("; "),
+						);
+					}
 				}
 			}
 		};
