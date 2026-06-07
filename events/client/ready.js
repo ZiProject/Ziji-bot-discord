@@ -34,14 +34,14 @@ module.exports = {
 		const initDatabase = async () => {
 			try {
 				if (!process.env.MONGO) throw new Error("MONGO is not configured");
-				const db = await connectPrismaDatabase("mongodb");
+				const db = await connectPrismaDatabase("mongodb", { logger });
 				useHooks.set("db", db);
 				logger?.info?.("Connected to MongoDB with Prisma!");
 				client.errorLog("Connected to MongoDB with Prisma!");
 			} catch (mongoError) {
 				logger?.error?.(`MongoDB Prisma connection failed: ${mongoError.message}`);
 				try {
-					const db = await connectPrismaDatabase("sqlite");
+					const db = await connectPrismaDatabase("sqlite", { logger });
 					useHooks.set("db", db);
 					logger?.info?.("Connected to SQLite with Prisma!");
 					client.errorLog("Connected to SQLite with Prisma!");

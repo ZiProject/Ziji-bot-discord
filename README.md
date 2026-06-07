@@ -88,7 +88,7 @@ Rename `.env.example` → `.env` and fill in your values:
 
 ```env
 TOKEN  = "Your Bot Token"       # required
-MONGO  = "Your MongoDB URI"     # optional
+MONGO  = "mongodb+srv://user:pass@cluster.mongodb.net/ziji?retryWrites=true&w=majority&appName=ziji" # optional, include database name; appName is fallback
 # ...
 ```
 

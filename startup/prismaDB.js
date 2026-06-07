@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const { useHooks } = require("zihooks");
 
 const CLIENT_MODULES = {
 	mongodb: "../node_modules/.prisma/client-mongo",
@@ -7,13 +8,60 @@ const CLIENT_MODULES = {
 };
 
 const DEFAULT_SQLITE_URL = "file:./jsons/ziDB.sqlite";
+const DEFAULT_MONGO_DATABASE = "ziji";
+const REDACTED_VALUE = "[REDACTED]";
+const SENSITIVE_KEY_PATTERN = /(token|secret|password|cookie|authorization|auth)/i;
 
 const MODEL_CONFIGS = {
 	ZiUser: {
 		delegate: "ziUser",
+		fields: [
+			"id",
+			"userID",
+			"username",
+			"avatar",
+			"name",
+			"xp",
+			"level",
+			"coin",
+			"lang",
+			"volume",
+			"color",
+			"lastDaily",
+			"dailyStreak",
+			"lastHunt",
+			"totalAnimals",
+			"huntStats",
+			"lootboxes",
+			"fabledLootboxes",
+			"cookiesGiven",
+			"cookiesReceived",
+			"lastCookie",
+			"thankedCookies",
+			"hoyoCookie",
+			"genshinAutoClaim",
+			"lastGenshinClaim",
+			"petCare",
+			"lastGive",
+			"dailyGives",
+			"dailyQuests",
+			"weeklyQuests",
+			"lastQuestReset",
+			"lastWeeklyReset",
+			"discordAccessToken",
+			"userInfo",
+			"guilds",
+			"lastLogin",
+			"loginCount",
+			"createdAt",
+			"lastBattle",
+			"battleStats",
+			"updatedAt",
+		],
 		indexedFields: ["id", "userID"],
-		jsonFields: ["huntStats", "thankedCookies", "petCare", "dailyQuests", "weeklyQuests", "userInfo", "guilds"],
+		jsonFields: ["huntStats", "thankedCookies", "petCare", "dailyQuests", "weeklyQuests", "userInfo", "guilds", "battleStats"],
 		dateFields: [
+			"createdAt",
 			"lastDaily",
 			"lastHunt",
 			"lastCookie",
@@ -21,6 +69,8 @@ const MODEL_CONFIGS = {
 			"lastGive",
 			"lastQuestReset",
 			"lastWeeklyReset",
+			"lastLogin",
+			"lastBattle",
 			"updatedAt",
 		],
 		defaults: {
@@ -42,11 +92,14 @@ const MODEL_CONFIGS = {
 			weeklyQuests: [],
 			userInfo: {},
 			guilds: [],
+			loginCount: 0,
+			battleStats: { wins: 0, losses: 0, total: 0 },
 		},
 		touchUpdatedAt: true,
 	},
 	ZiAutoresponder: {
 		delegate: "ziAutoresponder",
+		fields: ["id", "guildId", "trigger", "response", "options", "createdAt", "updatedAt"],
 		indexedFields: ["id", "guildId"],
 		jsonFields: ["options"],
 		dateFields: ["createdAt", "updatedAt"],
@@ -56,6 +109,7 @@ const MODEL_CONFIGS = {
 	},
 	ZiWelcome: {
 		delegate: "ziWelcome",
+		fields: ["id", "guildId", "channel", "content", "Bchannel", "Bcontent", "createdAt", "updatedAt"],
 		indexedFields: ["id", "guildId"],
 		jsonFields: [],
 		dateFields: ["createdAt", "updatedAt"],
@@ -63,6 +117,7 @@ const MODEL_CONFIGS = {
 	},
 	ZiGuild: {
 		delegate: "ziGuild",
+		fields: ["id", "guildId", "voice", "joinToCreate", "autoRole", "music_channel", "updatedAt"],
 		indexedFields: ["id", "guildId"],
 		jsonFields: ["voice", "joinToCreate", "autoRole"],
 		dateFields: ["updatedAt"],
@@ -83,6 +138,7 @@ const MODEL_CONFIGS = {
 	},
 	ZiConfess: {
 		delegate: "ziConfess",
+		fields: ["id", "enabled", "guildId", "channelId", "reviewSystem", "reviewChannelId", "currentId", "confessions"],
 		indexedFields: ["id", "guildId"],
 		jsonFields: ["confessions"],
 		dateFields: [],
@@ -100,6 +156,8 @@ const SQLITE_SCHEMA_SQL = [
 	`CREATE TABLE IF NOT EXISTS "ziusers" (
 		"id" TEXT NOT NULL PRIMARY KEY,
 		"userID" TEXT,
+		"username" TEXT,
+		"avatar" TEXT,
 		"name" TEXT,
 		"xp" INTEGER,
 		"level" INTEGER,
@@ -131,6 +189,11 @@ const SQLITE_SCHEMA_SQL = [
 		"discordAccessToken" TEXT,
 		"userInfo" TEXT,
 		"guilds" TEXT,
+		"lastLogin" DATETIME,
+		"loginCount" INTEGER,
+		"createdAt" DATETIME,
+		"lastBattle" DATETIME,
+		"battleStats" TEXT,
 		"updatedAt" DATETIME
 	)`,
 	`CREATE INDEX IF NOT EXISTS "ziusers_userID_idx" ON "ziusers"("userID")`,
@@ -178,6 +241,18 @@ const SQLITE_SCHEMA_SQL = [
 	`CREATE INDEX IF NOT EXISTS "ziconfesses_guildId_idx" ON "ziconfesses"("guildId")`,
 ];
 
+const SQLITE_ADDITIONAL_COLUMNS = {
+	ziusers: [
+		["username", "TEXT"],
+		["avatar", "TEXT"],
+		["lastLogin", "DATETIME"],
+		["loginCount", "INTEGER"],
+		["createdAt", "DATETIME"],
+		["lastBattle", "DATETIME"],
+		["battleStats", "TEXT"],
+	],
+};
+
 const clone = (value) => {
 	if (value === undefined || value === null) return value;
 	if (value instanceof Date) return new Date(value.getTime());
@@ -185,39 +260,104 @@ const clone = (value) => {
 	return value;
 };
 
+const getLogger = (fallbackLogger) => fallbackLogger || useHooks.get("logger");
+
+const stringifyLogDetails = (details) => {
+	try {
+		return JSON.stringify(details);
+	} catch {
+		return String(details);
+	}
+};
+
+const debugPrisma = (message, details, fallbackLogger) => {
+	const logger = getLogger(fallbackLogger);
+	if (!logger?.debug) return;
+	logger.debug(details === undefined ? message : `${message} ${stringifyLogDetails(details)}`);
+};
+
+const redactForLog = (value, depth = 0) => {
+	if (value === undefined || value === null) return value;
+	if (depth > 4) return "[MaxDepth]";
+	if (value instanceof Date) return value.toISOString();
+	if (Array.isArray(value)) return value.slice(0, 20).map((item) => redactForLog(item, depth + 1));
+	if (!isPlainObject(value)) return value;
+
+	const result = {};
+	for (const [key, entry] of Object.entries(value)) {
+		result[key] = SENSITIVE_KEY_PATTERN.test(key) ? REDACTED_VALUE : redactForLog(entry, depth + 1);
+	}
+	return result;
+};
+
+const getDataSummary = (data = {}) => ({
+	fields: Object.keys(data || {}),
+	data: redactForLog(data),
+});
+
 const deepEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 const isPlainObject = (value) => value && typeof value === "object" && !Array.isArray(value) && !(value instanceof Date);
 
-const getPath = (object, dottedPath) => {
-	const pathParts = dottedPath.split(".");
-	let current = object;
+const isContainer = (value) => value && typeof value === "object" && !(value instanceof Date);
+
+const isArrayIndex = (part) => /^\d+$/.test(part);
+
+const keyFor = (container, part) => (Array.isArray(container) && isArrayIndex(part) ? Number(part) : part);
+
+const resolvePositionalParts = (pathParts, positionalIndexes = {}) => {
+	const resolved = [];
 	for (const part of pathParts) {
-		if (current == null) return undefined;
-		current = current[part];
+		if (part === "$") {
+			const arrayField = resolved[resolved.length - 1];
+			const index = positionalIndexes[arrayField];
+			resolved.push(index === undefined ? part : String(index));
+			continue;
+		}
+		resolved.push(part);
 	}
-	return current;
+	return resolved;
 };
 
-const setPath = (object, dottedPath, value) => {
-	const pathParts = dottedPath.split(".");
+const getPathParts = (current, pathParts) => {
+	if (pathParts.length === 0) return current;
+	if (current == null) return undefined;
+
+	const [part, ...remaining] = pathParts;
+	if (Array.isArray(current)) {
+		if (isArrayIndex(part)) return getPathParts(current[Number(part)], remaining);
+		const values = current.map((item) => getPathParts(item, pathParts)).filter((value) => value !== undefined);
+		return values.length === 0 ? undefined : values;
+	}
+
+	return getPathParts(current[part], remaining);
+};
+
+const getPath = (object, dottedPath) => {
+	return getPathParts(object, dottedPath.split("."));
+};
+
+const setPath = (object, dottedPath, value, positionalIndexes = {}) => {
+	const pathParts = resolvePositionalParts(dottedPath.split("."), positionalIndexes);
 	let current = object;
 	for (let i = 0; i < pathParts.length - 1; i++) {
 		const part = pathParts[i];
-		if (!isPlainObject(current[part])) current[part] = {};
-		current = current[part];
+		const key = keyFor(current, part);
+		const nextPart = pathParts[i + 1];
+		if (!isContainer(current[key])) current[key] = isArrayIndex(nextPart) ? [] : {};
+		current = current[key];
 	}
-	current[pathParts[pathParts.length - 1]] = value;
+	current[keyFor(current, pathParts[pathParts.length - 1])] = value;
 };
 
-const unsetPath = (object, dottedPath) => {
-	const pathParts = dottedPath.split(".");
+const unsetPath = (object, dottedPath, positionalIndexes = {}) => {
+	const pathParts = resolvePositionalParts(dottedPath.split("."), positionalIndexes);
 	let current = object;
 	for (let i = 0; i < pathParts.length - 1; i++) {
-		current = current?.[pathParts[i]];
+		current = current?.[keyFor(current, pathParts[i])];
 		if (current == null) return;
 	}
-	delete current[pathParts[pathParts.length - 1]];
+	delete current[keyFor(current, pathParts[pathParts.length - 1])];
 };
 
 const parseJsonField = (value, fallback) => {
@@ -250,6 +390,10 @@ const normalizeIdFilter = (filter = {}) => {
 const hasOperator = (value) => isPlainObject(value) && Object.keys(value).some((key) => key.startsWith("$"));
 
 const matchesOperator = (actual, operator, expected) => {
+	if (Array.isArray(actual) && operator !== "$ne") {
+		return actual.some((item) => matchesOperator(item, operator, expected));
+	}
+
 	switch (operator) {
 		case "$gte":
 			return actual >= expected;
@@ -262,7 +406,10 @@ const matchesOperator = (actual, operator, expected) => {
 		case "$ne":
 			return Array.isArray(actual) ? !actual.some((item) => deepEqual(item, expected)) : !deepEqual(actual, expected);
 		case "$in":
-			return Array.isArray(expected) && expected.some((item) => deepEqual(item, actual));
+			if (!Array.isArray(expected)) return false;
+			return Array.isArray(actual) ?
+					actual.some((actualItem) => expected.some((expectedItem) => deepEqual(expectedItem, actualItem)))
+				:	expected.some((item) => deepEqual(item, actual));
 		case "$exists":
 			return expected ? actual !== undefined : actual === undefined;
 		default:
@@ -291,25 +438,83 @@ const matchesFilter = (document, rawFilter = {}) => {
 			continue;
 		}
 
+		if (Array.isArray(actual)) {
+			if (!actual.some((item) => deepEqual(item, expected))) return false;
+			continue;
+		}
+
 		if (!deepEqual(actual, expected)) return false;
 	}
 
 	return true;
 };
 
-const getSimpleWhere = (filter = {}, config) => {
+const toPrismaFieldWhere = (field, value, config) => {
+	const fields = new Set(config.fields || []);
+	const jsonFields = new Set(config.jsonFields || []);
+	if (!fields.has(field) || field.includes(".") || jsonFields.has(field)) return null;
+
+	if (!hasOperator(value)) {
+		if (isPlainObject(value)) return null;
+		return { [field]: value };
+	}
+
+	const operatorWhere = {};
+	for (const [operator, operatorValue] of Object.entries(value)) {
+		switch (operator) {
+			case "$gte":
+				operatorWhere.gte = operatorValue;
+				break;
+			case "$gt":
+				operatorWhere.gt = operatorValue;
+				break;
+			case "$lte":
+				operatorWhere.lte = operatorValue;
+				break;
+			case "$lt":
+				operatorWhere.lt = operatorValue;
+				break;
+			case "$ne":
+				operatorWhere.not = operatorValue;
+				break;
+			case "$in":
+				if (!Array.isArray(operatorValue)) return null;
+				operatorWhere.in = operatorValue;
+				break;
+			case "$exists":
+				operatorWhere[operatorValue ? "not" : "equals"] = null;
+				break;
+			default:
+				return null;
+		}
+	}
+
+	return Object.keys(operatorWhere).length ? { [field]: operatorWhere } : null;
+};
+
+const getPrismaWhere = (filter = {}, config) => {
 	const normalized = normalizeIdFilter(filter);
 	const entries = Object.entries(normalized);
 	if (entries.length === 0) return {};
 
-	const where = {};
+	const andClauses = [];
 	for (const [field, value] of entries) {
-		if (!config.indexedFields.includes(field) || field.includes(".") || hasOperator(value) || isPlainObject(value)) {
-			return null;
+		if (field === "$and" && Array.isArray(value)) {
+			for (const entry of value) {
+				const nestedWhere = getPrismaWhere(entry, config);
+				if (nestedWhere && Object.keys(nestedWhere).length) andClauses.push(nestedWhere);
+			}
+			continue;
 		}
-		where[field] = value;
+		if (field === "$or") continue;
+
+		const fieldWhere = toPrismaFieldWhere(field, value, config);
+		if (fieldWhere) andClauses.push(fieldWhere);
 	}
-	return where;
+
+	if (andClauses.length === 0) return null;
+	if (andClauses.length === 1) return andClauses[0];
+	return { AND: andClauses };
 };
 
 const applyProjection = (document, projection) => {
@@ -344,14 +549,38 @@ const makeQuery = (executor) => {
 	};
 };
 
-const applyUpdate = (document, update = {}) => {
+const findPositionalIndexes = (document, filter = {}) => {
+	const normalized = normalizeIdFilter(filter);
+	const grouped = {};
+
+	for (const [fieldPath, expected] of Object.entries(normalized)) {
+		if (fieldPath.startsWith("$") || !fieldPath.includes(".")) continue;
+		const [arrayField, ...rest] = fieldPath.split(".");
+		const array = document?.[arrayField];
+		if (!Array.isArray(array) || rest.length === 0) continue;
+		if (!grouped[arrayField]) grouped[arrayField] = {};
+		grouped[arrayField][rest.join(".")] = expected;
+	}
+
+	const indexes = {};
+	for (const [arrayField, elementFilter] of Object.entries(grouped)) {
+		const array = document[arrayField];
+		const index = array.findIndex((item) => matchesFilter(item, elementFilter));
+		if (index !== -1) indexes[arrayField] = index;
+	}
+
+	return indexes;
+};
+
+const applyUpdate = (document, update = {}, options = {}) => {
 	const next = clone(document) || {};
 	let upsertFromBody = false;
+	const positionalIndexes = findPositionalIndexes(next, options.filter);
 	const operatorEntries = Object.entries(update).filter(([key]) => key.startsWith("$"));
 	const plainEntries = Object.entries(update).filter(([key]) => !key.startsWith("$"));
 
 	for (const [fieldPath, value] of plainEntries) {
-		setPath(next, fieldPath, value);
+		setPath(next, fieldPath, value, positionalIndexes);
 	}
 
 	for (const [operator, values] of operatorEntries) {
@@ -359,33 +588,36 @@ const applyUpdate = (document, update = {}) => {
 			upsertFromBody = Boolean(values);
 			continue;
 		}
+		if (operator === "$setOnInsert" && !options.isInsert) continue;
 		if (!isPlainObject(values)) continue;
 
 		for (const [fieldPath, value] of Object.entries(values)) {
 			switch (operator) {
 				case "$set":
-					setPath(next, fieldPath, value);
+				case "$setOnInsert":
+					setPath(next, fieldPath, value, positionalIndexes);
 					break;
 				case "$inc": {
-					const current = Number(getPath(next, fieldPath) || 0);
-					setPath(next, fieldPath, current + Number(value));
+					const currentPathParts = resolvePositionalParts(fieldPath.split("."), positionalIndexes);
+					const current = Number(getPathParts(next, currentPathParts) || 0);
+					setPath(next, fieldPath, current + Number(value), positionalIndexes);
 					break;
 				}
 				case "$unset":
-					unsetPath(next, fieldPath);
+					unsetPath(next, fieldPath, positionalIndexes);
 					break;
 				case "$addToSet": {
 					const current = getPath(next, fieldPath);
 					const array = Array.isArray(current) ? current : [];
 					if (!array.some((item) => deepEqual(item, value))) array.push(value);
-					setPath(next, fieldPath, array);
+					setPath(next, fieldPath, array, positionalIndexes);
 					break;
 				}
 				case "$push": {
 					const current = getPath(next, fieldPath);
 					const array = Array.isArray(current) ? current : [];
 					array.push(value);
-					setPath(next, fieldPath, array);
+					setPath(next, fieldPath, array, positionalIndexes);
 					break;
 				}
 			}
@@ -408,11 +640,13 @@ const extractEqualityFields = (filter = {}) => {
 const prepareForPrisma = (document, config, provider, includeId = false) => {
 	const jsonFields = new Set(config.jsonFields || []);
 	const dateFields = new Set(config.dateFields || []);
+	const fields = new Set(config.fields || []);
 	const result = {};
 
 	for (const [field, value] of Object.entries(document || {})) {
 		if (field === "_id" || field === "save") continue;
 		if (field === "id" && !includeId) continue;
+		if (fields.size && !fields.has(field)) continue;
 		if (value === undefined) continue;
 
 		if (provider === "sqlite" && jsonFields.has(field)) {
@@ -466,6 +700,61 @@ const normalizeSqliteUrl = (sqliteUrl = DEFAULT_SQLITE_URL) => {
 	return `file:${absolutePath.replace(/\\/g, "/")}`;
 };
 
+const parseMongoUrl = (mongoUrl = "") => {
+	const trimmedUrl = mongoUrl.trim();
+	if (!trimmedUrl) throw new Error("MONGO is not configured");
+	if (!/^mongodb(?:\+srv)?:\/\//i.test(trimmedUrl)) {
+		throw new Error("MONGO must be a valid mongodb:// or mongodb+srv:// connection string");
+	}
+
+	try {
+		return new URL(trimmedUrl);
+	} catch {
+		throw new Error("MONGO must be a valid mongodb:// or mongodb+srv:// connection string");
+	}
+};
+
+const getMongoDatabaseName = (mongoUrl = "") => {
+	const url = typeof mongoUrl === "string" ? parseMongoUrl(mongoUrl) : mongoUrl;
+	return decodeURIComponent(url.pathname.replace(/^\//, "")).trim();
+};
+
+const redactMongoUrl = (mongoUrl = "") => {
+	try {
+		const url = parseMongoUrl(mongoUrl);
+		if (url.username) url.username = "***";
+		if (url.password) url.password = "***";
+		return url.toString();
+	} catch {
+		return "<invalid MongoDB URI>";
+	}
+};
+
+const normalizeMongoUrl = (mongoUrl = "", options = {}) => {
+	const logger = options.logger;
+	const url = parseMongoUrl(mongoUrl);
+	let database = getMongoDatabaseName(url);
+	const appName = (url.searchParams.get("appName") || "").trim();
+
+	if (!database) {
+		if (!appName) {
+			throw new Error(
+				`MONGO must include a database name in the URI path, for example mongodb+srv://user:pass@cluster.mongodb.net/${DEFAULT_MONGO_DATABASE}?retryWrites=true&w=majority`,
+			);
+		}
+
+		database = appName;
+		url.pathname = `/${encodeURIComponent(appName)}`;
+		logger?.debug?.(`[Prisma] MongoDB URI missing database name; using appName "${appName}" as database name.`);
+	}
+
+	const normalizedUrl = url.toString();
+	logger?.debug?.(`[Prisma] MongoDB database: ${database}`);
+	logger?.debug?.(`[Prisma] MongoDB URI: ${redactMongoUrl(normalizedUrl)}`);
+
+	return normalizedUrl;
+};
+
 const ensureSqliteFile = (sqliteUrl = process.env.SQLITE_DATABASE_URL || DEFAULT_SQLITE_URL) => {
 	const relativePath = sqliteUrl.replace(/^file:/, "");
 	if (path.isAbsolute(relativePath)) {
@@ -480,17 +769,47 @@ const ensureSqliteSchema = async (prisma) => {
 	for (const sql of SQLITE_SCHEMA_SQL) {
 		await prisma.$executeRawUnsafe(sql);
 	}
+
+	for (const [table, columns] of Object.entries(SQLITE_ADDITIONAL_COLUMNS)) {
+		const existingColumns = new Set((await prisma.$queryRawUnsafe(`PRAGMA table_info("${table}")`)).map((column) => column.name));
+		for (const [column, definition] of columns) {
+			if (!existingColumns.has(column)) {
+				await prisma.$executeRawUnsafe(`ALTER TABLE "${table}" ADD COLUMN "${column}" ${definition}`);
+			}
+		}
+	}
 };
 
-const createTransactionShim = () => ({
-	startSession: async () => ({
-		withTransaction: async (callback) => callback(),
-		endSession: async () => {},
-	}),
+const createTransactionShim = (prisma) => ({
+	startSession: async () => {
+		const session = {
+			_tx: null,
+			withTransaction: async (callback) => {
+				debugPrisma("[PrismaTransaction] start");
+				return prisma.$transaction(async (tx) => {
+					session._tx = tx;
+					try {
+						const result = await callback();
+						debugPrisma("[PrismaTransaction] commit");
+						return result;
+					} catch (error) {
+						debugPrisma("[PrismaTransaction] rollback", { error: error?.message || String(error) });
+						throw error;
+					} finally {
+						session._tx = null;
+					}
+				});
+			},
+			endSession: async () => {
+				session._tx = null;
+			},
+		};
+		return session;
+	},
 });
 
-const createPrismaModel = (prisma, provider, config) => {
-	const delegate = prisma[config.delegate];
+const createPrismaModel = (prisma, provider, config, modelName = config.delegate) => {
+	const getDelegate = (options = {}) => (options.session?._tx || prisma)[config.delegate];
 
 	class PrismaModel {
 		constructor(data = {}) {
@@ -507,23 +826,90 @@ const createPrismaModel = (prisma, provider, config) => {
 			return hydrateRow(row, config, provider, PrismaModel);
 		}
 
-		static async _fetch(filter = {}) {
-			const where = getSimpleWhere(filter, config);
-			const rows = where ? await delegate.findMany({ where }) : await delegate.findMany();
-			return rows.map((row) => PrismaModel._hydrate(row)).filter((document) => matchesFilter(document, filter));
+		static async _fetch(filter = {}, options = {}) {
+			const delegate = getDelegate(options);
+			const where = getPrismaWhere(filter, config);
+			const startedAt = Date.now();
+			debugPrisma("[PrismaModel] findMany start", {
+				provider,
+				model: modelName,
+				filter: redactForLog(filter),
+				where: redactForLog(where),
+			});
+
+			try {
+				const rows = where ? await delegate.findMany({ where }) : await delegate.findMany();
+				const documents = rows.map((row) => PrismaModel._hydrate(row)).filter((document) => matchesFilter(document, filter));
+				debugPrisma("[PrismaModel] findMany done", {
+					provider,
+					model: modelName,
+					rowCount: rows.length,
+					matchedCount: documents.length,
+					durationMs: Date.now() - startedAt,
+				});
+				return documents;
+			} catch (error) {
+				debugPrisma("[PrismaModel] findMany error", {
+					provider,
+					model: modelName,
+					durationMs: Date.now() - startedAt,
+					error: error?.message || String(error),
+				});
+				throw error;
+			}
 		}
 
-		static async _saveDocument(document) {
+		static async _saveDocument(document, options = {}) {
+			const delegate = getDelegate(options);
 			const source = addDefaults(clone(document), config);
 			const data = prepareForPrisma(source, config, provider);
 			let saved;
+			const startedAt = Date.now();
+			const operation = source.id ? "updateOrCreate" : "create";
+			debugPrisma("[PrismaModel] save start", {
+				provider,
+				model: modelName,
+				operation,
+				id: source.id,
+				...getDataSummary(data),
+			});
 
-			if (source.id) {
-				saved = await delegate.update({ where: { id: source.id }, data }).catch(async () => {
-					return delegate.create({ data: prepareForPrisma(source, config, provider, true) });
+			try {
+				if (source.id) {
+					try {
+						saved = await delegate.update({ where: { id: source.id }, data });
+					} catch (updateError) {
+						const createData = prepareForPrisma(source, config, provider, true);
+						debugPrisma("[PrismaModel] update missed; falling back to create", {
+							provider,
+							model: modelName,
+							id: source.id,
+							error: updateError?.message || String(updateError),
+							...getDataSummary(createData),
+						});
+						saved = await delegate.create({ data: createData });
+					}
+				} else {
+					saved = await delegate.create({ data });
+				}
+
+				debugPrisma("[PrismaModel] save done", {
+					provider,
+					model: modelName,
+					operation,
+					id: saved?.id,
+					durationMs: Date.now() - startedAt,
 				});
-			} else {
-				saved = await delegate.create({ data });
+			} catch (error) {
+				debugPrisma("[PrismaModel] save error", {
+					provider,
+					model: modelName,
+					operation,
+					id: source.id,
+					durationMs: Date.now() - startedAt,
+					error: error?.message || String(error),
+				});
+				throw error;
 			}
 
 			return PrismaModel._hydrate(saved);
@@ -548,34 +934,74 @@ const createPrismaModel = (prisma, provider, config) => {
 		}
 
 		static async updateOne(filter = {}, update = {}, options = {}) {
-			const documents = await PrismaModel._fetch(filter);
+			const startedAt = Date.now();
+			debugPrisma("[PrismaModel] updateOne start", {
+				provider,
+				model: modelName,
+				filter: redactForLog(filter),
+				update: redactForLog(update),
+				options: redactForLog(options),
+			});
+			const documents = await PrismaModel._fetch(filter, options);
 			const matched = documents[0];
-			const updateState = applyUpdate(matched || extractEqualityFields(filter), update);
+			const updateState = applyUpdate(matched || extractEqualityFields(filter), update, {
+				filter,
+				isInsert: !matched,
+			});
 			const shouldUpsert = options.upsert || updateState.upsertFromBody;
 
 			if (!matched && !shouldUpsert) {
-				return { acknowledged: true, matchedCount: 0, modifiedCount: 0, upsertedCount: 0 };
+				const result = { acknowledged: true, matchedCount: 0, modifiedCount: 0, upsertedCount: 0 };
+				debugPrisma("[PrismaModel] updateOne done", { provider, model: modelName, durationMs: Date.now() - startedAt, result });
+				return result;
 			}
 
-			const saved = await PrismaModel._saveDocument(updateState.document);
-			return {
+			const saved = await PrismaModel._saveDocument(updateState.document, options);
+			const result = {
 				acknowledged: true,
 				matchedCount: matched ? 1 : 0,
 				modifiedCount: matched ? 1 : 0,
 				upsertedCount: matched ? 0 : 1,
 				upsertedId: matched ? null : saved.id,
 			};
+			debugPrisma("[PrismaModel] updateOne done", { provider, model: modelName, durationMs: Date.now() - startedAt, result });
+			return result;
 		}
 
 		static async findOneAndUpdate(filter = {}, update = {}, options = {}) {
-			const documents = await PrismaModel._fetch(filter);
+			const startedAt = Date.now();
+			debugPrisma("[PrismaModel] findOneAndUpdate start", {
+				provider,
+				model: modelName,
+				filter: redactForLog(filter),
+				update: redactForLog(update),
+				options: redactForLog(options),
+			});
+			const documents = await PrismaModel._fetch(filter, options);
 			const matched = documents[0];
 
-			if (!matched && !options.upsert) return null;
+			if (!matched && !options.upsert) {
+				debugPrisma("[PrismaModel] findOneAndUpdate done", {
+					provider,
+					model: modelName,
+					durationMs: Date.now() - startedAt,
+					result: null,
+				});
+				return null;
+			}
 
 			const base = matched || extractEqualityFields(filter);
-			const updateState = applyUpdate(base, update);
-			const saved = await PrismaModel._saveDocument(updateState.document);
+			const updateState = applyUpdate(base, update, {
+				filter,
+				isInsert: !matched,
+			});
+			const saved = await PrismaModel._saveDocument(updateState.document, options);
+			debugPrisma("[PrismaModel] findOneAndUpdate done", {
+				provider,
+				model: modelName,
+				durationMs: Date.now() - startedAt,
+				id: saved?.id,
+			});
 			return saved;
 		}
 
@@ -584,7 +1010,7 @@ const createPrismaModel = (prisma, provider, config) => {
 		}
 	}
 
-	PrismaModel.db = createTransactionShim();
+	PrismaModel.db = createTransactionShim(prisma);
 	return PrismaModel;
 };
 
@@ -597,31 +1023,85 @@ const loadPrismaClient = (provider) => {
 const createDatabaseApi = (prisma, provider) => {
 	const api = { prisma, provider };
 	for (const [name, config] of Object.entries(MODEL_CONFIGS)) {
-		api[name] = createPrismaModel(prisma, provider, config);
+		api[name] = createPrismaModel(prisma, provider, config, name);
 	}
 	api.disconnect = () => prisma.$disconnect();
 	return api;
 };
 
-const connectPrismaDatabase = async (provider) => {
+const summarizePrismaParams = (params) => {
+	if (!params || params === "[]") return params;
+	try {
+		const parsed = JSON.parse(params);
+		if (isPlainObject(parsed)) return redactForLog(parsed);
+		if (Array.isArray(parsed)) return { type: "array", count: parsed.length };
+		return { type: typeof parsed };
+	} catch {
+		return { length: String(params).length };
+	}
+};
+
+const attachPrismaQueryDebug = (prisma, provider, fallbackLogger) => {
+	if (typeof prisma.$on !== "function") return;
+
+	try {
+		prisma.$on("query", (event) => {
+			debugPrisma(
+				"[PrismaQuery]",
+				{
+					provider,
+					query: event.query,
+					params: summarizePrismaParams(event.params),
+					durationMs: event.duration,
+					target: event.target,
+				},
+				fallbackLogger,
+			);
+		});
+	} catch (error) {
+		debugPrisma("[PrismaQuery] failed to attach query logger", { provider, error: error?.message || String(error) }, fallbackLogger);
+	}
+};
+
+const connectPrismaDatabase = async (provider, options = {}) => {
+	const logger = getLogger(options.logger);
+
 	if (provider === "sqlite") {
 		process.env.SQLITE_DATABASE_URL = normalizeSqliteUrl(process.env.SQLITE_DATABASE_URL || DEFAULT_SQLITE_URL);
 		ensureSqliteFile(process.env.SQLITE_DATABASE_URL);
+		logger?.debug?.(`[Prisma] SQLite database URL: ${process.env.SQLITE_DATABASE_URL}`);
+	} else if (provider === "mongodb") {
+		process.env.MONGO = normalizeMongoUrl(process.env.MONGO, { logger });
 	}
 
 	const PrismaClient = loadPrismaClient(provider);
-	const options =
+	logger?.debug?.(`[Prisma] Creating ${provider} PrismaClient.`);
+	const prismaOptions =
 		provider === "sqlite" ?
-			{ datasources: { db: { url: process.env.SQLITE_DATABASE_URL } } }
-		:	{ datasources: { db: { url: process.env.MONGO } } };
-	const prisma = new PrismaClient(options);
+			{
+				datasources: { db: { url: process.env.SQLITE_DATABASE_URL } },
+				log: [{ emit: "event", level: "query" }],
+			}
+		:	{
+				datasources: { db: { url: process.env.MONGO } },
+				log: [{ emit: "event", level: "query" }],
+			};
+	const prisma = new PrismaClient(prismaOptions);
+	attachPrismaQueryDebug(prisma, provider, logger);
 
+	logger?.debug?.(`[Prisma] Connecting to ${provider}.`);
 	await prisma.$connect();
 	if (provider === "sqlite") await ensureSqliteSchema(prisma);
+	logger?.debug?.(`[Prisma] Connected to ${provider}.`);
 
 	return createDatabaseApi(prisma, provider);
 };
 
 module.exports = {
 	connectPrismaDatabase,
+	_internals: {
+		getMongoDatabaseName,
+		normalizeMongoUrl,
+		redactMongoUrl,
+	},
 };

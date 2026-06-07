@@ -11,6 +11,8 @@ datasource db {
 model ZiUser {
   id                 String    @id @default(auto()) @map("_id") @db.ObjectId
   userID             String?
+  username           String?
+  avatar             String?
   name               String?
   xp                 Int?
   level              Int?
@@ -42,6 +44,11 @@ model ZiUser {
   discordAccessToken String?
   userInfo           Json?
   guilds             Json?
+  lastLogin          DateTime?
+  loginCount         Int?
+  createdAt          DateTime?
+  lastBattle         DateTime?
+  battleStats        Json?
   updatedAt          DateTime?
 
   @@index([userID])

@@ -8,7 +8,7 @@ const { EventEmitter } = require("node:events");
 const { Collection } = require("discord.js");
 const { useHooks } = require("zihooks");
 
-const { connectPrismaDatabase } = require("../startup/prismaDB.js");
+const { connectPrismaDatabase, _internals: prismaInternals } = require("../startup/prismaDB.js");
 const { StartupLoader } = require("../startup/loader.js");
 const { StartupManager } = require("../startup/index.js");
 
@@ -217,4 +217,21 @@ test("Prisma SQLite adapter exposes Mongoose-like model API", async () => {
 		else process.env.SQLITE_DATABASE_URL = previousSqliteUrl;
 		await removeTempDir(tempDir);
 	}
+});
+
+test("Prisma Mongo adapter uses appName as database name when URI path is empty", () => {
+	const mongoUrl = "mongodb+srv://user:pass@example.mongodb.net/?retryWrites=true&w=majority&appName=Divahost";
+
+	const normalizedUrl = prismaInternals.normalizeMongoUrl(mongoUrl);
+
+	assert.strictEqual(prismaInternals.getMongoDatabaseName(normalizedUrl), "Divahost");
+	assert.strictEqual(normalizedUrl, "mongodb+srv://user:pass@example.mongodb.net/Divahost?retryWrites=true&w=majority&appName=Divahost");
+});
+
+test("Prisma Mongo adapter rejects connection strings without database name or appName", () => {
+	assert.throws(
+		() => prismaInternals.normalizeMongoUrl("mongodb+srv://user:pass@example.mongodb.net/?retryWrites=true&w=majority"),
+		/MONGO must include a database name/,
+		"MongoDB connection strings must include a database path or appName fallback",
+	);
 });
