@@ -1,8 +1,21 @@
 const { Events, Client, ActivityType } = require("discord.js");
 const deploy = require("../../startup/deploy");
-const mongoose = require("mongoose");
 const { useHooks } = require("zihooks");
+const { connectPrismaDatabase } = require("../../startup/prismaDB");
 const { Database, createModel } = require("@zibot/db");
+
+const createLocalDatabase = () => {
+	const db = new Database("./jsons/ziDB.json");
+
+	return {
+		provider: "localdb",
+		ZiUser: createModel(db, "ZiUser"),
+		ZiAutoresponder: createModel(db, "ZiAutoresponder"),
+		ZiWelcome: createModel(db, "ZiWelcome"),
+		ZiGuild: createModel(db, "ZiGuild"),
+		ZiConfess: createModel(db, "ZiConfess"),
+	};
+};
 
 module.exports = {
 	name: Events.ClientReady,
@@ -32,29 +45,38 @@ module.exports = {
 			}
 		};
 
-		// Use Promise.all to handle MongoDB connection and deployment concurrently
-		const [deployResult, mongoConnected] = await Promise.all([
-			config?.deploy ? deploy(client).catch(() => null) : null,
-			mongoose.connect(process.env.MONGO).catch(() => false),
-		]);
+		const initDatabase = async () => {
+			try {
+				if (!process.env.MONGO) throw new Error("MONGO is not configured");
+				const db = await connectPrismaDatabase("mongodb", { logger });
+				useHooks.set("db", db);
+				logger?.info?.("Connected to MongoDB with Prisma!");
+				client.errorLog("Connected to MongoDB with Prisma!");
+			} catch (mongoError) {
+				logger?.error?.(`MongoDB Prisma connection failed: ${mongoError.message}`);
+				try {
+					const db = await connectPrismaDatabase("sqlite", { logger });
+					useHooks.set("db", db);
+					logger?.info?.("Connected to SQLite with Prisma!");
+					client.errorLog("Connected to SQLite with Prisma!");
+				} catch (sqliteError) {
+					logger?.error?.(`SQLite Prisma fallback failed: ${sqliteError.message}`);
+					try {
+						const db = createLocalDatabase();
+						useHooks.set("db", db);
+						logger?.warn?.("Using LocalDB fallback!");
+						client.errorLog("Using LocalDB fallback!");
+					} catch (localError) {
+						logger?.error?.(`LocalDB fallback failed: ${localError.message}`);
+						throw new Error(
+							[`MongoDB: ${mongoError.message}`, `SQLite: ${sqliteError.message}`, `LocalDB: ${localError.message}`].join("; "),
+						);
+					}
+				}
+			}
+		};
 
-		if (!mongoConnected) {
-			logger?.error?.("Failed to connect to MongoDB!");
-			const db = new Database("./jsons/ziDB.json");
-			useHooks.set("db", {
-				ZiUser: createModel(db, "ZiUser"),
-				ZiAutoresponder: createModel(db, "ZiAutoresponder"),
-				ZiWelcome: createModel(db, "ZiWelcome"),
-				ZiGuild: createModel(db, "ZiGuild"),
-			});
-
-			logger?.info?.("Connected to LocalDB!");
-			client.errorLog("Connected to LocalDB!");
-		} else {
-			useHooks.set("db", require("../../startup/mongoDB"));
-			logger?.info?.("Connected to MongoDB!");
-			client.errorLog("Connected to MongoDB!");
-		}
+		await Promise.all([config?.deploy ? deploy(client).catch(() => null) : null, initDatabase()]);
 
 		// Set Activity status
 		client.user.setStatus(config?.botConfig?.Status || "online");

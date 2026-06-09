@@ -44,6 +44,7 @@ module.exports = {
 		DJS_DEBUG: false,
 		Player_DEBUG: false,
 		voiceExt_DEBUG: false,
+		prisma_DEBUG: false,
 		Giveaway: true,
 		AutoResponder: true,
 		welcomer: true,

@@ -8,6 +8,7 @@ const { EventEmitter } = require("node:events");
 const { Collection } = require("discord.js");
 const { useHooks } = require("zihooks");
 
+const { connectPrismaDatabase, _internals: prismaInternals } = require("../startup/prismaDB.js");
 const { StartupLoader } = require("../startup/loader.js");
 const { StartupManager } = require("../startup/index.js");
 
@@ -174,4 +175,153 @@ test("StartupManager.initHooks initializes hooks and exposes config/logger", asy
 	assert.ok(useHooks.get("functions") instanceof Collection, "Functions hook should be a Collection");
 	assert.ok(useHooks.get("logger"), "Logger hook should be available");
 	assert.deepStrictEqual(manager.getConfig(), useHooks.get("config"));
+});
+
+test("Prisma SQLite adapter exposes Mongoose-like model API", async () => {
+	const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "ziji-prisma-sqlite-test-"));
+	const previousSqliteUrl = process.env.SQLITE_DATABASE_URL;
+	let db;
+
+	try {
+		const sqlitePath = path.join(tempDir, "ziDB.sqlite").replace(/\\/g, "/");
+		process.env.SQLITE_DATABASE_URL = `file:${sqlitePath}`;
+		db = await connectPrismaDatabase("sqlite");
+
+		const user = await db.ZiUser.findOneAndUpdate(
+			{ userID: "adapter-user" },
+			{
+				$set: { name: "Adapter" },
+				$inc: { coin: 10 },
+				$addToSet: { thankedCookies: "cookie-1" },
+			},
+			{ upsert: true },
+		);
+
+		user.huntStats.common = { Cat: { count: 2 } };
+		await user.save();
+
+		const found = await db.ZiUser.findOne({
+			userID: "adapter-user",
+			"huntStats.common.Cat.count": { $gte: 2 },
+		});
+		const leanUsers = await db.ZiUser.find({}, { userID: 1, coin: 1 }).lean();
+
+		assert.strictEqual(found.coin, 10);
+		assert.strictEqual(found.thankedCookies.includes("cookie-1"), true);
+		assert.strictEqual(found.huntStats.common.Cat.count, 2);
+		assert.strictEqual(typeof leanUsers[0].save, "undefined");
+		assert.strictEqual(leanUsers[0].userID, "adapter-user");
+	} finally {
+		if (db) await db.disconnect();
+		if (previousSqliteUrl === undefined) delete process.env.SQLITE_DATABASE_URL;
+		else process.env.SQLITE_DATABASE_URL = previousSqliteUrl;
+		await removeTempDir(tempDir);
+	}
+});
+
+test("client ready falls back to LocalDB when Prisma providers fail", async () => {
+	const prismaDbPath = require.resolve("../startup/prismaDB.js");
+	const readyEventPath = require.resolve("../events/client/ready.js");
+
+	const previousPrismaCache = require.cache[prismaDbPath];
+	const previousMongo = process.env.MONGO;
+
+	let extensionExecuted = false;
+	let statusSet = false;
+	let activitySet = false;
+
+	try {
+		process.env.MONGO = "mongodb://localhost:27017/ziji";
+
+		useHooks.set("config", {
+			deploy: false,
+			botConfig: {},
+		});
+
+		useHooks.set("logger", {
+			error: () => {},
+			info: () => {},
+			warn: () => {},
+			debug: () => {},
+		});
+
+		useHooks.set("extensions", [
+			{
+				data: {
+					name: "test-extension",
+					enable: true,
+					priority: 1,
+				},
+				execute: async () => {
+					extensionExecuted = true;
+				},
+			},
+		]);
+
+		delete require.cache[readyEventPath];
+
+		require.cache[prismaDbPath] = {
+			id: prismaDbPath,
+			filename: prismaDbPath,
+			loaded: true,
+			exports: {
+				connectPrismaDatabase: async () => {
+					throw new Error("database failed");
+				},
+			},
+		};
+
+		const readyEvent = require("../events/client/ready.js");
+
+		const fakeClient = {
+			channels: {
+				fetch: async () => null,
+			},
+			user: {
+				tag: "Test#0001",
+				setStatus() {
+					statusSet = true;
+				},
+				setActivity() {
+					activitySet = true;
+				},
+			},
+		};
+
+		await readyEvent.execute(fakeClient);
+
+		assert.ok(useHooks.get("db"));
+
+		assert.strictEqual(extensionExecuted, true);
+		assert.strictEqual(statusSet, true);
+		assert.strictEqual(activitySet, true);
+	} finally {
+		delete require.cache[readyEventPath];
+
+		if (previousPrismaCache) require.cache[prismaDbPath] = previousPrismaCache;
+		else delete require.cache[prismaDbPath];
+
+		if (previousMongo === undefined) delete process.env.MONGO;
+		else process.env.MONGO = previousMongo;
+	}
+});
+
+test("Prisma Mongo adapter uses appName as database name when URI path is empty", () => {
+	const mongoUrl = "mongodb+srv://user:pass@example.mongodb.net/?retryWrites=true&w=majority&appName=Divahost";
+
+	const normalizedUrl = prismaInternals.normalizeMongoUrl(mongoUrl);
+
+	assert.strictEqual(prismaInternals.getMongoDatabaseName(normalizedUrl), "Divahost");
+	assert.strictEqual(
+		normalizedUrl,
+		"mongodb+srv://user:pass@example.mongodb.net/Divahost?retryWrites=true&w=majority&appName=Divahost",
+	);
+});
+
+test("Prisma Mongo adapter rejects connection strings without database name or appName", () => {
+	assert.throws(
+		() => prismaInternals.normalizeMongoUrl("mongodb+srv://user:pass@example.mongodb.net/?retryWrites=true&w=majority"),
+		/MONGO must include a database name/,
+		"MongoDB connection strings must include a database path or appName fallback",
+	);
 });

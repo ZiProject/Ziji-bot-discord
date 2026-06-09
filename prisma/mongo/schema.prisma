@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/.prisma/client-mongo"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGO")
+}
+
+model ZiUser {
+  id                 String    @id @default(auto()) @map("_id") @db.ObjectId
+  userID             String?
+  username           String?
+  avatar             String?
+  name               String?
+  xp                 Int?
+  level              Int?
+  coin               Int?
+  lang               String?
+  volume             Int?
+  color              String?
+  lastDaily          DateTime?
+  dailyStreak        Int?
+  lastHunt           DateTime?
+  totalAnimals       Int?
+  huntStats          Json?
+  lootboxes          Int?
+  fabledLootboxes    Int?
+  cookiesGiven       Int?
+  cookiesReceived    Int?
+  lastCookie         DateTime?
+  thankedCookies     String[]
+  hoyoCookie         String?
+  genshinAutoClaim   Boolean?
+  lastGenshinClaim   DateTime?
+  petCare            Json?
+  lastGive           DateTime?
+  dailyGives         Int?
+  dailyQuests        Json?
+  weeklyQuests       Json?
+  lastQuestReset     DateTime?
+  lastWeeklyReset    DateTime?
+  discordAccessToken String?
+  userInfo           Json?
+  guilds             Json?
+  lastLogin          DateTime?
+  loginCount         Int?
+  createdAt          DateTime?
+  lastBattle         DateTime?
+  battleStats        Json?
+  updatedAt          DateTime?
+
+  @@index([userID])
+  @@map("ziusers")
+}
+
+model ZiAutoresponder {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  guildId   String
+  trigger   String
+  response  String
+  options   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([guildId])
+  @@map("ziautoresponders")
+}
+
+model ZiWelcome {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  guildId   String
+  channel   String?
+  content   String?
+  Bchannel  String?
+  Bcontent  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([guildId])
+  @@map("ziwelcomes")
+}
+
+model ZiGuild {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  guildId       String
+  voice         Json?
+  joinToCreate  Json?
+  autoRole      Json?
+  music_channel String?
+  updatedAt     DateTime?
+
+  @@index([guildId])
+  @@map("ziguilds")
+}
+
+model ZiConfess {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  enabled         Boolean?
+  guildId         String
+  channelId       String?
+  reviewSystem    Boolean?
+  reviewChannelId String?
+  currentId       Int?
+  confessions     Json?
+
+  @@index([guildId])
+  @@map("ziconfesses")
+}

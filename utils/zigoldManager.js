@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { ZiUser } = require("../startup/mongoDB");
+const { useHooks } = require("zihooks");
 
 // ZiGold emoji
 const zigoldEmoji = "🪙";
@@ -91,6 +91,12 @@ class ZigoldManager {
 	}
 
 	static async checkUserBalance(userID) {
+		const db = useHooks.get("db");
+		if (!db?.ZiUser) {
+			throw new Error("❌ Database hiện không khả dụng!");
+		}
+
+		const { ZiUser } = db;
 		const user = await ZiUser.findOne({ userID });
 		if (!user) {
 			throw new Error("❌ User không tồn tại trong database!");
