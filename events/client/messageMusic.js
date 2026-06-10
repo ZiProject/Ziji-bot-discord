@@ -31,9 +31,6 @@ module.exports.execute = async (message) => {
 		return message.delete().catch(() => {});
 	}
 
-	const langfunc = Functions.get("ZiRank");
-	const lang = await langfunc.execute({ user: message.author, XpADD: 0 });
-
 	// fetch playerMessage in top channel if exist
 	const playerMessage = await message.channel.messages.fetch({ limit: 10 }).then((messages) => {
 		//player description start whith "Volume: "
@@ -72,7 +69,8 @@ module.exports.execute = async (message) => {
 	}
 
 	const Search = await Functions.get("playerController");
-
+	const langfunc = Functions.get("ZiRank");
+	const lang = await langfunc.execute({ user: message.author, XpADD: 0 });
 	await Search.execute(message, context, lang, { player });
 
 	await setTimeout(() => {

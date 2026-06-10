@@ -20,10 +20,11 @@ module.exports.execute = async (message) => {
 	if (!message.client.isReady()) return;
 	if (message.author.bot) return;
 	// Get the user's language preference
-	const langfunc = Functions.get("ZiRank");
-	const lang = await langfunc.execute({ user: message.author, XpADD: 0 });
+
 	//tts
 	if (message.channel.isThread() && message.channel.name.startsWith(`${message?.client?.user?.username} TTS |`)) {
+		const langfunc = Functions.get("ZiRank");
+		const lang = await langfunc.execute({ user: message.author, XpADD: 0 });
 		return await reqTTS(message, lang);
 	}
 	// Auto Responder
@@ -31,6 +32,8 @@ module.exports.execute = async (message) => {
 	if (!message.guild || message.mentions.has(message.client.user)) {
 		// DM channel auto reply = AI
 		if (!config.DevConfig.ai || !process.env?.GEMINI_API_KEY?.length) return;
+		const langfunc = Functions.get("ZiRank");
+		const lang = await langfunc.execute({ user: message.author, XpADD: 0 });
 		await reqai(message, lang);
 	}
 };
