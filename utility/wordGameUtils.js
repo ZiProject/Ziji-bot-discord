@@ -1,11 +1,11 @@
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const WORDS_PATH = path.resolve(__dirname, '../data/words.txt');
-const ACCEPTED_PATH = path.resolve(__dirname, '../data/accepted-words.txt');
-const GAME_STATE_PATH = path.resolve(__dirname, '../jsons/wordgame.json');
+const WORDS_PATH = path.resolve(__dirname, "../data/words.txt");
+const ACCEPTED_PATH = path.resolve(__dirname, "../data/accepted-words.txt");
+const GAME_STATE_PATH = path.resolve(__dirname, "../jsons/wordgame.json");
 
 // ─── Dictionary cache ──────────────────────────────────────────────────────
 
@@ -24,37 +24,37 @@ let _wordSet = null;
  * @returns {Set<string>}
  */
 function loadDictionary() {
-    if (_wordSet) return _wordSet;
+	if (_wordSet) return _wordSet;
 
-    _wordSet = new Set();
+	_wordSet = new Set();
 
-    // words.txt – JSONL format
-    if (fs.existsSync(WORDS_PATH)) {
-        const lines = fs.readFileSync(WORDS_PATH, 'utf8').split('\n');
-        for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-            try {
-                const obj = JSON.parse(trimmed);
-                if (obj && typeof obj.text === 'string') {
-                    _wordSet.add(obj.text.toLowerCase().trim());
-                }
-            } catch {
-                // skip malformed JSON lines
-            }
-        }
-    }
+	// words.txt – JSONL format
+	if (fs.existsSync(WORDS_PATH)) {
+		const lines = fs.readFileSync(WORDS_PATH, "utf8").split("\n");
+		for (const line of lines) {
+			const trimmed = line.trim();
+			if (!trimmed) continue;
+			try {
+				const obj = JSON.parse(trimmed);
+				if (obj && typeof obj.text === "string") {
+					_wordSet.add(obj.text.toLowerCase().trim());
+				}
+			} catch {
+				// skip malformed JSON lines
+			}
+		}
+	}
 
-    // accepted-words.txt – plain text
-    if (fs.existsSync(ACCEPTED_PATH)) {
-        const lines = fs.readFileSync(ACCEPTED_PATH, 'utf8').split('\n');
-        for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed) _wordSet.add(trimmed.toLowerCase());
-        }
-    }
+	// accepted-words.txt – plain text
+	if (fs.existsSync(ACCEPTED_PATH)) {
+		const lines = fs.readFileSync(ACCEPTED_PATH, "utf8").split("\n");
+		for (const line of lines) {
+			const trimmed = line.trim();
+			if (trimmed) _wordSet.add(trimmed.toLowerCase());
+		}
+	}
 
-    return _wordSet;
+	return _wordSet;
 }
 
 // ─── Word helpers ──────────────────────────────────────────────────────────
@@ -79,8 +79,8 @@ const getFirstSyllable = (word) => word.trim().split(/\s+/)[0].toLowerCase();
  * @returns {string}
  */
 const getLastSyllable = (word) => {
-    const parts = word.trim().split(/\s+/);
-    return parts[parts.length - 1].toLowerCase();
+	const parts = word.trim().split(/\s+/);
+	return parts[parts.length - 1].toLowerCase();
 };
 
 /**
@@ -104,19 +104,19 @@ const isValidWord = (word) => loadDictionary().has(word.toLowerCase().trim());
 const _emptyState = () => ({ lastWord: null, lastSyllable: null, lastPlayer: null, usedWords: [] });
 
 function _readAll() {
-    if (!fs.existsSync(GAME_STATE_PATH)) {
-        fs.writeFileSync(GAME_STATE_PATH, '{}', 'utf8');
-        return {};
-    }
-    try {
-        return JSON.parse(fs.readFileSync(GAME_STATE_PATH, 'utf8')) || {};
-    } catch {
-        return {};
-    }
+	if (!fs.existsSync(GAME_STATE_PATH)) {
+		fs.writeFileSync(GAME_STATE_PATH, "{}", "utf8");
+		return {};
+	}
+	try {
+		return JSON.parse(fs.readFileSync(GAME_STATE_PATH, "utf8")) || {};
+	} catch {
+		return {};
+	}
 }
 
 function _writeAll(data) {
-    fs.writeFileSync(GAME_STATE_PATH, JSON.stringify(data, null, 2), 'utf8');
+	fs.writeFileSync(GAME_STATE_PATH, JSON.stringify(data, null, 2), "utf8");
 }
 
 /**
@@ -126,8 +126,8 @@ function _writeAll(data) {
  * @returns {GameState}
  */
 function loadGameState(guildId) {
-    const all = _readAll();
-    return all[guildId] ?? _emptyState();
+	const all = _readAll();
+	return all[guildId] ?? _emptyState();
 }
 
 /**
@@ -136,9 +136,9 @@ function loadGameState(guildId) {
  * @param {GameState} state
  */
 function saveGameState(guildId, state) {
-    const all = _readAll();
-    all[guildId] = state;
-    _writeAll(all);
+	const all = _readAll();
+	all[guildId] = state;
+	_writeAll(all);
 }
 
 /**
@@ -146,18 +146,18 @@ function saveGameState(guildId, state) {
  * @param {string} guildId
  */
 function resetGameState(guildId) {
-    const all = _readAll();
-    delete all[guildId];
-    _writeAll(all);
+	const all = _readAll();
+	delete all[guildId];
+	_writeAll(all);
 }
 
 module.exports = {
-    loadDictionary,
-    countSyllables,
-    getFirstSyllable,
-    getLastSyllable,
-    isValidWord,
-    loadGameState,
-    saveGameState,
-    resetGameState,
+	loadDictionary,
+	countSyllables,
+	getFirstSyllable,
+	getLastSyllable,
+	isValidWord,
+	loadGameState,
+	saveGameState,
+	resetGameState,
 };

@@ -113,7 +113,7 @@ const ZiGuild = Schema({
 	noitu: {
 		enabled: { type: Boolean, default: false },
 		channel: { type: String, default: null },
-	}
+	},
 });
 
 const ZiConfess = Schema({

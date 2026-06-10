@@ -138,7 +138,7 @@ const MODEL_CONFIGS = {
 				channel: null,
 				lastPlayer: null,
 				lastWord: null,
-			}
+			},
 		},
 		touchUpdatedAt: true,
 	},
@@ -258,9 +258,7 @@ const SQLITE_ADDITIONAL_COLUMNS = {
 		["lastBattle", "DATETIME"],
 		["battleStats", "TEXT"],
 	],
-	ziguilds: [
-		["noitu", "TEXT"],
-	],
+	ziguilds: [["noitu", "TEXT"]],
 };
 
 const clone = (value) => {
