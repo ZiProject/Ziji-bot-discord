@@ -48,6 +48,7 @@
 		"chalk": "^4.1.2",
 		"cloudflared": "^0.7.1",
 		"cors": "^2.8.5",
+		"cross-env": "^10.1.0",
 		"discord-gamecord": "^4.4.2",
 		"discord-giveaways": "^6.0.1",
 		"discord.js": "^14.26.4",
@@ -75,7 +76,6 @@
 		"ziplayer": "^0.3.12"
 	},
 	"devDependencies": {
-		"cross-env": "^10.0.0",
 		"nodemon": "^3.1.14",
 		"prettier": "^3.3.2"
 	},
