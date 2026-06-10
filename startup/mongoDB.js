@@ -110,6 +110,10 @@ const ZiGuild = Schema({
 	},
 	music_channel: { type: String, default: null },
 	updatedAt: { type: Date },
+	noitu: {
+		enabled: { type: Boolean, default: false },
+		channel: { type: String, default: null },
+	}
 });
 
 const ZiConfess = Schema({

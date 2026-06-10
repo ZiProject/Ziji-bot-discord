@@ -90,6 +90,7 @@ model ZiGuild {
   autoRole      Json?
   music_channel String?
   updatedAt     DateTime?
+  noitu         Json?
 
   @@index([guildId])
   @@map("ziguilds")
