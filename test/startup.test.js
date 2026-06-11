@@ -318,6 +318,12 @@ test("Prisma Mongo adapter uses appName as database name when URI path is empty"
 	);
 });
 
+test("Prisma where builder treats empty filters as unconstrained queries", () => {
+	const where = prismaInternals.getPrismaWhere({}, { fields: ["id", "userID"], jsonFields: [], dateFields: [] });
+
+	assert.strictEqual(where, null, "Empty filters should not generate a Mongo where clause");
+});
+
 test("Prisma Mongo adapter rejects connection strings without database name or appName", () => {
 	assert.throws(
 		() => prismaInternals.normalizeMongoUrl("mongodb+srv://user:pass@example.mongodb.net/?retryWrites=true&w=majority"),

@@ -504,7 +504,7 @@ const toPrismaFieldWhere = (field, value, config) => {
 const getPrismaWhere = (filter = {}, config) => {
 	const normalized = normalizeIdFilter(filter);
 	const entries = Object.entries(normalized);
-	if (entries.length === 0) return {};
+	if (entries.length === 0) return null;
 
 	const andClauses = [];
 	for (const [field, value] of entries) {
@@ -847,7 +847,8 @@ const createPrismaModel = (prisma, provider, config, modelName = config.delegate
 			});
 
 			try {
-				const rows = where ? await delegate.findMany({ where }) : await delegate.findMany();
+				const hasWhere = where && Object.keys(where).length > 0;
+				const rows = hasWhere ? await delegate.findMany({ where }) : await delegate.findMany();
 				const documents = rows.map((row) => PrismaModel._hydrate(row)).filter((document) => matchesFilter(document, filter));
 				debugPrisma("[PrismaModel] findMany done", {
 					provider,
@@ -1116,5 +1117,6 @@ module.exports = {
 		getMongoDatabaseName,
 		normalizeMongoUrl,
 		redactMongoUrl,
+		getPrismaWhere,
 	},
 };
