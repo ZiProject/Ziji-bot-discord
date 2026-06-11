@@ -2,15 +2,16 @@
 
 const fs = require("fs");
 const path = require("path");
+const zlib = require("zlib");
 
-const WORDS_PATH = path.resolve(__dirname, "../data/words.txt");
+const WORDS_PATH = path.resolve(__dirname, "../data/dictionary.br");
 const ACCEPTED_PATH = path.resolve(__dirname, "../data/accepted-words.txt");
 const GAME_STATE_PATH = path.resolve(__dirname, "../jsons/wordgame.json");
 
 // ─── Dictionary cache ──────────────────────────────────────────────────────
 
 /** @type {Set<string>|null} Lazy-loaded, shared across the process. */
-let _wordSet = null;
+let dictionary = null;
 
 /**
  * Load and cache the Vietnamese word dictionary.
@@ -24,37 +25,11 @@ let _wordSet = null;
  * @returns {Set<string>}
  */
 function loadDictionary() {
-	if (_wordSet) return _wordSet;
+	if (dictionary) return dictionary;
 
-	_wordSet = new Set();
+	dictionary = JSON.parse(zlib.brotliDecompressSync(fs.readFileSync(WORDS_PATH)).toString("utf8"));
 
-	// words.txt – JSONL format
-	if (fs.existsSync(WORDS_PATH)) {
-		const lines = fs.readFileSync(WORDS_PATH, "utf8").split("\n");
-		for (const line of lines) {
-			const trimmed = line.trim();
-			if (!trimmed) continue;
-			try {
-				const obj = JSON.parse(trimmed);
-				if (obj && typeof obj.text === "string") {
-					_wordSet.add(obj.text.toLowerCase().trim());
-				}
-			} catch {
-				// skip malformed JSON lines
-			}
-		}
-	}
-
-	// accepted-words.txt – plain text
-	if (fs.existsSync(ACCEPTED_PATH)) {
-		const lines = fs.readFileSync(ACCEPTED_PATH, "utf8").split("\n");
-		for (const line of lines) {
-			const trimmed = line.trim();
-			if (trimmed) _wordSet.add(trimmed.toLowerCase());
-		}
-	}
-
-	return _wordSet;
+	return dictionary;
 }
 
 // ─── Word helpers ──────────────────────────────────────────────────────────
@@ -88,8 +63,30 @@ const getLastSyllable = (word) => {
  * @param {string} word
  * @returns {boolean}
  */
-const isValidWord = (word) => loadDictionary().has(word.toLowerCase().trim());
+function isValidWord(word) {
+	const arr = loadDictionary();
 
+	word = word.toLowerCase().trim();
+
+	let left = 0;
+	let right = arr.length - 1;
+
+	while (left <= right) {
+		const mid = (left + right) >> 1;
+
+		if (arr[mid] === word) {
+			return true;
+		}
+
+		if (arr[mid] < word) {
+			left = mid + 1;
+		} else {
+			right = mid - 1;
+		}
+	}
+
+	return false;
+}
 // ─── Game-state I/O ────────────────────────────────────────────────────────
 
 /**
