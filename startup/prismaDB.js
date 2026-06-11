@@ -683,6 +683,18 @@ const prepareForPrisma = (document, config, provider, includeId = false) => {
 
 const createDocument = (data, model) => {
 	const document = { ...data, _id: data.id };
+	Object.defineProperty(document, "_doc", {
+		enumerable: false,
+		configurable: true,
+		get() {
+			const plain = {};
+			for (const [key, value] of Object.entries(document)) {
+				if (key === "_doc" || key === "save") continue;
+				plain[key] = value;
+			}
+			return plain;
+		},
+	});
 	Object.defineProperty(document, "save", {
 		enumerable: false,
 		value: async () => {

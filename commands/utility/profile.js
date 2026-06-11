@@ -78,11 +78,10 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 	const [userDB, UserI] = await Promise.all([db.ZiUser.findOne({ userID: member.id }), db.ZiUser.find()]);
 
-	const usersort = UserI.sort((a, b) => {
-		if (b.lvl !== a.lvl) {
-			return b.lvl - a.lvl;
-		}
-		return b.Xp - a.Xp;
+	const usersort = [...UserI].sort((a, b) => {
+		const levelDiff = (b.level ?? 0) - (a.level ?? 0);
+		if (levelDiff !== 0) return levelDiff;
+		return (b.xp ?? 0) - (a.xp ?? 0);
 	});
 
 	const sss = usersort.findIndex((user) => user.userID === member.id);
@@ -113,9 +112,9 @@ module.exports.execute = async ({ interaction, lang }) => {
 		},
 		userDB: {
 			_doc: {
-				coin: userDB._doc?.coin || 0,
-				xp: userDB._doc?.xp || 0,
-				level: userDB._doc?.level || 1,
+				coin: userDB?.coin ?? userDB?._doc?.coin ?? 0,
+				xp: userDB?.xp ?? userDB?._doc?.xp ?? 0,
+				level: userDB?.level ?? userDB?._doc?.level ?? 1,
 			},
 		},
 		sss,
