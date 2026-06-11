@@ -370,7 +370,8 @@ const unsetPath = (object, dottedPath, positionalIndexes = {}) => {
 };
 
 const parseJsonField = (value, fallback) => {
-	if (value === undefined || value === null || value === "") return clone(fallback);
+	if (value === undefined) return clone(fallback);
+	if (value === null || value === "") return value === null ? null : clone(fallback);
 	if (typeof value !== "string") return clone(value);
 	try {
 		return JSON.parse(value);
@@ -382,7 +383,7 @@ const parseJsonField = (value, fallback) => {
 const addDefaults = (data, config) => {
 	const result = { ...data };
 	for (const [field, value] of Object.entries(config.defaults || {})) {
-		if (result[field] === undefined || result[field] === null) result[field] = clone(value);
+		if (result[field] === undefined) result[field] = clone(value);
 	}
 	return result;
 };
@@ -1114,6 +1115,8 @@ const connectPrismaDatabase = async (provider, options = {}) => {
 module.exports = {
 	connectPrismaDatabase,
 	_internals: {
+		addDefaults,
+		hydrateRow,
 		getMongoDatabaseName,
 		normalizeMongoUrl,
 		redactMongoUrl,

@@ -177,6 +177,61 @@ test("StartupManager.initHooks initializes hooks and exposes config/logger", asy
 	assert.deepStrictEqual(manager.getConfig(), useHooks.get("config"));
 });
 
+test("Prisma adapter keeps null JSON values instead of replacing them with defaults", async () => {
+	const config = {
+		defaults: {
+			huntStats: {},
+			userInfo: {},
+			guilds: [],
+			battleStats: { wins: 0, losses: 0, total: 0 },
+		},
+	};
+
+	const hydrated = prismaInternals.addDefaults(
+		{
+			huntStats: null,
+			userInfo: null,
+			guilds: null,
+			battleStats: null,
+		},
+		config,
+	);
+
+	assert.strictEqual(hydrated.huntStats, null, "null JSON fields should remain null");
+	assert.strictEqual(hydrated.userInfo, null, "null JSON fields should remain null");
+	assert.strictEqual(hydrated.guilds, null, "null array fields should remain null");
+	assert.strictEqual(hydrated.battleStats, null, "null JSON fields should remain null");
+});
+
+test("Prisma hydration fills missing fields without overwriting existing null values", () => {
+	const config = {
+		defaults: {
+			level: 1,
+			coin: 0,
+			volume: 100,
+			huntStats: {},
+			guilds: [],
+		},
+		jsonFields: ["huntStats", "guilds"],
+	};
+
+	const row = {
+		id: "doc-id",
+		userID: "abc",
+		huntStats: null,
+		guilds: null,
+		level: 1,
+		coin: 5,
+	};
+
+	const hydrated = prismaInternals.hydrateRow(row, config, "sqlite", { _saveDocument: async () => null });
+
+	assert.strictEqual(hydrated.huntStats, null, "stored null JSON values should not be replaced");
+	assert.strictEqual(hydrated.guilds, null, "stored null array values should not be replaced");
+	assert.strictEqual(hydrated.level, 1, "existing scalar values should be preserved");
+	assert.strictEqual(hydrated.coin, 5, "existing scalar values should be preserved");
+});
+
 test("Prisma SQLite adapter exposes Mongoose-like model API", async () => {
 	const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "ziji-prisma-sqlite-test-"));
 	const previousSqliteUrl = process.env.SQLITE_DATABASE_URL;
