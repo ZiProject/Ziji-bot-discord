@@ -6,32 +6,22 @@ module.exports.data = {
 	type: "ranksys",
 };
 
-/**
- * @param { import ("discord.js").User } user
- * @param { Number } XpADD
- * @param { Number } CoinADD
- */
-
 module.exports.execute = async ({ user, XpADD = 1, CoinADD = 0 }) => {
-	// Check if useHooks is available
-	if (!useHooks) {
-		console.error("useHooks is not available");
-		return (
-			interaction?.reply?.({ content: "System is under maintenance, please try again later.", ephemeral: true }) ||
-			console.error("No interaction available")
-		);
-	}
+	if (!useHooks) return;
+
 	const DataBase = useHooks.get("db");
 	if (DataBase && user) {
-		// Destructure userDB to extract values with default assignments
-		const { xp = 1, level = 1, coin = 1, lang, color } = (await DataBase.ZiUser.findOne({ userID: user.id })) || {};
+		const userData = (await DataBase.ZiUser.findOne({ userID: user.id })) || {};
 
-		// Calculate new xp
+		const xp = userData.xp ?? 1;
+		const level = userData.level ?? 1;
+		const coin = userData.coin ?? 0;
+		const { lang, color } = userData;
+
 		let newXp = xp + XpADD;
 		let newLevel = level;
 		let newCoin = coin + CoinADD;
 
-		// Level up if the new xp exceeds the threshold
 		const xpThreshold = newLevel * 50 + 1;
 		if (newXp > xpThreshold) {
 			newLevel += 1;
@@ -39,7 +29,6 @@ module.exports.execute = async ({ user, XpADD = 1, CoinADD = 0 }) => {
 			newCoin += newLevel * 100;
 		}
 
-		// Update the user in the database
 		await DataBase.ZiUser.updateOne(
 			{ userID: user.id },
 			{
@@ -51,12 +40,11 @@ module.exports.execute = async ({ user, XpADD = 1, CoinADD = 0 }) => {
 			},
 			{ upsert: true },
 		);
+
 		const langdef = require(`./../../lang/${lang || config?.DefaultLang}`);
 		langdef.color = color;
 		return langdef;
-	} else {
-		// If the database is not available, just increment the user's XP and Coin
-		const langdef = require(`./../../lang/${config?.DefaultLang}`);
-		return langdef;
 	}
+
+	return require(`./../../lang/${config?.DefaultLang}`);
 };

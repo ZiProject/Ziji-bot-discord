@@ -382,8 +382,13 @@ const parseJsonField = (value, fallback) => {
 
 const addDefaults = (data, config) => {
 	const result = { ...data };
+	const jsonFields = new Set(config.jsonFields || []);
 	for (const [field, value] of Object.entries(config.defaults || {})) {
-		if (result[field] === undefined) result[field] = clone(value);
+		if (jsonFields.has(field)) {
+			if (result[field] === undefined) result[field] = clone(value);
+		} else {
+			if (result[field] == null) result[field] = clone(value);
+		}
 	}
 	return result;
 };
