@@ -135,6 +135,40 @@ router.post("/music/join", authenticate, async (req, res) => {
 	}
 });
 
+router.get("/proxy/image", async (req, res) => {
+	const url = req.query.url;
+
+	if (!url) {
+		return res.status(400).json({
+			error: "Missing url",
+		});
+	}
+
+	try {
+		const response = await fetch(url, {
+			headers: {
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+			},
+		});
+
+		if (!response.ok || !response.body) {
+			return res.status(response.status).send("Failed to fetch image");
+		}
+
+		res.setHeader("Content-Type", response.headers.get("content-type") || "image/jpeg");
+
+		res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+
+		await pipeline(response.body, res);
+	} catch (err) {
+		console.error(err);
+
+		res.status(500).json({
+			error: "Proxy error",
+		});
+	}
+});
+
 module.exports.execute = () => {
 	const server = useHooks.get("server");
 	server.use("/", router);
