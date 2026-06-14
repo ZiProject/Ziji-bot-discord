@@ -5,6 +5,7 @@ const { joinVoiceChannel } = require("@discordjs/voice");
 const jwt = require("jsonwebtoken");
 const express = require("express");
 const router = express.Router();
+const { pipeline } = require("stream/promises");
 
 module.exports.data = {
 	name: "musicRoutes",
