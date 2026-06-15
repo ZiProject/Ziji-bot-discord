@@ -34,7 +34,7 @@
 		"@google/generative-ai": "^0.24.0",
 		"@iamtraction/google-translate": "^2.0.1",
 		"@ngrok/ngrok": "^1.7.0",
-		"@prisma/client": "^6.19.3",
+		"@prisma/client": "^7.8.0",
 		"@zibot/db": "^0.0.3",
 		"@zibot/ziencryptor": "^0.0.1",
 		"@ziplayer/extension": "^0.3.1",
