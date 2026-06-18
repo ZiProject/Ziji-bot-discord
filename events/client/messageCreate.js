@@ -58,9 +58,7 @@ module.exports.execute = async (message) => {
 				if (mentionedUser?.afk) {
 					const timeDiff = Date.now() - new Date(mentionedUser.afkTime).getTime();
 					const duration = formatDuration(timeDiff);
-					message.reply(
-						`💤 **${user.username}** hiện đang AFK từ **${duration}** trước.\n**Lý do:** ${mentionedUser.afkReason}`,
-					);
+					message.reply(`💤 **${user.username}** hiện đang AFK từ **${duration}** trước.\n**Lý do:** ${mentionedUser.afkReason}`);
 				}
 			});
 		}

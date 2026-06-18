@@ -30,7 +30,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 				afkTime: new Date(),
 			},
 		},
-		{ upsert: true }
+		{ upsert: true },
 	);
 
 	const embed = new EmbedBuilder()
