@@ -42,6 +42,21 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const totalMembers = client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0);
 	const voiceConnections = client?.voice?.adapters?.size || 0;
 
+	const DataBase = useHooks.get("db");
+	let dbStats = "";
+	if (DataBase) {
+		try {
+			const [totalDbUsers, totalNotes, totalAutoRes] = await Promise.all([
+				DataBase.ZiUser.find({}).then((res) => res.length).catch(() => 0),
+				DataBase.ZiNote.find({}).then((res) => res.length).catch(() => 0),
+				DataBase.ZiAutoresponder.find({}).then((res) => res.length).catch(() => 0),
+			]);
+			dbStats = `\n          • Total DB Users: \`${totalDbUsers}\`\n          • Total Personal Notes: \`${totalNotes}\`\n          • Total Autoresponders: \`${totalAutoRes}\``;
+		} catch (dbError) {
+			console.error("Failed to fetch DB stats:", dbError);
+		}
+	}
+
 	// Tạo embed để hiển thị thông tin
 	const embed = new EmbedBuilder()
 		.setColor(lang?.color || "Random")
@@ -50,7 +65,7 @@ module.exports.execute = async ({ interaction, lang }) => {
           • Owner/Developer: ${onwerIDs.map((id) => `<@${id}>`).join(" ") || `<@891275176409460746>`}
           • ${lang?.BotStats?.User}: \`${totalMembers || 0}\`
           • ${lang?.BotStats?.Server}: \`${totalGuilds || 0}\`
-          • ${lang?.BotStats?.Voice}: \`${voiceConnections}\`
+          • ${lang?.BotStats?.Voice}: \`${voiceConnections}\`${dbStats}
           • ${lang?.BotStats?.Command}: \`${useHooks.get("commands").map((c) => c.data.name).length}\`
           • ${lang?.BotStats?.Operation}: <t:${Math.floor(Number(Date.now() - client.uptime) / 1000)}:R>
           • Ping: \`${client.ws.ping} MS\`

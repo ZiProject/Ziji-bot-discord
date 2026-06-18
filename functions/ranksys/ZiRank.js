@@ -34,11 +34,16 @@ module.exports.execute = async ({ user, XpADD = 1, CoinADD = 0 }) => {
 			let newLevel = level;
 			let newCoin = coin + CoinADD;
 
-			const xpThreshold = newLevel * 50 + 1;
-			if (newXp > xpThreshold) {
+			let xpThreshold = newLevel * 50 + 1;
+			while (newXp >= xpThreshold) {
+				newXp -= xpThreshold;
 				newLevel += 1;
-				newXp = 1;
 				newCoin += newLevel * 100;
+				xpThreshold = newLevel * 50 + 1;
+			}
+
+			if (newLevel > level) {
+				// level up logic can go here (e.g. send message)
 			}
 
 			await DataBase.ZiUser.updateOne(

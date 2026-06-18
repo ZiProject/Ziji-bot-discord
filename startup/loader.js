@@ -48,7 +48,7 @@ class StartupLoader {
 									if (!isDisabled && collection) {
 										collection.set(module.data.name, module);
 									}
-									if ("run" in module) {
+									if (!isDisabled) {
 										const mCommandsf = useHooks.get("Mcommands");
 										mCommandsf.set(module.data.name, module);
 										if (module.data?.alias && Array.isArray(module.data?.alias)) {

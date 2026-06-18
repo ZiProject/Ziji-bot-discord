@@ -156,6 +156,14 @@ const MODEL_CONFIGS = {
 			confessions: [],
 		},
 	},
+	ZiNote: {
+		delegate: "ziNote",
+		fields: ["id", "userID", "title", "content", "createdAt", "updatedAt"],
+		indexedFields: ["id", "userID"],
+		jsonFields: [],
+		dateFields: ["createdAt", "updatedAt"],
+		defaults: {},
+	},
 };
 
 const SQLITE_SCHEMA_SQL = [
@@ -246,6 +254,15 @@ const SQLITE_SCHEMA_SQL = [
 		"confessions" TEXT
 	)`,
 	`CREATE INDEX IF NOT EXISTS "ziconfesses_guildId_idx" ON "ziconfesses"("guildId")`,
+	`CREATE TABLE IF NOT EXISTS "zinotes" (
+		"id" TEXT NOT NULL PRIMARY KEY,
+		"userID" TEXT NOT NULL,
+		"title" TEXT NOT NULL,
+		"content" TEXT NOT NULL,
+		"createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		"updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	)`,
+	`CREATE INDEX IF NOT EXISTS "zinotes_userID_idx" ON "zinotes"("userID")`,
 ];
 
 const SQLITE_ADDITIONAL_COLUMNS = {
@@ -427,6 +444,16 @@ const matchesOperator = (actual, operator, expected) => {
 				:	expected.some((item) => deepEqual(item, actual));
 		case "$exists":
 			return expected ? actual !== undefined : actual === undefined;
+		case "$regex": {
+			const val = String(actual || "");
+			if (expected instanceof RegExp) return expected.test(val);
+			try {
+				const regex = new RegExp(expected, "i");
+				return regex.test(val);
+			} catch {
+				return val.includes(String(expected));
+			}
+		}
 		default:
 			return false;
 	}
@@ -498,6 +525,18 @@ const toPrismaFieldWhere = (field, value, config) => {
 				break;
 			case "$exists":
 				operatorWhere[operatorValue ? "not" : "equals"] = null;
+				break;
+			case "$regex":
+				if (typeof operatorValue === "string") {
+					if (operatorValue.startsWith("^")) {
+						operatorWhere.startsWith = operatorValue.substring(1).replace(/\\/g, "");
+					} else if (operatorValue.endsWith("$")) {
+						operatorWhere.endsWith = operatorValue.substring(0, operatorValue.length - 1).replace(/\\/g, "");
+					} else {
+						operatorWhere.contains = operatorValue.replace(/\\/g, "");
+					}
+					operatorWhere.mode = "insensitive";
+				}
 				break;
 			default:
 				return null;
@@ -1035,6 +1074,67 @@ const createPrismaModel = (prisma, provider, config, modelName = config.delegate
 
 		static async findByIdAndUpdate(id, update = {}, options = {}) {
 			return PrismaModel.findOneAndUpdate({ id }, update, options);
+		}
+
+		static async deleteOne(filter = {}, options = {}) {
+			const startedAt = Date.now();
+			debugPrisma("[PrismaModel] deleteOne start", {
+				provider,
+				model: modelName,
+				filter: redactForLog(filter),
+			});
+			const delegate = getDelegate(options);
+			const documents = await PrismaModel._fetch(filter, options);
+			const matched = documents[0];
+			if (!matched) {
+				const result = { acknowledged: true, deletedCount: 0 };
+				debugPrisma("[PrismaModel] deleteOne done", { provider, model: modelName, durationMs: Date.now() - startedAt, result });
+				return result;
+			}
+			await delegate.delete({ where: { id: matched.id } });
+			const result = { acknowledged: true, deletedCount: 1 };
+			debugPrisma("[PrismaModel] deleteOne done", { provider, model: modelName, durationMs: Date.now() - startedAt, result });
+			return result;
+		}
+
+		static async deleteMany(filter = {}, options = {}) {
+			const startedAt = Date.now();
+			debugPrisma("[PrismaModel] deleteMany start", {
+				provider,
+				model: modelName,
+				filter: redactForLog(filter),
+			});
+			const delegate = getDelegate(options);
+			const documents = await PrismaModel._fetch(filter, options);
+			if (documents.length === 0) {
+				const result = { acknowledged: true, deletedCount: 0 };
+				debugPrisma("[PrismaModel] deleteMany done", { provider, model: modelName, durationMs: Date.now() - startedAt, result });
+				return result;
+			}
+			const ids = documents.map((d) => d.id);
+			await delegate.deleteMany({ where: { id: { in: ids } } });
+			const result = { acknowledged: true, deletedCount: ids.length };
+			debugPrisma("[PrismaModel] deleteMany done", { provider, model: modelName, durationMs: Date.now() - startedAt, result });
+			return result;
+		}
+
+		static async findByIdAndDelete(id, options = {}) {
+			const startedAt = Date.now();
+			debugPrisma("[PrismaModel] findByIdAndDelete start", {
+				provider,
+				model: modelName,
+				id,
+			});
+			const delegate = getDelegate(options);
+			const row = await delegate.delete({ where: { id } }).catch(() => null);
+			const result = row ? PrismaModel._hydrate(row) : null;
+			debugPrisma("[PrismaModel] findByIdAndDelete done", {
+				provider,
+				model: modelName,
+				durationMs: Date.now() - startedAt,
+				success: !!result,
+			});
+			return result;
 		}
 	}
 

@@ -73,7 +73,7 @@
 		"winston": "^3.17.0",
 		"ws": "^8.18.0",
 		"zihooks": "^2.0.0",
-		"ziplayer": "^0.3.12"
+		"ziplayer": "^0.3.12-dev.0"
 	},
 	"devDependencies": {
 		"nodemon": "^3.1.14",

@@ -172,7 +172,105 @@ module.exports.execute = async (message) => {
 			return value ?? null;
 		};
 
-		await command.run({ message, args, lang, ...cmdops });
+		if (command.run) {
+			await command.run({ message, args, lang, ...cmdops });
+		} else if (command.execute) {
+			const options = {
+				_options: {},
+				_subcommand: null,
+				getSubcommand: function () {
+					return this._subcommand;
+				},
+				get: function (name) {
+					const val = this._options[name];
+					return val !== undefined ? { value: val, user: val, member: val, role: val, channel: val } : null;
+				},
+				getString: function (name) {
+					const val = this._options[name];
+					return val !== undefined ? String(val) : null;
+				},
+				getUser: function (name) {
+					const val = this._options[name];
+					return val && val.id ? val : null;
+				},
+				getMember: function (name) {
+					const user = this.getUser(name);
+					return user ? message.guild?.members.cache.get(user.id) : null;
+				},
+				getBoolean: function (name) {
+					const val = this._options[name];
+					return val === true || val === "true";
+				},
+				getInteger: function (name) {
+					const val = parseInt(this._options[name]);
+					return isNaN(val) ? null : val;
+				},
+				getChannel: function (name) {
+					const val = this._options[name];
+					return val && val.id ? val : null;
+				},
+				getRole: function (name) {
+					const val = this._options[name];
+					return val && val.id ? val : null;
+				},
+				getMentionable: function (name) {
+					return this._options[name] || null;
+				},
+				getNumber: function (name) {
+					const val = parseFloat(this._options[name]);
+					return isNaN(val) ? null : val;
+				},
+				getAttachment: function (name) {
+					return message.attachments.first() || null;
+				},
+			};
+
+			const commandData = command.data;
+			let currentArgs = [...args];
+
+			if (commandData.options && commandData.options.length > 0) {
+				const firstOption = commandData.options[0];
+				if (firstOption.type === 1 || firstOption.type === 2) {
+					// Subcommand or SubcommandGroup
+					const subName = currentArgs.shift()?.toLowerCase();
+					const subData = commandData.options.find((o) => o.name.toLowerCase() === subName);
+					if (subData) {
+						options._subcommand = subData.name;
+						if (subData.options) {
+							subData.options.forEach((opt, index) => {
+								if (opt.type === 3) {
+									// STRING
+									options._options[opt.name] = currentArgs.slice(index).join(" ");
+								} else if (opt.type === 6) {
+									// USER
+									options._options[opt.name] = message.mentions.users.at(index) || message.mentions.users.first();
+								} else if (opt.type === 5 || opt.type === 4) {
+									// BOOLEAN or INTEGER
+									options._options[opt.name] = currentArgs[index];
+								}
+							});
+						}
+					} else {
+						currentArgs.unshift(subName);
+					}
+				} else {
+					// Root options
+					commandData.options.forEach((opt, index) => {
+						if (opt.type === 3) {
+							options._options[opt.name] = currentArgs.slice(index).join(" ");
+						} else if (opt.type === 6) {
+							options._options[opt.name] = message.mentions.users.at(index) || message.mentions.users.first();
+						} else if (opt.type === 5 || opt.type === 4) {
+							// BOOLEAN or INTEGER
+							options._options[opt.name] = currentArgs[index];
+						}
+					});
+				}
+			}
+
+			message.options = options;
+			await command.execute({ interaction: message, lang, ...cmdops });
+		}
 	} catch (error) {
 		console.error(`Error executing message command ${command.data.name}:`, error);
 	}
