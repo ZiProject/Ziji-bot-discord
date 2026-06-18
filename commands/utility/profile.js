@@ -95,7 +95,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 			.setEmoji("<:leaderboard:1154355691063087195>")
 			.setCustomId("B_refLeaderboard")
 			.setStyle(ButtonStyle.Secondary),
-		new ButtonBuilder().setLabel("❌").setCustomId("cancel").setStyle(ButtonStyle.Secondary),
+		new ButtonBuilder().setLabel("❌").setCustomId("B_cancel").setStyle(ButtonStyle.Secondary),
 	);
 
 	const status = member.presence?.status || "none";
