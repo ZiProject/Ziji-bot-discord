@@ -50,6 +50,9 @@ model ZiUser {
   lastBattle         DateTime?
   battleStats        String?
   updatedAt          DateTime?
+  afk                Boolean?
+  afkReason          String?
+  afkTime            DateTime?
 
   @@index([userID])
   @@map("ziusers")

@@ -7,6 +7,21 @@ const { getPlayer } = require("ziplayer");
 const Commands = useHooks.get("commands");
 const Functions = useHooks.get("functions");
 
+function formatDuration(ms) {
+	const seconds = Math.floor((ms / 1000) % 60);
+	const minutes = Math.floor((ms / (1000 * 60)) % 60);
+	const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
+	const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+
+	const parts = [];
+	if (days > 0) parts.push(`${days} ngày`);
+	if (hours > 0) parts.push(`${hours} giờ`);
+	if (minutes > 0) parts.push(`${minutes} phút`);
+	if (seconds > 0 || parts.length === 0) parts.push(`${seconds} giây`);
+
+	return parts.join(", ");
+}
+
 module.exports = {
 	name: Events.MessageCreate,
 	type: "events",
@@ -19,6 +34,38 @@ module.exports = {
 module.exports.execute = async (message) => {
 	if (!message.client.isReady()) return;
 	if (message.author.bot) return;
+
+	const db = useHooks.get("db");
+
+	// Manage AFK
+	if (db) {
+		// User returning from AFK
+		const userData = await db.ZiUser.findOne({ userID: message.author.id });
+		if (userData?.afk) {
+			await db.ZiUser.updateOne({ userID: message.author.id }, { $set: { afk: false, afkReason: null, afkTime: null } });
+			const timeDiff = Date.now() - new Date(userData.afkTime).getTime();
+			const duration = formatDuration(timeDiff);
+			message.reply(`Chào mừng bạn quay trở lại! Bạn đã vắng mặt trong **${duration}**.`).then((msg) => {
+				setTimeout(() => msg.delete().catch(() => {}), 10000);
+			});
+		}
+
+		// Checking mentioned users for AFK
+		if (message.mentions.users.size > 0) {
+			message.mentions.users.forEach(async (user) => {
+				if (user.id === message.author.id) return;
+				const mentionedUser = await db.ZiUser.findOne({ userID: user.id });
+				if (mentionedUser?.afk) {
+					const timeDiff = Date.now() - new Date(mentionedUser.afkTime).getTime();
+					const duration = formatDuration(timeDiff);
+					message.reply(
+						`💤 **${user.username}** hiện đang AFK từ **${duration}** trước.\n**Lý do:** ${mentionedUser.afkReason}`,
+					);
+				}
+			});
+		}
+	}
+
 	// Get the user's language preference
 
 	//tts
