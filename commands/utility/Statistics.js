@@ -47,9 +47,15 @@ module.exports.execute = async ({ interaction, lang }) => {
 	if (DataBase) {
 		try {
 			const [totalDbUsers, totalNotes, totalAutoRes] = await Promise.all([
-				DataBase.ZiUser.find({}).then((res) => res.length).catch(() => 0),
-				DataBase.ZiNote.find({}).then((res) => res.length).catch(() => 0),
-				DataBase.ZiAutoresponder.find({}).then((res) => res.length).catch(() => 0),
+				DataBase.ZiUser.find({})
+					.then((res) => res.length)
+					.catch(() => 0),
+				DataBase.ZiNote.find({})
+					.then((res) => res.length)
+					.catch(() => 0),
+				DataBase.ZiAutoresponder.find({})
+					.then((res) => res.length)
+					.catch(() => 0),
 			]);
 			dbStats = `\n          • Total DB Users: \`${totalDbUsers}\`\n          • Total Personal Notes: \`${totalNotes}\`\n          • Total Autoresponders: \`${totalAutoRes}\``;
 		} catch (dbError) {

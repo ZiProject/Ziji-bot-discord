@@ -75,7 +75,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 			.addFields(
 				{ name: "Tiêu đề", value: title },
 				{ name: "Nội dung", value: content.length > 1024 ? content.substring(0, 1021) + "..." : content },
-				{ name: "ID", value: `\`${newNote.id}\`` }
+				{ name: "ID", value: `\`${newNote.id}\`` },
 			)
 			.setTimestamp();
 
