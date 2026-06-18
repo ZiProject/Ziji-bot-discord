@@ -279,18 +279,43 @@ module.exports.execute = (client) => {
 			const { guildId } = req.params;
 			if (!(await checkGuildAccess(req.user.id, guildId))) return res.status(403).json({ error: "Access denied" });
 			const db = useHooks.get("db");
-			const { trigger, response, id } = req.body;
+			const { trigger, response, options, id } = req.body;
 			if (id) {
-				await db.ZiAutoresponder.findByIdAndUpdate(id, { trigger, response });
+				await db.ZiAutoresponder.findByIdAndUpdate(id, { trigger, response, options });
 			} else {
-				await db.ZiAutoresponder.create({ guildId, trigger, response });
+				await db.ZiAutoresponder.create({
+					guildId,
+					trigger,
+					response,
+					options: options || { matchMode: "exactly" },
+				});
 			}
 			const autoRes = useHooks.get("responder");
 			if (autoRes) {
 				const refreshed = await db.ZiAutoresponder.find({ guildId });
 				autoRes.set(
 					guildId,
-					refreshed.map((r) => ({ trigger: r.trigger, response: r.response })),
+					refreshed.map((r) => ({ trigger: r.trigger, response: r.response, options: r.options })),
+				);
+			}
+			res.json({ success: true });
+		} catch (error) {
+			res.status(500).json({ error: error.message });
+		}
+	});
+
+	router.delete("/guild/:guildId/autoresponder/:id", authenticate, async (req, res) => {
+		try {
+			const { guildId, id } = req.params;
+			if (!(await checkGuildAccess(req.user.id, guildId))) return res.status(403).json({ error: "Access denied" });
+			const db = useHooks.get("db");
+			await db.ZiAutoresponder.findByIdAndDelete(id);
+			const autoRes = useHooks.get("responder");
+			if (autoRes) {
+				const refreshed = await db.ZiAutoresponder.find({ guildId });
+				autoRes.set(
+					guildId,
+					refreshed.map((r) => ({ trigger: r.trigger, response: r.response, options: r.options })),
 				);
 			}
 			res.json({ success: true });
@@ -319,8 +344,32 @@ module.exports.execute = (client) => {
 			await db.ZiWelcome.findOneAndUpdate({ guildId }, { $set: { channel, content, Bchannel, Bcontent } }, { upsert: true });
 			const WelcomeCache = useHooks.get("welcome");
 			if (WelcomeCache) {
-				WelcomeCache.set(guildId, [{ channel, content, Bchannel, Bcontent }]);
+				WelcomeCache.set(guildId, { channel, content, Bchannel, Bcontent });
 			}
+			res.json({ success: true });
+		} catch (error) {
+			res.status(500).json({ error: error.message });
+		}
+	});
+
+	router.get("/guild/:guildId/confess", authenticate, async (req, res) => {
+		try {
+			if (!(await checkGuildAccess(req.user.id, req.params.guildId))) return res.status(403).json({ error: "Access denied" });
+			const db = useHooks.get("db");
+			let confess = await db.ZiConfess.findOne({ guildId: req.params.guildId });
+			if (!confess) confess = await db.ZiConfess.create({ guildId: req.params.guildId });
+			res.json(confess);
+		} catch (error) {
+			res.status(500).json({ error: error.message });
+		}
+	});
+
+	router.post("/guild/:guildId/confess", authenticate, async (req, res) => {
+		try {
+			const { guildId } = req.params;
+			if (!(await checkGuildAccess(req.user.id, guildId))) return res.status(403).json({ error: "Access denied" });
+			const db = useHooks.get("db");
+			await db.ZiConfess.findOneAndUpdate({ guildId }, { $set: req.body }, { upsert: true });
 			res.json({ success: true });
 		} catch (error) {
 			res.status(500).json({ error: error.message });
