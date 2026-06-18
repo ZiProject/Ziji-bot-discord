@@ -185,6 +185,7 @@ test("Prisma adapter keeps null JSON values instead of replacing them with defau
 			guilds: [],
 			battleStats: { wins: 0, losses: 0, total: 0 },
 		},
+		jsonFields: ["huntStats", "userInfo", "guilds", "battleStats"],
 	};
 
 	const hydrated = prismaInternals.addDefaults(

@@ -215,7 +215,10 @@ const SQLITE_SCHEMA_SQL = [
 		"createdAt" DATETIME,
 		"lastBattle" DATETIME,
 		"battleStats" TEXT,
-		"updatedAt" DATETIME
+		"updatedAt" DATETIME,
+		"afk" BOOLEAN,
+		"afkReason" TEXT,
+		"afkTime" DATETIME
 	)`,
 	`CREATE INDEX IF NOT EXISTS "ziusers_userID_idx" ON "ziusers"("userID")`,
 	`CREATE TABLE IF NOT EXISTS "ziautoresponders" (
