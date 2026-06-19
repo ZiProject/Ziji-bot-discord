@@ -38,16 +38,64 @@ module.exports.execute = async (message) => {
 	const db = useHooks.get("db");
 
 	// Manage AFK
-	if (db) {
+	const afkCache = useHooks.get("afkCache");
+	if (afkCache) {
 		// User returning from AFK
+		const cachedUser = afkCache.get(message.author.id);
+		if (cachedUser?.afk) {
+			let shouldNotifyReturn = false;
+
+			if (db) {
+				try {
+					await db.ZiUser.updateOne({ userID: message.author.id }, { $set: { afk: false, afkReason: null, afkTime: null } });
+					shouldNotifyReturn = true;
+				} catch (err) {
+					useHooks.get("logger")?.error?.("Failed to update AFK status in database", err);
+				}
+			} else {
+				shouldNotifyReturn = true;
+			}
+
+			if (shouldNotifyReturn) {
+				afkCache.delete(message.author.id);
+
+				const timeDiff = Date.now() - new Date(cachedUser.afkTime).getTime();
+				const duration = formatDuration(timeDiff);
+				message.reply(`Chào mừng bạn quay trở lại! Bạn đã vắng mặt trong **${duration}**.`).then((msg) => {
+					setTimeout(() => msg.delete().catch(() => {}), 10000);
+				});
+			}
+		}
+
+		// Checking mentioned users for AFK
+		if (message.mentions.users.size > 0) {
+			message.mentions.users.forEach((user) => {
+				if (user.id === message.author.id) return;
+				const cachedMentioned = afkCache.get(user.id);
+				if (cachedMentioned?.afk) {
+					const timeDiff = Date.now() - new Date(cachedMentioned.afkTime).getTime();
+					const duration = formatDuration(timeDiff);
+					message.reply(
+						`💤 **${user.username}** hiện đang AFK từ **${duration}** trước.\n**Lý do:** ${cachedMentioned.afkReason}`,
+					);
+				}
+			});
+		}
+	} else if (db) {
+		// Fallback if afkCache is not loaded/initialized
 		const userData = await db.ZiUser.findOne({ userID: message.author.id });
 		if (userData?.afk) {
-			await db.ZiUser.updateOne({ userID: message.author.id }, { $set: { afk: false, afkReason: null, afkTime: null } });
-			const timeDiff = Date.now() - new Date(userData.afkTime).getTime();
-			const duration = formatDuration(timeDiff);
-			message.reply(`Chào mừng bạn quay trở lại! Bạn đã vắng mặt trong **${duration}**.`).then((msg) => {
-				setTimeout(() => msg.delete().catch(() => {}), 10000);
-			});
+			try {
+				await db.ZiUser.updateOne({ userID: message.author.id }, { $set: { afk: false, afkReason: null, afkTime: null } });
+
+				const timeDiff = Date.now() - new Date(userData.afkTime).getTime();
+				const duration = formatDuration(timeDiff);
+				message.reply(`Chào mừng bạn quay trở lại! Bạn đã vắng mặt trong **${duration}**.`).then((msg) => {
+					setTimeout(() => msg.delete().catch(() => {}), 10000);
+				});
+			} catch (err) {
+				useHooks.get("logger")?.error?.("Failed to update AFK status in database", err);
+			}
 		}
 
 		// Checking mentioned users for AFK
@@ -67,7 +115,7 @@ module.exports.execute = async (message) => {
 	// Get the user's language preference
 
 	//tts
-	if (message.channel.isThread() && message.channel.name.startsWith(`${message?.client?.user?.username} TTS |`)) {
+	if (message.channel?.isThread?.() && message.channel?.name?.startsWith(`${message?.client?.user?.username} TTS |`)) {
 		const langfunc = Functions.get("ZiRank");
 		const lang = await langfunc.execute({ user: message.author, XpADD: 0 });
 		return await reqTTS(message, lang);
@@ -76,7 +124,7 @@ module.exports.execute = async (message) => {
 	if (config?.DevConfig?.AutoResponder && message?.guild && (await reqreponser(message))) return; // Auto Responder
 	if (!message.guild || message.mentions.has(message.client.user)) {
 		// DM channel auto reply = AI
-		if (!config.DevConfig.ai || !process.env?.GEMINI_API_KEY?.length) return;
+		if (!config?.DevConfig?.ai || !process.env?.GEMINI_API_KEY?.length) return;
 		const langfunc = Functions.get("ZiRank");
 		const lang = await langfunc.execute({ user: message.author, XpADD: 0 });
 		await reqai(message, lang);

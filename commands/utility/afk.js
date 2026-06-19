@@ -20,6 +20,7 @@ module.exports.data = {
 module.exports.execute = async ({ interaction, lang }) => {
 	const db = useHooks.get("db");
 	const reason = interaction.options.getString("reason") || "Không có lý do";
+	const afkTime = new Date();
 
 	await db.ZiUser.updateOne(
 		{ userID: interaction.user.id },
@@ -27,11 +28,22 @@ module.exports.execute = async ({ interaction, lang }) => {
 			$set: {
 				afk: true,
 				afkReason: reason,
-				afkTime: new Date(),
+				afkTime: afkTime,
 			},
 		},
 		{ upsert: true },
 	);
+
+	let afkCache = useHooks.get("afkCache");
+	if (!afkCache) {
+		afkCache = new Map();
+		useHooks.set("afkCache", afkCache);
+	}
+	afkCache.set(interaction.user.id, {
+		afk: true,
+		afkReason: reason,
+		afkTime: afkTime,
+	});
 
 	const embed = new EmbedBuilder()
 		.setColor("Yellow")
