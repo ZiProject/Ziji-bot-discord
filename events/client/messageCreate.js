@@ -47,10 +47,7 @@ module.exports.execute = async (message) => {
 
 			if (db) {
 				try {
-					await db.ZiUser.updateOne(
-						{ userID: message.author.id },
-						{ $set: { afk: false, afkReason: null, afkTime: null } },
-					);
+					await db.ZiUser.updateOne({ userID: message.author.id }, { $set: { afk: false, afkReason: null, afkTime: null } });
 					shouldNotifyReturn = true;
 				} catch (err) {
 					useHooks.get("logger")?.error?.("Failed to update AFK status in database", err);
@@ -89,10 +86,7 @@ module.exports.execute = async (message) => {
 		const userData = await db.ZiUser.findOne({ userID: message.author.id });
 		if (userData?.afk) {
 			try {
-				await db.ZiUser.updateOne(
-					{ userID: message.author.id },
-					{ $set: { afk: false, afkReason: null, afkTime: null } },
-				);
+				await db.ZiUser.updateOne({ userID: message.author.id }, { $set: { afk: false, afkReason: null, afkTime: null } });
 
 				const timeDiff = Date.now() - new Date(userData.afkTime).getTime();
 				const duration = formatDuration(timeDiff);
