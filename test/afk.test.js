@@ -172,9 +172,7 @@ test("messageCreate event checks mentioned users using afkCache", async () => {
 			username: "OtherGuy",
 		},
 		mentions: {
-			users: new Map([
-				["11111", { id: "11111", username: "Coder" }],
-			]),
+			users: new Map([["11111", { id: "11111", username: "Coder" }]]),
 		},
 		reply: async (text) => {
 			assert.ok(text.includes("Coder"));
