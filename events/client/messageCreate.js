@@ -43,21 +43,31 @@ module.exports.execute = async (message) => {
 		// User returning from AFK
 		const cachedUser = afkCache.get(message.author.id);
 		if (cachedUser?.afk) {
-			afkCache.delete(message.author.id);
+			let shouldNotifyReturn = false;
 
 			if (db) {
-				await db.ZiUser.updateOne({ userID: message.author.id }, { $set: { afk: false, afkReason: null, afkTime: null } }).catch(
-					(err) => {
-						useHooks.get("logger")?.error?.("Failed to update AFK status in database", err);
-					},
-				);
+				try {
+					await db.ZiUser.updateOne(
+						{ userID: message.author.id },
+						{ $set: { afk: false, afkReason: null, afkTime: null } },
+					);
+					shouldNotifyReturn = true;
+				} catch (err) {
+					useHooks.get("logger")?.error?.("Failed to update AFK status in database", err);
+				}
+			} else {
+				shouldNotifyReturn = true;
 			}
 
-			const timeDiff = Date.now() - new Date(cachedUser.afkTime).getTime();
-			const duration = formatDuration(timeDiff);
-			message.reply(`Chào mừng bạn quay trở lại! Bạn đã vắng mặt trong **${duration}**.`).then((msg) => {
-				setTimeout(() => msg.delete().catch(() => {}), 10000);
-			});
+			if (shouldNotifyReturn) {
+				afkCache.delete(message.author.id);
+
+				const timeDiff = Date.now() - new Date(cachedUser.afkTime).getTime();
+				const duration = formatDuration(timeDiff);
+				message.reply(`Chào mừng bạn quay trở lại! Bạn đã vắng mặt trong **${duration}**.`).then((msg) => {
+					setTimeout(() => msg.delete().catch(() => {}), 10000);
+				});
+			}
 		}
 
 		// Checking mentioned users for AFK
@@ -78,12 +88,20 @@ module.exports.execute = async (message) => {
 		// Fallback if afkCache is not loaded/initialized
 		const userData = await db.ZiUser.findOne({ userID: message.author.id });
 		if (userData?.afk) {
-			await db.ZiUser.updateOne({ userID: message.author.id }, { $set: { afk: false, afkReason: null, afkTime: null } });
-			const timeDiff = Date.now() - new Date(userData.afkTime).getTime();
-			const duration = formatDuration(timeDiff);
-			message.reply(`Chào mừng bạn quay trở lại! Bạn đã vắng mặt trong **${duration}**.`).then((msg) => {
-				setTimeout(() => msg.delete().catch(() => {}), 10000);
-			});
+			try {
+				await db.ZiUser.updateOne(
+					{ userID: message.author.id },
+					{ $set: { afk: false, afkReason: null, afkTime: null } },
+				);
+
+				const timeDiff = Date.now() - new Date(userData.afkTime).getTime();
+				const duration = formatDuration(timeDiff);
+				message.reply(`Chào mừng bạn quay trở lại! Bạn đã vắng mặt trong **${duration}**.`).then((msg) => {
+					setTimeout(() => msg.delete().catch(() => {}), 10000);
+				});
+			} catch (err) {
+				useHooks.get("logger")?.error?.("Failed to update AFK status in database", err);
+			}
 		}
 
 		// Checking mentioned users for AFK

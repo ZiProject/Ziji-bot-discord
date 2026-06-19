@@ -152,6 +152,48 @@ test("messageCreate event handles returning AFK users using afkCache", async () 
 	assert.strictEqual(replied, true, "Should reply welcoming back the user");
 });
 
+test("messageCreate event keeps AFK cache if database update fails", async () => {
+	const mockDb = {
+		ZiUser: {
+			updateOne: async () => {
+				throw new Error("DB write failed");
+			},
+		},
+	};
+	useHooks.set("db", mockDb);
+
+	const afkCache = new Map();
+	afkCache.set("99999", {
+		afk: true,
+		afkReason: "Out for lunch",
+		afkTime: new Date(Date.now() - 60000),
+	});
+	useHooks.set("afkCache", afkCache);
+
+	let replied = false;
+	const mockMessage = {
+		client: {
+			isReady: () => true,
+		},
+		author: {
+			bot: false,
+			id: "99999",
+			username: "LunchGuy",
+		},
+		mentions: {
+			users: new Map(),
+		},
+		reply: async () => {
+			replied = true;
+		},
+	};
+
+	await messageCreateEvent.execute(mockMessage);
+
+	assert.strictEqual(afkCache.has("99999"), true, "AFK cache should stay intact when DB update fails");
+	assert.strictEqual(replied, false, "Should not reply if DB update failed");
+});
+
 test("messageCreate event checks mentioned users using afkCache", async () => {
 	const afkCache = new Map();
 	afkCache.set("11111", {
