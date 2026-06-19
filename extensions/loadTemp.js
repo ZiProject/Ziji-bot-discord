@@ -8,44 +8,68 @@ module.exports.execute = async () => {
 	try {
 		const db = useHooks.get("db");
 
-		if (!db) return;
-
-		const guilds = await db.ZiGuild.find(
-			{},
-			{
-				guildId: 1,
-				music_channel: 1,
-				joinToCreate: 1,
-				voice: 1,
-			},
-		).lean();
-
 		const temp = useHooks.get("temp");
 
 		const guildSettings = new Map();
 		const joinToCreateCache = new Map();
+		const afkCache = new Map();
 
-		for (const guild of guilds) {
-			const guildId = guild.guildId;
+		if (db) {
+			const guilds = await db.ZiGuild.find(
+				{},
+				{
+					guildId: 1,
+					music_channel: 1,
+					joinToCreate: 1,
+					voice: 1,
+				},
+			).lean();
 
-			guildSettings.set(guildId, guild);
+			for (const guild of guilds) {
+				const guildId = guild.guildId;
 
-			if (guild.music_channel) {
-				temp.set(`music_channel_${guildId}`, guild.music_channel);
+				guildSettings.set(guildId, guild);
+
+				if (guild.music_channel) {
+					temp.set(`music_channel_${guildId}`, guild.music_channel);
+				}
+
+				if (guild.joinToCreate?.enabled) {
+					joinToCreateCache.set(guild.joinToCreate.voiceChannelId, {
+						guildId,
+						...guild.joinToCreate,
+					});
+				}
 			}
 
-			if (guild.joinToCreate?.enabled) {
-				joinToCreateCache.set(guild.joinToCreate.voiceChannelId, {
-					guildId,
-					...guild.joinToCreate,
-				});
+			if (db.ZiUser) {
+				const afkUsers = await db.ZiUser.find(
+					{ afk: true },
+					{
+						userID: 1,
+						afk: 1,
+						afkReason: 1,
+						afkTime: 1,
+					},
+				).lean();
+
+				for (const user of afkUsers) {
+					if (user.userID) {
+						afkCache.set(user.userID, {
+							afk: user.afk,
+							afkReason: user.afkReason,
+							afkTime: user.afkTime,
+						});
+					}
+				}
 			}
 		}
 
 		useHooks.set("guildSettings", guildSettings);
 		useHooks.set("joinToCreateCache", joinToCreateCache);
+		useHooks.set("afkCache", afkCache);
 
-		logger?.debug?.(`[Temp] Loaded ${guilds.length} guild settings`);
+		logger?.debug?.(`[Temp] Loaded ${guildSettings.size} guild settings and ${afkCache.size} AFK users`);
 	} catch (error) {
 		useHooks.get("logger")?.error?.("[Temp] Load cache failed", error);
 	}
