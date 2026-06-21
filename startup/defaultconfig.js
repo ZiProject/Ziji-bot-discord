@@ -33,14 +33,15 @@ module.exports = {
 		statusUrl: "https://ziji.betteruptime.com/",
 		dashboardUrl: "https://zibot-dashboard.vercel.app/",
 	},
-	ticket: {
-		logChannelId: "1468618088558760086",
-	},
+	// ticket: {
+	// 	logChannelId: "1468618088558760086",
+	// },
 	DefaultLang: "vi",
 	OwnerID: ["661968947327008768"],
 	DevGuild: [],
 	disabledCommands: [],
 	DevConfig: {
+		ticket: false,
 		DJS_DEBUG: false,
 		Player_DEBUG: false,
 		voiceExt_DEBUG: false,

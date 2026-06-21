@@ -94,6 +94,7 @@ model ZiGuild {
   music_channel String?
   updatedAt     DateTime?
   noitu         Json?
+  ticket        Json?
 
   @@index([guildId])
   @@map("ziguilds")
