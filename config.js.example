@@ -170,17 +170,6 @@ module.exports = {
 		statusUrl: 'https://garretapp.betteruptime.com/',
 	},
 
-	ticket: {
-
-		/**
-		 * ID log channel ticket
-	 	*/
-		logChannelId: "1468618088558760086",
-		/**
-		 * ID category ticket create in
-	 	*/
-		categoryId: ""
-	},
 	
 	/**
 	 * Ngôn ngữ mặc định của bot (vi, en, ...)
@@ -223,6 +212,8 @@ module.exports = {
 		Giveaway: true,
 		//enable AutoResponder
 		AutoResponder: true,
+		//enable ticket
+		ticket: false,
 		//enable welcomer
 		welcomer: true,
 		//enable AI
