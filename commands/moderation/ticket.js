@@ -92,7 +92,7 @@ module.exports.data = {
 			description: "Cho phép người tạo ticket tự đóng (mặc định: có)",
 			type: 5, // BOOLEAN
 			required: false,
-		}
+		},
 	],
 
 	integration_types: [0],
@@ -170,14 +170,16 @@ module.exports.execute = async ({ interaction, lang }) => {
 	GuildSetting.ticket.allowUserClose = allowUserClose;
 	if (typeof GuildSetting.markModified === "function") GuildSetting.markModified("ticket");
 	await GuildSetting.save();
-	return interaction.reply({
-		content: "✅ Panel ticket đã được tạo!",
-		flags: MessageFlags.Ephemeral,
-		embeds: [embed],
-		components: [row],
-	}).then(() => {
-		targetChannel.send({ embeds: [embed], components: [row] });
-	});
+	return interaction
+		.reply({
+			content: "✅ Panel ticket đã được tạo!",
+			flags: MessageFlags.Ephemeral,
+			embeds: [embed],
+			components: [row],
+		})
+		.then(() => {
+			targetChannel.send({ embeds: [embed], components: [row] });
+		});
 };
 
 /**

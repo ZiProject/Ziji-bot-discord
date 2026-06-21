@@ -151,7 +151,7 @@ const MODEL_CONFIGS = {
 				staffRoleId: null,
 				allowUserClose: true,
 				logChannelId: null,
-			}
+			},
 		},
 		touchUpdatedAt: true,
 	},
@@ -295,7 +295,10 @@ const SQLITE_ADDITIONAL_COLUMNS = {
 		["afkReason", "TEXT"],
 		["afkTime", "DATETIME"],
 	],
-	ziguilds: [["noitu", "TEXT"],["ticket", "TEXT"]]
+	ziguilds: [
+		["noitu", "TEXT"],
+		["ticket", "TEXT"],
+	],
 };
 
 const clone = (value) => {

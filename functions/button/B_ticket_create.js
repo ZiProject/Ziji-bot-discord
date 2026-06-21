@@ -11,16 +11,14 @@ module.exports.data = {
  * @param { object } params.lang - language object
  */
 module.exports.execute = async ({ interaction, lang }) => {
-    const modal = new ModalBuilder()
-        .setCustomId("M_ticket_create")
-        .setTitle("Tạo Ticket");
-    const reasonInput = new TextInputBuilder()
-        .setCustomId("reason")
-        .setLabel("Lý do tạo ticket")
-        .setPlaceholder("Nhập lý do...")
-        .setStyle(TextInputStyle.Paragraph)
-        .setRequired(true);
-    const row = new ActionRowBuilder().addComponents(reasonInput);
-    modal.addComponents(row);
-    await interaction.showModal(modal);
-}
+	const modal = new ModalBuilder().setCustomId("M_ticket_create").setTitle("Tạo Ticket");
+	const reasonInput = new TextInputBuilder()
+		.setCustomId("reason")
+		.setLabel("Lý do tạo ticket")
+		.setPlaceholder("Nhập lý do...")
+		.setStyle(TextInputStyle.Paragraph)
+		.setRequired(true);
+	const row = new ActionRowBuilder().addComponents(reasonInput);
+	modal.addComponents(row);
+	await interaction.showModal(modal);
+};

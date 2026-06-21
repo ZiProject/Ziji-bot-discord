@@ -22,11 +22,11 @@ module.exports.data = {
  */
 module.exports.execute = (client) => {
 	const server = useHooks.get("server");
-	const transcriptDir = path.join(__dirname, '../../transcripts');
-	router.get(['/transcripts', '/transcripts/'], (req, res) => {
+	const transcriptDir = path.join(__dirname, "../../transcripts");
+	router.get(["/transcripts", "/transcripts/"], (req, res) => {
 		return res.status(403).send("<h1>❌ 403 Forbidden</h1><p>Bạn không có quyền truy cập vào thư mục này.</p>");
 	});
-	router.use('/transcripts', express.static(transcriptDir));
+	router.use("/transcripts", express.static(transcriptDir));
 	router.get("/auth/discord/login", async (req, res) => {
 		try {
 			const url = `https://discord.com/api/oauth2/authorize?client_id=${client.user?.id}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify%20guilds%20email`;
