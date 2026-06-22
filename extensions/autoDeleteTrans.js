@@ -8,7 +8,7 @@ module.exports.data = {
 	name: "autoDeleteTranscripts",
 	type: "extension",
 	enable: useHooks.get("config").DevConfig.ticket ? true : false,
-    //enable: true,
+	//enable: true,
 };
 function cleanOldFiles() {
 	console.log(`[${new Date().toLocaleString()}] Bắt đầu quét thư mục dọn dẹp...`);
@@ -47,8 +47,8 @@ function cleanOldFiles() {
 }
 
 module.exports.execute = async () => {
-    useHooks.get("logger")?.info?.("Starting autoDeleteTranscripts...");
-    cron.schedule("0 0 * * *", () => {
-	    cleanOldFiles();
-    }); 
-}
+	useHooks.get("logger")?.info?.("Starting autoDeleteTranscripts...");
+	cron.schedule("0 0 * * *", () => {
+		cleanOldFiles();
+	});
+};
