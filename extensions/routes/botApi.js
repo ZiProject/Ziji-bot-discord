@@ -350,7 +350,7 @@ module.exports.execute = (client) => {
 			await db.ZiWelcome.findOneAndUpdate({ guildId }, { $set: { channel, content, Bchannel, Bcontent } }, { upsert: true });
 			const WelcomeCache = useHooks.get("welcome");
 			if (WelcomeCache) {
-				WelcomeCache.set(guildId, { channel, content, Bchannel, Bcontent });
+				WelcomeCache.set(guildId, [{ channel, content, Bchannel, Bcontent }]);
 			}
 			res.json({ success: true });
 		} catch (error) {
