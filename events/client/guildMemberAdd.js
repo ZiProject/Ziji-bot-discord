@@ -92,9 +92,8 @@ module.exports = {
 
 			// send welcome
 			const channel = await member.client.channels.fetch(welcome.channel);
-			
-			const embed = new EmbedBuilder()
-				.setColor(config.defaultColor || "Random");
+
+			const embed = new EmbedBuilder().setColor(config.defaultColor || "Random");
 
 			if (welcomeConfig.title) {
 				embed.setTitle(parseVar?.execute(welcomeConfig.title, member));
@@ -141,8 +140,7 @@ module.exports = {
 			}
 
 			const channel = await member.client.channels.fetch(welcome.channel);
-			const embed = new EmbedBuilder()
-				.setColor(config.defaultColor || "Random");
+			const embed = new EmbedBuilder().setColor(config.defaultColor || "Random");
 
 			if (welcomeConfig.title) {
 				embed.setTitle(parseVar?.execute(welcomeConfig.title, member));

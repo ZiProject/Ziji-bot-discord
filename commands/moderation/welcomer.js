@@ -222,23 +222,23 @@ module.exports.setupWelcome = async ({ interaction, lang, options }) => {
 		}
 
 		const welcomeConfig = {
-			description: options.content !== null ? options.content : (existingWelcomeConfig.description || null),
-			title: options.title !== null ? options.title : (existingWelcomeConfig.title || null),
-			footer: options.footer !== null ? options.footer : (existingWelcomeConfig.footer || null),
-			image: options.image !== null ? options.image : (existingWelcomeConfig.image || null),
-			thumbnail: options.thumbnail !== null ? options.thumbnail : (existingWelcomeConfig.thumbnail || null),
+			description: options.content !== null ? options.content : existingWelcomeConfig.description || null,
+			title: options.title !== null ? options.title : existingWelcomeConfig.title || null,
+			footer: options.footer !== null ? options.footer : existingWelcomeConfig.footer || null,
+			image: options.image !== null ? options.image : existingWelcomeConfig.image || null,
+			thumbnail: options.thumbnail !== null ? options.thumbnail : existingWelcomeConfig.thumbnail || null,
 		};
 
 		const byeConfig = {
-			description: options.byecontent !== null ? options.byecontent : (existingByeConfig.description || null),
-			title: options.byetitle !== null ? options.byetitle : (existingByeConfig.title || null),
-			footer: options.byefooter !== null ? options.byefooter : (existingByeConfig.footer || null),
-			image: options.byeimage !== null ? options.byeimage : (existingByeConfig.image || null),
-			thumbnail: options.byethumbnail !== null ? options.byethumbnail : (existingByeConfig.thumbnail || null),
+			description: options.byecontent !== null ? options.byecontent : existingByeConfig.description || null,
+			title: options.byetitle !== null ? options.byetitle : existingByeConfig.title || null,
+			footer: options.byefooter !== null ? options.byefooter : existingByeConfig.footer || null,
+			image: options.byeimage !== null ? options.byeimage : existingByeConfig.image || null,
+			thumbnail: options.byethumbnail !== null ? options.byethumbnail : existingByeConfig.thumbnail || null,
 		};
 
-		const finalChannel = options.channel?.id !== undefined ? options.channel?.id : (existing?.channel || null);
-		const finalByeChannel = options.byechannel?.id !== undefined ? options.byechannel?.id : (existing?.Bchannel || null);
+		const finalChannel = options.channel?.id !== undefined ? options.channel?.id : existing?.channel || null;
+		const finalByeChannel = options.byechannel?.id !== undefined ? options.byechannel?.id : existing?.Bchannel || null;
 
 		const finalContentStr = JSON.stringify(welcomeConfig);
 		const finalByeContentStr = JSON.stringify(byeConfig);
@@ -256,12 +256,14 @@ module.exports.setupWelcome = async ({ interaction, lang, options }) => {
 			{ upsert: true },
 		);
 
-		options.Welcome.set(interaction.guild.id, [{
-			channel: finalChannel,
-			content: finalContentStr,
-			Bchannel: finalByeChannel,
-			Bcontent: finalByeContentStr,
-		}]);
+		options.Welcome.set(interaction.guild.id, [
+			{
+				channel: finalChannel,
+				content: finalContentStr,
+				Bchannel: finalByeChannel,
+				Bcontent: finalByeContentStr,
+			},
+		]);
 
 		const sucessEm = new EmbedBuilder()
 			.setTitle(`Sucess`)

@@ -91,9 +91,8 @@ module.exports = {
 			}
 
 			const channel = await member.client.channels.fetch(welcome.Bchannel);
-			
-			const embed = new EmbedBuilder()
-				.setColor(config.defaultColor || "Random");
+
+			const embed = new EmbedBuilder().setColor(config.defaultColor || "Random");
 
 			if (byeConfig.title) {
 				embed.setTitle(parseVar?.execute(byeConfig.title, member));
@@ -125,7 +124,7 @@ module.exports = {
 			await channel.send(sendPayload);
 		} catch (error) {
 			console.error("Error building image or sending goodbye:", error);
-			
+
 			let attachment = null;
 			let imageName = "GoodbyeCard.png";
 			if (shouldRender) {
@@ -138,8 +137,7 @@ module.exports = {
 			}
 
 			const channel = await member.client.channels.fetch(welcome.Bchannel);
-			const embed = new EmbedBuilder()
-				.setColor(config.defaultColor || "Random");
+			const embed = new EmbedBuilder().setColor(config.defaultColor || "Random");
 
 			if (byeConfig.title) {
 				embed.setTitle(parseVar?.execute(byeConfig.title, member));
