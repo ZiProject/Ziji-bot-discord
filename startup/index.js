@@ -47,7 +47,19 @@ class StartupManager {
 		};
 
 		app.use(cors(corsOptions));
-		app.options("*", cors(corsOptions));
+		app.use((req, res, next) => {
+			if (req.method === "OPTIONS") {
+				res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+				res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+				res.header(
+					"Access-Control-Allow-Headers",
+					req.headers["access-control-request-headers"] || "Content-Type, Authorization",
+				);
+				res.header("Access-Control-Allow-Credentials", "true");
+				return res.sendStatus(204);
+			}
+			next();
+		});
 		app.use(express.json());
 
 		server.listen(process.env.SERVER_PORT || 2003, () => {
