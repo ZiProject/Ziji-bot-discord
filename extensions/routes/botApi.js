@@ -381,6 +381,103 @@ module.exports.execute = (client) => {
 			res.status(500).json({ error: error.message });
 		}
 	});
+
+	// --- OWNER CUSTOM WORDS MANAGEMENT API ---
+
+	const authenticateOwner = (req, res, next) => {
+		const authHeader = req.headers.authorization;
+		if (!authHeader) return res.status(401).send("No token provided");
+		const token = authHeader.split(" ")[1];
+		try {
+			const decoded = jwt.verify(token, process.env.JWT_SECRET);
+			req.user = decoded;
+			const currentConfig = useHooks.get("config");
+			if (!currentConfig || !currentConfig.OwnerID || !currentConfig.OwnerID.includes(decoded.id)) {
+				return res.status(403).json({ error: "Access denied: Owner only" });
+			}
+			next();
+		} catch (error) {
+			res.status(401).send("Invalid token");
+		}
+	};
+
+	router.get("/admin/words", authenticateOwner, async (req, res) => {
+		try {
+			const db = useHooks.get("db");
+			if (!db || !db.ZiData) return res.status(500).json({ error: "Database not available" });
+			const words = await db.ZiData.find({ type: "wordgame_words" }).lean();
+			res.json(words);
+		} catch (error) {
+			res.status(500).json({ error: error.message });
+		}
+	});
+
+	router.post("/admin/words", authenticateOwner, async (req, res) => {
+		try {
+			const db = useHooks.get("db");
+			if (!db || !db.ZiData) return res.status(500).json({ error: "Database not available" });
+
+			const { words } = req.body;
+			if (!words || typeof words !== "string") {
+				return res.status(400).json({ error: "Missing or invalid words field" });
+			}
+
+			const rawWords = words.split(/[\n,;]+/).map((w) => w.trim().toLowerCase()).filter(Boolean);
+			const { countSyllables, isValidWord } = require("../../utility/wordGameUtils");
+
+			const added = [];
+			const existing = [];
+			const invalid = [];
+
+			const customWords = useHooks.get("customWords") || new Set();
+
+			for (const word of rawWords) {
+				if (countSyllables(word) !== 2) {
+					invalid.push(word);
+					continue;
+				}
+
+				if (isValidWord(word)) {
+					existing.push(word);
+					continue;
+				}
+
+				await db.ZiData.create({
+					type: "wordgame_words",
+					key: word,
+					value: JSON.stringify({ addedBy: req.user.id, addedAt: new Date() }),
+				});
+
+				customWords.add(word);
+				added.push(word);
+			}
+
+			useHooks.set("customWords", customWords);
+			res.json({ success: true, added, existing, invalid });
+		} catch (error) {
+			res.status(500).json({ error: error.message });
+		}
+	});
+
+	router.delete("/admin/words/:word", authenticateOwner, async (req, res) => {
+		try {
+			const db = useHooks.get("db");
+			if (!db || !db.ZiData) return res.status(500).json({ error: "Database not available" });
+
+			const word = req.params.word.trim().toLowerCase();
+			const result = await db.ZiData.deleteOne({ type: "wordgame_words", key: word });
+
+			const customWords = useHooks.get("customWords");
+			if (customWords) {
+				customWords.delete(word);
+			}
+
+			res.json({ success: result.deletedCount > 0 });
+		} catch (error) {
+			res.status(500).json({ error: error.message });
+		}
+	});
+
 	server.use("/", router);
 	return;
 };

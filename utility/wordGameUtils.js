@@ -68,6 +68,12 @@ function isValidWord(word) {
 
 	word = word.toLowerCase().trim();
 
+	const { useHooks } = require("zihooks");
+	const customWords = useHooks.get("customWords");
+	if (customWords && customWords.has(word)) {
+		return true;
+	}
+
 	let left = 0;
 	let right = arr.length - 1;
 

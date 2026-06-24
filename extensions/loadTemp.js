@@ -13,6 +13,7 @@ module.exports.execute = async () => {
 		const guildSettings = new Map();
 		const joinToCreateCache = new Map();
 		const afkCache = new Map();
+		const customWords = new Set();
 
 		if (db) {
 			const guilds = await db.ZiGuild.find(
@@ -63,13 +64,25 @@ module.exports.execute = async () => {
 					}
 				}
 			}
+
+			if (db.ZiData) {
+				const dbWords = await db.ZiData.find({ type: "wordgame_words" }).lean();
+				for (const item of dbWords) {
+					if (item.key) {
+						customWords.add(item.key.toLowerCase().trim());
+					}
+				}
+			}
 		}
 
 		useHooks.set("guildSettings", guildSettings);
 		useHooks.set("joinToCreateCache", joinToCreateCache);
 		useHooks.set("afkCache", afkCache);
+		useHooks.set("customWords", customWords);
 
-		logger?.debug?.(`[Temp] Loaded ${guildSettings.size} guild settings and ${afkCache.size} AFK users`);
+		logger?.debug?.(
+			`[Temp] Loaded ${guildSettings.size} guild settings, ${afkCache.size} AFK users, and ${customWords.size} custom words`
+		);
 	} catch (error) {
 		useHooks.get("logger")?.error?.("[Temp] Load cache failed", error);
 	}

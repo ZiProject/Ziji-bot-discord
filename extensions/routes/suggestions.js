@@ -2,8 +2,8 @@ const { getManager } = require("ziplayer");
 const { useHooks } = require("zihooks");
 
 module.exports.data = {
-	name: "lyricsRoutes",
-	description: "Lyrics route for fetching song lyrics",
+	name: "suggestionsRoutes",
+	description: "Suggestions route for fetching related tracks",
 	version: "1.0.0",
 	enable: true,
 	priority: 9,
@@ -21,7 +21,7 @@ module.exports.execute = () => {
 
 		try {
 			const player = await getManager().create("default");
-			const result = await player.getRelatedTracks(track);
+			const result = await player.pluginManager.getRelatedTracks(track);
 			res.json({ results: result, total: result.length });
 		} catch (error) {
 			console.error("Search error:", error);

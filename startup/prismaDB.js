@@ -177,6 +177,14 @@ const MODEL_CONFIGS = {
 		dateFields: ["createdAt", "updatedAt"],
 		defaults: {},
 	},
+	ZiData: {
+		delegate: "ziData",
+		fields: ["id", "type", "key", "value", "createdAt", "updatedAt"],
+		indexedFields: ["id", "type", "key"],
+		jsonFields: [],
+		dateFields: ["createdAt", "updatedAt"],
+		defaults: {},
+	},
 };
 
 const SQLITE_SCHEMA_SQL = [
@@ -280,6 +288,15 @@ const SQLITE_SCHEMA_SQL = [
 		"updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	)`,
 	`CREATE INDEX IF NOT EXISTS "zinotes_userID_idx" ON "zinotes"("userID")`,
+	`CREATE TABLE IF NOT EXISTS "zidata" (
+		"id" TEXT NOT NULL PRIMARY KEY,
+		"type" TEXT NOT NULL,
+		"key" TEXT NOT NULL,
+		"value" TEXT,
+		"createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		"updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	)`,
+	`CREATE INDEX IF NOT EXISTS "zidata_type_key_idx" ON "zidata"("type", "key")`,
 ];
 
 const SQLITE_ADDITIONAL_COLUMNS = {
