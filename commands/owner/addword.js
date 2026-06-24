@@ -40,7 +40,10 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 	const wordsInput = interaction.options.getString("words");
 	// Split by newline, comma, or semicolon
-	const rawWords = wordsInput.split(/[\n,;]+/).map((w) => w.trim().toLowerCase()).filter(Boolean);
+	const rawWords = wordsInput
+		.split(/[\n,;]+/)
+		.map((w) => w.trim().toLowerCase())
+		.filter(Boolean);
 
 	const added = [];
 	const existing = [];
@@ -88,21 +91,33 @@ module.exports.execute = async ({ interaction, lang }) => {
 	if (added.length > 0) {
 		embed.addFields({
 			name: `✅ Đã thêm thành công (${added.length})`,
-			value: added.map((w) => `\`${w}\``).join(", ").substring(0, 1024) || "None",
+			value:
+				added
+					.map((w) => `\`${w}\``)
+					.join(", ")
+					.substring(0, 1024) || "None",
 		});
 	}
 
 	if (existing.length > 0) {
 		embed.addFields({
 			name: `⚠️ Đã tồn tại (${existing.length})`,
-			value: existing.map((w) => `\`${w}\``).join(", ").substring(0, 1024) || "None",
+			value:
+				existing
+					.map((w) => `\`${w}\``)
+					.join(", ")
+					.substring(0, 1024) || "None",
 		});
 	}
 
 	if (invalid.length > 0) {
 		embed.addFields({
 			name: `❌ Không hợp lệ (Không phải 2 âm tiết hoặc lỗi) (${invalid.length})`,
-			value: invalid.map((w) => `\`${w}\``).join(", ").substring(0, 1024) || "None",
+			value:
+				invalid
+					.map((w) => `\`${w}\``)
+					.join(", ")
+					.substring(0, 1024) || "None",
 		});
 	}
 

@@ -81,7 +81,7 @@ module.exports.execute = async () => {
 		useHooks.set("customWords", customWords);
 
 		logger?.debug?.(
-			`[Temp] Loaded ${guildSettings.size} guild settings, ${afkCache.size} AFK users, and ${customWords.size} custom words`
+			`[Temp] Loaded ${guildSettings.size} guild settings, ${afkCache.size} AFK users, and ${customWords.size} custom words`,
 		);
 	} catch (error) {
 		useHooks.get("logger")?.error?.("[Temp] Load cache failed", error);

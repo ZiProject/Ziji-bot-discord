@@ -422,7 +422,10 @@ module.exports.execute = (client) => {
 				return res.status(400).json({ error: "Missing or invalid words field" });
 			}
 
-			const rawWords = words.split(/[\n,;]+/).map((w) => w.trim().toLowerCase()).filter(Boolean);
+			const rawWords = words
+				.split(/[\n,;]+/)
+				.map((w) => w.trim().toLowerCase())
+				.filter(Boolean);
 			const { countSyllables, isValidWord } = require("../../utility/wordGameUtils");
 
 			const added = [];
