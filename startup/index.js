@@ -40,14 +40,14 @@ class StartupManager {
 			path: "/ws",
 		});
 
-		app.use(
-			cors({
-				origin: getAllowedOrigins(),
-				methods: ["GET", "POST"],
-				credentials: true,
-			}),
-		);
+		const corsOptions = {
+			origin: getAllowedOrigins(),
+			methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+			credentials: true,
+		};
 
+		app.use(cors(corsOptions));
+		app.options("*", cors(corsOptions));
 		app.use(express.json());
 
 		server.listen(process.env.SERVER_PORT || 2003, () => {
