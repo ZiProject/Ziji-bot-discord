@@ -49,61 +49,126 @@ module.exports = {
 		const parseVar = useHooks.get("functions").get("getVariable");
 		if (!welcome) return;
 
-		const datadescription =
-			parseVar?.execute(welcome.content, member) ||
-			`Xin chào **${member.user.username}**! Server hiện nay đã tăng thành ${member.guild.memberCount} người.`;
-		try {
-			const renderer = new GifRenderer({
-				workers: 4,
-				background: "./utility/BG.gif",
-				delay: 120,
-			});
+		let welcomeConfig = { description: welcome.content };
+		if (welcome.content && welcome.content.startsWith("{")) {
+			try {
+				welcomeConfig = JSON.parse(welcome.content);
+			} catch (e) {
+				console.error("Error parsing welcome.content JSON:", e);
+			}
+		}
 
-			const buffer = await renderer.render({
-				template: path.join(__dirname, "../../utility/WelcomeCard.js"),
-				props: {
-					avatar: member.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
-					displayName: member.user.username,
-					type: "welcome",
-					message: `to ${member.guild.name}.`,
-				},
-			});
-			renderer.close();
-			const attachment = new AttachmentBuilder(buffer, {
-				name: "WelcomeCard.gif",
-				description: datadescription,
-			});
+		const datadescription =
+			parseVar?.execute(welcomeConfig.description, member) ||
+			`Xin chào **${member.user.username}**! Server hiện nay đã tăng thành ${member.guild.memberCount} người.`;
+
+		const shouldRender = !welcomeConfig.image || welcomeConfig.image === "default";
+
+		try {
+			let attachment = null;
+			let imageName = "WelcomeCard.gif";
+			if (shouldRender) {
+				const renderer = new GifRenderer({
+					workers: 4,
+					background: "./utility/BG.gif",
+					delay: 120,
+				});
+
+				const buffer = await renderer.render({
+					template: path.join(__dirname, "../../utility/WelcomeCard.js"),
+					props: {
+						avatar: member.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
+						displayName: member.user.username,
+						type: "welcome",
+						message: `to ${member.guild.name}.`,
+					},
+				});
+				renderer.close();
+				attachment = new AttachmentBuilder(buffer, {
+					name: imageName,
+					description: datadescription,
+				});
+			}
+
 			// send welcome
 			const channel = await member.client.channels.fetch(welcome.channel);
-			await channel.send({
-				embeds: [
-					new EmbedBuilder()
-						.setDescription(datadescription)
-						.setColor(config.defaultColor)
-						.setImage("attachment://WelcomeCard.gif"),
-				],
-				files: [attachment],
-			});
+
+			const embed = new EmbedBuilder().setColor(config.defaultColor || "Random");
+
+			if (welcomeConfig.title) {
+				embed.setTitle(parseVar?.execute(welcomeConfig.title, member));
+			}
+			if (datadescription) {
+				embed.setDescription(datadescription);
+			}
+			if (welcomeConfig.footer) {
+				embed.setFooter({ text: parseVar?.execute(welcomeConfig.footer, member) });
+			}
+			if (welcomeConfig.thumbnail) {
+				if (welcomeConfig.thumbnail === "default") {
+					embed.setThumbnail(member.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }));
+				} else {
+					embed.setThumbnail(parseVar?.execute(welcomeConfig.thumbnail, member));
+				}
+			}
+			if (shouldRender) {
+				embed.setImage(`attachment://${imageName}`);
+			} else if (welcomeConfig.image) {
+				embed.setImage(parseVar?.execute(welcomeConfig.image, member));
+			}
+
+			const sendPayload = { embeds: [embed] };
+			if (attachment) {
+				sendPayload.files = [attachment];
+			}
+
+			await channel.send(sendPayload);
 			return;
 		} catch (error) {
-			console.error("Error building image:", error);
+			console.error("Error building image or sending welcome:", error);
 
-			const attachment = await buildImageInWorker({
-				ZDisplayName: member.user.username,
-				ZType: "welcome",
-				ZAvatar: member.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
-				ZMessage: `to ${member.guild.name}.`,
-			});
+			// Fallback if GifRenderer failed
+			let attachment = null;
+			let imageName = "WelcomeCard.png";
+			if (shouldRender) {
+				attachment = await buildImageInWorker({
+					ZDisplayName: member.user.username,
+					ZType: "welcome",
+					ZAvatar: member.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
+					ZMessage: `to ${member.guild.name}.`,
+				});
+			}
+
 			const channel = await member.client.channels.fetch(welcome.channel);
-			await channel.send({
-				embeds: [
-					new EmbedBuilder()
-						.setDescription(datadescription)
-						.setColor(config.defaultColor)
-						.setImage("attachment://WelcomeCard.png"),
-				],
-				files: [attachment],
-			});
+			const embed = new EmbedBuilder().setColor(config.defaultColor || "Random");
+
+			if (welcomeConfig.title) {
+				embed.setTitle(parseVar?.execute(welcomeConfig.title, member));
+			}
+			if (datadescription) {
+				embed.setDescription(datadescription);
+			}
+			if (welcomeConfig.footer) {
+				embed.setFooter({ text: parseVar?.execute(welcomeConfig.footer, member) });
+			}
+			if (welcomeConfig.thumbnail) {
+				if (welcomeConfig.thumbnail === "default") {
+					embed.setThumbnail(member.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }));
+				} else {
+					embed.setThumbnail(parseVar?.execute(welcomeConfig.thumbnail, member));
+				}
+			}
+			if (shouldRender) {
+				embed.setImage(`attachment://${imageName}`);
+			} else if (welcomeConfig.image) {
+				embed.setImage(parseVar?.execute(welcomeConfig.image, member));
+			}
+
+			const sendPayload = { embeds: [embed] };
+			if (attachment) {
+				sendPayload.files = [attachment];
+			}
+			await channel.send(sendPayload);
 		}
 	},
 };
