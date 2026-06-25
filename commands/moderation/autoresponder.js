@@ -90,8 +90,16 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 module.exports.newAutoRes = async ({ interaction, lang, options }) => {
 	await interaction.deferReply();
-
 	try {
+		const responders = await options.db.ZiAutoresponder.find({ guildId: interaction.guild.id });
+		const isExisted = responders.some((ar) => ar.trigger.toLowerCase() === options.trigger.toLowerCase());
+		if (isExisted) {
+			interaction.editReply(
+				`Autoresponder với trigger \`${options.trigger}\` đã tồn tại trên máy chủ này. Bạn có thể sử dụng lệnh \`/autoresponder edit\` để thay đổi nó.`,
+			);
+			return;
+		}
+
 		const newResponder = await options.db.ZiAutoresponder.create({
 			guildId: interaction.guild.id,
 			trigger: options.trigger,
@@ -104,6 +112,7 @@ module.exports.newAutoRes = async ({ interaction, lang, options }) => {
 		options.autoRes.get(interaction.guild.id).push({
 			trigger: newResponder.trigger,
 			response: newResponder.response,
+			matchMode: newResponder.options?.matchMode || "exactly",
 		});
 
 		interaction.editReply(`Đã thêm autoresponder: Khi ai đó gửi \`${options.trigger}\`, bot sẽ trả lời \`${options.response}\`.`);
@@ -127,18 +136,19 @@ module.exports.autocomplete = async ({ interaction, lang }) => {
 module.exports.editAutoRes = async ({ interaction, lang, options }) => {
 	await interaction.deferReply();
 	try {
-		const existingResponder = await options.db.ZiAutoresponder.findOne({
-			where: { guildId: interaction.guild.id, trigger: options.trigger },
-		});
+		const responders = await options.db.ZiAutoresponder.find({ guildId: interaction.guild.id });
+		const existingResponder = responders.find((ar) => ar.trigger.toLowerCase() === options.trigger.toLowerCase());
 		if (!existingResponder) {
 			return interaction.editReply(`Không tìm thấy autoresponder với trigger \`${options.trigger}\`.`);
 		}
 		existingResponder.response = options.response;
 		await existingResponder.save();
 		const guildAutoRes = options.autoRes.get(interaction.guild.id) || [];
-		const responderIndex = guildAutoRes.findIndex((ar) => ar.trigger === options.trigger);
+		const responderIndex = guildAutoRes.findIndex((ar) => ar.trigger.toLowerCase() === options.trigger.toLowerCase());
 		if (responderIndex !== -1) {
 			guildAutoRes[responderIndex].response = options.response;
+			guildAutoRes[responderIndex].trigger = existingResponder.trigger;
+			guildAutoRes[responderIndex].matchMode = existingResponder.options?.matchMode || "exactly";
 			options.autoRes.set(interaction.guild.id, guildAutoRes);
 		}
 		interaction.editReply(

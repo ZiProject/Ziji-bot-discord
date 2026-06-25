@@ -1,4 +1,4 @@
-const { PermissionsBitField } = require("discord.js");
+const { PermissionsBitField, Guild } = require("discord.js");
 const { useHooks } = require("zihooks");
 
 module.exports.data = {
@@ -79,21 +79,17 @@ module.exports.execute = async ({ interaction, lang }) => {
 				const channel = interaction.options.getChannel("channel");
 				const category = interaction.options.getChannel("category");
 				const guildId = interaction.guild.id;
-				await DataBase.ZiGuild.findOneAndUpdate(
-					{ guildId }, // Query condition
-					{
-						joinToCreate: {
-							enabled: true,
-							voiceChannelId: channel.id,
-							categoryId: category.id,
-						},
-					},
-					{ new: true, upsert: true },
-				);
+				let GuildSetting = await DataBase.ZiGuild.findOne({ guildId });
+				if (!GuildSetting) GuildSetting = new DataBase.ZiGuild({ guildId });
+				if (!GuildSetting.joinToCreate) GuildSetting.joinToCreate = {};
+				GuildSetting.joinToCreate.enabled = true;
+				GuildSetting.joinToCreate.voiceChannelId = channel.id;
+				GuildSetting.joinToCreate.categoryId = category.id;
+				if (typeof GuildSetting.markModified === "function") GuildSetting.markModified("joinToCreate");
+				await GuildSetting.save();
 				const guildSettings = useHooks.get("guildSettings");
-
 				const joinToCreateCache = useHooks.get("joinToCreateCache");
-
+				//console.log(joinToCreateCache);
 				const data = {
 					enabled: true,
 					voiceChannelId: channel.id,
@@ -118,11 +114,12 @@ module.exports.execute = async ({ interaction, lang }) => {
 				const guildId = interaction.guild.id;
 
 				// Disable the join-to-create system
-				const updatedGuild = await DataBase.ZiGuild.findOneAndUpdate(
-					{ guildId }, // Query condition
-					{ "joinToCreate.enabled": false },
-					{ new: true },
-				);
+				let GuildSetting = await DataBase.ZiGuild.findOne({ guildId });
+				if (!GuildSetting) GuildSetting = new DataBase.ZiGuild({ guildId });
+				if (!GuildSetting.joinToCreate) GuildSetting.joinToCreate = {};
+				GuildSetting.joinToCreate.enabled = false;
+				if (typeof GuildSetting.markModified === "function") GuildSetting.markModified("joinToCreate");
+				await GuildSetting.save();
 				const guildSettings = useHooks.get("guildSettings");
 
 				const joinToCreateCache = useHooks.get("joinToCreateCache");

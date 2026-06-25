@@ -289,6 +289,11 @@ module.exports.execute = (client) => {
 			if (id) {
 				await db.ZiAutoresponder.findByIdAndUpdate(id, { trigger, response, options });
 			} else {
+				const existing = await db.ZiAutoresponder.find({ guildId });
+				const isExisted = existing.some((ar) => ar.trigger.toLowerCase() === trigger.toLowerCase());
+				if (isExisted) {
+					return res.status(400).json({ error: `Autoresponder với trigger "${trigger}" đã tồn tại.` });
+				}
 				await db.ZiAutoresponder.create({
 					guildId,
 					trigger,
@@ -301,7 +306,7 @@ module.exports.execute = (client) => {
 				const refreshed = await db.ZiAutoresponder.find({ guildId });
 				autoRes.set(
 					guildId,
-					refreshed.map((r) => ({ trigger: r.trigger, response: r.response, options: r.options })),
+					refreshed.map((r) => ({ trigger: r.trigger, response: r.response, matchMode: r.options?.matchMode || "exactly" })),
 				);
 			}
 			res.json({ success: true });
@@ -321,7 +326,7 @@ module.exports.execute = (client) => {
 				const refreshed = await db.ZiAutoresponder.find({ guildId });
 				autoRes.set(
 					guildId,
-					refreshed.map((r) => ({ trigger: r.trigger, response: r.response, options: r.options })),
+					refreshed.map((r) => ({ trigger: r.trigger, response: r.response, matchMode: r.options?.matchMode || "exactly" })),
 				);
 			}
 			res.json({ success: true });
