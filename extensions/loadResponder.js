@@ -13,7 +13,7 @@ module.exports.execute = async () => {
 			autoRes.get(responder.guildId).push({
 				trigger: responder.trigger,
 				response: responder.response,
-				matchMode: responder.options.matchMode,
+				matchMode: responder.options?.matchMode || "exactly",
 			});
 			indexs++;
 		});
