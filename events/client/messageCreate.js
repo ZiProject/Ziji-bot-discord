@@ -6,7 +6,48 @@ const { getPlayer } = require("ziplayer");
 
 const Commands = useHooks.get("commands");
 const Functions = useHooks.get("functions");
+/**
+ * @param {string} text - Đoạn văn bản gốc cần cắt
+ * @param {number} maxLength - Giới hạn ký tự (Mặc định Discord là 2000)
+ * @returns {string[]} - Mảng các tin nhắn đã được cắt đẹp
+ */
+function splitMessage(text, maxLength = 1900) {
+    if (text.length <= maxLength) return [text];
+    const chunks = [];
+    const lines = text.split('\n');
+    let currentChunk = '';
+    let inCodeBlock = false;
+    let currentCodeLanguage = '';
+    for (const line of lines) {
+        if (line.startsWith('```')) {
+            inCodeBlock = !inCodeBlock;
+            if (inCodeBlock) {
+                currentCodeLanguage = line.slice(3).trim();
+            }
+        }
+        if ((currentChunk + line + '\n').length > maxLength) {
+            if (inCodeBlock) {
+                currentChunk += '```\n';
+            }
+            if (currentChunk.trim().length > 0) {
+                chunks.push(currentChunk);
+            }
+            if (inCodeBlock) {
+                currentChunk = `\`\`\`${currentCodeLanguage}\n` + line + '\n';
+            } else {
+                currentChunk = line + '\n';
+            }
+        } else {
+            currentChunk += line + '\n';
+        }
+    }
 
+    if (currentChunk.trim().length > 0) {
+        chunks.push(currentChunk);
+    }
+
+    return chunks;
+}
 function formatDuration(ms) {
 	const seconds = Math.floor((ms / 1000) % 60);
 	const minutes = Math.floor((ms / (1000 * 60)) % 60);
@@ -152,7 +193,16 @@ const reqai = async (message, lang) => {
 
 	try {
 		const result = await useHooks.get("ai").run(prompt, message.author, lang);
-		await message.reply(result);
+		//console.log(result);
+		if (result.length > 2000) {
+			const messageChunks = splitMessage(result, 1900);
+			let isFirst = true;
+			for (const chunks of messageChunks){
+				if (isFirst) {await message.reply(chunks);isFirst=false;}
+				else await message.send(chunks);
+			}
+		} else await message.reply(result);
+		//await message.reply(result);
 	} catch (err) {
 		useHooks.get("logger")?.error?.(`Error in generating content: ${err}`);
 	}
