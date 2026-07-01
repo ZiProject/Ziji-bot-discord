@@ -27,7 +27,6 @@ module.exports.execute = async (interaction, lang, options = { query: null }) =>
 			});
 		}
 
-
 		const permissions = voiceChannel.permissionsFor(client.user);
 		if (!permissions.has("Connect") || !permissions.has("Speak")) {
 			return interaction.reply({
