@@ -53,6 +53,9 @@ model ZiUser {
   afk                Boolean?
   afkReason          String?
   afkTime            DateTime?
+  promptHistory      String?
+  CurrentAI          String?
+  CurrentUser        String?
 
   @@index([userID])
   @@map("ziusers")

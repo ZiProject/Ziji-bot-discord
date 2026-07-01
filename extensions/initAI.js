@@ -24,7 +24,7 @@ const promptBuilder = async ({ content, user, lang, DataBase }) => {
 
 	const lowerContent = content?.toLowerCase()?.trim();
 	const language = lang?.local_names || "Vietnamese";
-	const commandsList = getCommandsList();
+	const commandsList = await getCommandsList();
 
 	// Hệ thống Instruction (System Prompt) - Nơi quy định "tính cách" và "khả năng"
 	const systemPrompt = `
@@ -39,11 +39,23 @@ const promptBuilder = async ({ content, user, lang, DataBase }) => {
         4. You have access to Google Search for real-time information.
     `.trim();
 
-	// Lịch sử hội thoại (Context)
-	const context = `${promptHistory}\nUser: ${CurrentUser}\nAI: ${CurrentAI}`.slice(-10000);
-	const finalPrompt = lowerContent ? `User context: ${context}\nQuestion: ${lowerContent}` : "How can I assist you today?";
+	// Lịch sử hội thoại (Context) dạng có cấu trúc
+	let history = [];
+	if (promptHistory) {
+		try {
+			history = JSON.parse(promptHistory);
+		} catch {
+			// Fallback nếu lịch sử trước đó dạng chuỗi phẳng
+			if (CurrentUser && CurrentAI) {
+				history = [
+					{ role: "user", parts: [{ text: CurrentUser }] },
+					{ role: "model", parts: [{ text: CurrentAI }] },
+				];
+			}
+		}
+	}
 
-	return { finalPrompt, systemPrompt };
+	return { finalPrompt: lowerContent || "hello", systemPrompt, history };
 };
 
 module.exports.execute = async () => {
@@ -58,12 +70,13 @@ module.exports.execute = async () => {
 			client,
 			genAI,
 			run: async (prompt, user, lang) => {
-				const { finalPrompt, systemPrompt } = await promptBuilder({ content: prompt, user, lang, DataBase });
+				const { finalPrompt, systemPrompt, history } = await promptBuilder({ content: prompt, user, lang, DataBase });
 
 				const model = genAI.getGenerativeModel({
 					model: "gemini-2.5-flash", // Hoặc "gemini-1.5-pro"
 					// Kích hoạt tính năng Google Search
 					tools: [{ googleSearch: {} }],
+					systemInstruction: systemPrompt,
 				});
 
 				const generationConfig = {
@@ -73,22 +86,25 @@ module.exports.execute = async () => {
 					maxOutputTokens: 2048,
 				};
 
-				// Gọi AI với System Instruction tách biệt
-				const result = await model.generateContent({
-					contents: [{ role: "user", parts: [{ text: finalPrompt }] }],
-					systemInstruction: systemPrompt,
+				// Khởi tạo phiên chat với lịch sử
+				const chat = model.startChat({
+					history,
 					generationConfig,
 				});
 
+				const result = await chat.sendMessage(finalPrompt);
 				const text = result?.response?.text();
 				if (!text) return "⚠️ Có lỗi xảy ra khi kết nối với trí tuệ nhân tạo.";
 
 				if (user) {
+					const updatedHistory = await chat.getHistory();
+					const historyToSave = updatedHistory.slice(-20); // Giới hạn 20 tin nhắn gần nhất (~10 lượt)
+
 					await DataBase.ZiUser.updateOne(
 						{ userID: user?.id },
 						{
 							$set: {
-								promptHistory: finalPrompt.slice(-5000),
+								promptHistory: JSON.stringify(historyToSave),
 								CurrentAI: text,
 								CurrentUser: prompt,
 							},

@@ -15,7 +15,11 @@ module.exports.execute = async (interaction, msg, lang) => {
 			console.error("No interaction available")
 		);
 	}
-	const result = await useHooks.get("ai").run(msg, interaction.user, lang);
+	const aiHook = useHooks.get("ai");
+	if (!aiHook) {
+		return interaction.editReply("⚠️ Tính năng AI hiện đang tắt hoặc chưa được cấu hình API Key.");
+	}
+	const result = await aiHook.run(msg, interaction.user, lang);
 
 	// Chia kết quả thành các trang
 	const chunks = splitIntoChunks(result, 4090); // Chia nhỏ kết quả thành các đoạn

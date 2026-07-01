@@ -60,6 +60,9 @@ const MODEL_CONFIGS = {
 			"afk",
 			"afkReason",
 			"afkTime",
+			"promptHistory",
+			"CurrentAI",
+			"CurrentUser",
 		],
 		indexedFields: ["id", "userID"],
 		jsonFields: ["huntStats", "thankedCookies", "petCare", "dailyQuests", "weeklyQuests", "userInfo", "guilds", "battleStats"],
@@ -232,7 +235,10 @@ const SQLITE_SCHEMA_SQL = [
 		"updatedAt" DATETIME,
 		"afk" BOOLEAN,
 		"afkReason" TEXT,
-		"afkTime" DATETIME
+		"afkTime" DATETIME,
+		"promptHistory" TEXT,
+		"CurrentAI" TEXT,
+		"CurrentUser" TEXT
 	)`,
 	`CREATE INDEX IF NOT EXISTS "ziusers_userID_idx" ON "ziusers"("userID")`,
 	`CREATE TABLE IF NOT EXISTS "ziautoresponders" (
@@ -311,6 +317,9 @@ const SQLITE_ADDITIONAL_COLUMNS = {
 		["afk", "BOOLEAN"],
 		["afkReason", "TEXT"],
 		["afkTime", "DATETIME"],
+		["promptHistory", "TEXT"],
+		["CurrentAI", "TEXT"],
+		["CurrentUser", "TEXT"],
 	],
 	ziguilds: [
 		["noitu", "TEXT"],

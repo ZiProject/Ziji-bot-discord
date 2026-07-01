@@ -44,9 +44,14 @@ module.exports.execute = async (interaction, lang, options = { query: null }) =>
 		}
 
 		// Tham gia voice channel
+		const aiHook = useHooks.get("ai");
+		if (!aiHook) {
+			return interaction.editReply("⚠️ Tính năng AI hiện đang tắt hoặc chưa được cấu hình API Key.");
+		}
+
 		const tts = useHooks.get("functions").get("TextToSpeech");
-		const result = options?.query ?? useHooks.get("ai").run(`Hello, my name is ${user.username}`);
-		await tts.execute(interaction, result, lang);
+		const result = options?.query ?? (await aiHook.run(`Hello, my name is ${user.username}`));
+		await tts.execute(interaction, result, lang, { assistant: true, useAI: true, focus: options?.focus });
 
 		voiceAI = true;
 

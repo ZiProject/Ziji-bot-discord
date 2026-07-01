@@ -10,8 +10,10 @@ module.exports = {
 	 * @param {number} events
 	 */
 	execute: async (player, events) => {
+		const { channel, useAI, focus } = player.userdata;
+		if (focus && events.user.id !== focus) return;
+
 		const lowerContent = events.content.toLowerCase();
-		const { channel, useAI } = player.userdata;
 		let messsend = null;
 		const commands = {
 			"skip|bỏ qua bài hát|next": () => {
@@ -80,10 +82,13 @@ module.exports = {
 		}
 
 		if (!useAI) return;
+		const aiHook = useHooks.get("ai");
+		if (!aiHook) return;
+
 		const voice = useHooks.get("client").channels.cache.get(player.connection.joinConfig.channelId);
 		const aifunc = await useHooks.get("functions").get("runVoiceAI");
-		if (aifunc.checkStatus) {
-			const result = await useHooks.get("ai").run(lowerContent, events.user);
+		if (aifunc && typeof aifunc.checkStatus === "function" && aifunc.checkStatus()) {
+			const result = await aiHook.run(lowerContent, events.user, player?.userdata?.lang);
 
 			const tts = await useHooks.get("functions").get("TextToSpeech");
 			await tts.execute(
