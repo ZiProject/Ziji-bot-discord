@@ -66,8 +66,7 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 	// Kiểm tra xem người dùng có ở cùng voice channel với bot không
 	const botVoiceChannel = interaction.guild.members.me.voice.channel;
 	const userVoiceChannel = interaction.member.voice.channel;
-	if (!botVoiceChannel || botVoiceChannel.id !== userVoiceChannel?.id)
-		return interaction.followUp({ content: lang.music.NOvoiceMe, ephemeral: true });
+
 	const DataBase = useHooks.get("db");
 	switch (query) {
 		case "Lock": {
