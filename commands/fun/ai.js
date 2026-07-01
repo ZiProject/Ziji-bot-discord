@@ -65,20 +65,14 @@ module.exports.execute = async ({ interaction, lang }) => {
 	 * Nếu Không có thì trả lời messenger
 	 */
 
-	if (subcommand === "assistant") {
-		// Handle assistant functionality
-		return this.assistant(interaction, lang, { query: prompt });
+	if (subcommand === "ask") {
+		// Handle ask functionality
+		return this.ask(interaction, prompt, lang);
 	}
 
 	if (!player) return this.ask(interaction, prompt, lang);
 
 	if (!voiceChannel) {
-		return this.ask(interaction, prompt, lang);
-	}
-
-	// Check if bot is in the same voice channel
-	const botVoiceChannel = guild.members.cache.get(client.user.id)?.voice.channel;
-	if (botVoiceChannel && botVoiceChannel.id !== voiceChannel.id) {
 		return this.ask(interaction, prompt, lang);
 	}
 

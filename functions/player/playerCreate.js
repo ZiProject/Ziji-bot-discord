@@ -21,7 +21,6 @@ async function execute({ interaction, lang, options = {} }) {
 	});
 
 	if (!isUserInVoiceChannel(voiceChannel, interaction, lang)) return;
-	// if (!isBotInSameVoiceChannel(guild, voiceChannel, interaction, lang)) return;
 
 	const player = getPlayer(`${guild.id}::${voiceChannel.id}`);
 	let tempmess = null;
@@ -104,20 +103,6 @@ function isUserInVoiceChannel(voiceChannel, interaction, lang) {
 		logger.debug("User is not in a voice channel");
 		interaction.editReply({
 			content: lang?.music?.NOvoiceChannel ?? "Bạn chưa tham gia vào kênh thoại",
-			ephemeral: true,
-		});
-		return false;
-	}
-	return true;
-}
-
-function isBotInSameVoiceChannel(guild, voiceChannel, interaction, lang) {
-	const voiceMe = guild.members.me.voice?.channel;
-	if (voiceMe && voiceMe.id !== voiceChannel.id) {
-		logger.debug("Bot is not in the same voice channel");
-
-		interaction.editReply({
-			content: lang?.music?.NOvoiceMe ?? "Bot đã tham gia một kênh thoại khác",
 			ephemeral: true,
 		});
 		return false;

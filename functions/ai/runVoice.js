@@ -27,13 +27,6 @@ module.exports.execute = async (interaction, lang, options = { query: null }) =>
 			});
 		}
 
-		const voiceMe = guild.members.cache.get(client.user.id).voice.channel;
-		if (voiceMe && voiceMe.id !== voiceChannel.id) {
-			return interaction.editReply({
-				content: lang?.music?.NOvoiceMe ?? "Bot đã tham gia một kênh thoại khác",
-				ephemeral: true,
-			});
-		}
 
 		const permissions = voiceChannel.permissionsFor(client.user);
 		if (!permissions.has("Connect") || !permissions.has("Speak")) {
