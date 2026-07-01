@@ -113,7 +113,7 @@ module.exports = {
 				)
 				.addTextDisplayComponents((text) =>
 					text.setContent(
-						`now Playing at: **${player.userdata?.voiceChannel}** | Text Channel: **${player.userdata?.textChannel}** | Bot: **${player?.userdata?.client.user}**`,
+						`**${player.userdata?.voiceChannel}** | Text Channel: **${player.userdata?.channel}** | Bot: **${player?.userdata?.client.user}**`,
 					),
 				),
 		);
