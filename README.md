@@ -21,11 +21,13 @@
 
 ### 🎵 Music Player
 
-Full-featured music playback with an interactive player UI, queue management, search, and more.
+Full-featured music playback with an interactive player UI v2, queue management, search, and more.
+Multi bot support on one player/per voice channel. Image search track support
 
 <table>
 <tr>
-<td width="50%"><img alt="Player" src="https://raw.githubusercontent.com/zijipia/zijipia/Ziji-Discord-Bot-Image/Assets/Player.png"/></td>
+<td width="50%"><img width="985" height="916" alt="image" src="https://github.com/user-attachments/assets/60611cbb-08e1-4cf9-9fab-00805384d6e3" />
+</td>
 <td width="50%"><img alt="Search" src="https://github.com/zijipia/zijipia/blob/Ziji-Discord-Bot-Image/Assets/search.png"/></td>
 </tr>
 </table>
@@ -122,6 +124,10 @@ npm test
 ## 🤝 Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before submitting a pull request.
+
+<a href="https://github.com/ZiProject/Ziji-bot-discord/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ZiProject/Ziji-bot-discord" />
+</a>
 
 ---
 
