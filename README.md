@@ -21,8 +21,8 @@
 
 ### 🎵 Music Player
 
-Full-featured music playback with an interactive player UI v2, queue management, search, and more.
-Multi bot support on one player/per voice channel. Image search track support
+Full-featured music playback with an interactive player UI v2, queue management, search, and more. Multi bot support on one
+player/per voice channel. Image search track support
 
 <table>
 <tr>
