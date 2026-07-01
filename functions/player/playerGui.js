@@ -110,6 +110,11 @@ module.exports = {
 					text.setContent(
 						`Volume: **${player.volume}%** | Host: ${player.userdata.requestedBy} | Loop: **${repeatMode(player.loop(), player.autoPlay())}** | Lyrics: **${player.userdata?.lyrcsActive ? "ON" : "OFF"}**`,
 					),
+				)
+				.addTextDisplayComponents((text) =>
+					text.setContent(
+						`now Playing at: **${player.voiceChannel.name}** | Text Channel: **${player.textChannel.name}** | Bot: **${player?.userdata?.client?.user}**`,
+					),
 				),
 		);
 
