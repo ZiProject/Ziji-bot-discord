@@ -218,6 +218,8 @@ module.exports = {
 		welcomer: true,
 		//enable AI
 		ai: true,
+		//enable AI AutoPlay suggestion
+		aiAutoPlay: true,
 		/** ============ Else ============ */
 		//enable logger (info | debug | warn | error | leave blank to enable all type)
 		logger: "info",

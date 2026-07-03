@@ -207,6 +207,11 @@ async function getPlayerConfig(options, userID) {
 		playerConfig.extensions.push("voiceExt");
 	}
 
+	if (config?.DevConfig?.aiAutoPlay) {
+		logger.debug("useAI is true and aiAutoPlay is enabled");
+		playerConfig.extensions.push("AiAutoplayExtension");
+	}
+
 	if (playerConfig.volume === "auto") {
 		logger.debug("Volume is set to auto, fetching from database");
 		const DataBase = useHooks.get("db");

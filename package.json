@@ -37,7 +37,7 @@
 		"@prisma/client": "^6.19.3",
 		"@zibot/db": "^0.0.3",
 		"@zibot/ziencryptor": "^0.0.1",
-		"@ziplayer/extension": "^0.3.1",
+		"@ziplayer/extension": "^0.3.3",
 		"@ziplayer/infinity": "^0.0.3",
 		"@ziplayer/plugin": "^0.3.4",
 		"@ziplayer/ytexecplug": "^0.0.4",
@@ -73,7 +73,7 @@
 		"winston": "^3.17.0",
 		"ws": "^8.18.0",
 		"zihooks": "^2.0.0",
-		"ziplayer": "^0.3.12-dev.0"
+		"ziplayer": "^0.3.13"
 	},
 	"devDependencies": {
 		"nodemon": "^3.1.14",

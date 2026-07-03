@@ -50,6 +50,7 @@ module.exports = {
 		AutoResponder: true,
 		welcomer: true,
 		ai: true,
+		aiAutoPlay: true,
 		logger: "info",
 	},
 };

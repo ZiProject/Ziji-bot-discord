@@ -267,6 +267,12 @@ module.exports = {
 					Value: "Filter",
 					Emoji: ZiIcons.fillter,
 				},
+				{
+					Label: "Lyrics",
+					Description: "Lời bài hát",
+					Value: "Lyrics",
+					Emoji: ZiIcons.lyrics,
+				},
 			];
 
 			const functionOptions = functions.map((f) =>

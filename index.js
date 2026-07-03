@@ -12,7 +12,7 @@ const fs = require("fs");
 //music player
 const { default: PlayerManager } = require("ziplayer");
 const { TTSPlugin, YTSRPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin, AttachmentsPlugin } = require("@ziplayer/plugin");
-const { lyricsExt, voiceExt, lavalinkExt } = require("@ziplayer/extension");
+const { lyricsExt, voiceExt, lavalinkExt, AiAutoplayExtension } = require("@ziplayer/extension");
 const { YTexec } = require("@ziplayer/ytexecplug");
 const { InfinityPlugin } = require("@ziplayer/infinity");
 
@@ -69,6 +69,7 @@ const manager = new PlayerManager({
 		// 	client: client,
 		// 	debug: true,
 		// }),
+		new AiAutoplayExtension(process.env.GEMINI_API_KEY),
 		new lyricsExt(),
 		new voiceExt(null, { client, minimalVoiceMessageDuration: 1 }),
 	],
