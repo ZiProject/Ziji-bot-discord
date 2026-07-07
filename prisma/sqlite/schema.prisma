@@ -98,6 +98,7 @@ model ZiGuild {
   updatedAt     DateTime?
   noitu         String?
   ticket        String?
+  youtube       String?
 
   @@index([guildId])
   @@map("ziguilds")

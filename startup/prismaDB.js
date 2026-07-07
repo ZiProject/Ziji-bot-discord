@@ -127,9 +127,9 @@ const MODEL_CONFIGS = {
 	},
 	ZiGuild: {
 		delegate: "ziGuild",
-		fields: ["id", "guildId", "voice", "joinToCreate", "autoRole", "music_channel", "updatedAt", "noitu", "ticket"],
+		fields: ["id", "guildId", "voice", "joinToCreate", "autoRole", "music_channel", "updatedAt", "noitu", "ticket", "youtube"],
 		indexedFields: ["id", "guildId"],
-		jsonFields: ["voice", "joinToCreate", "autoRole", "noitu", "ticket"],
+		jsonFields: ["voice", "joinToCreate", "autoRole", "noitu", "ticket", "youtube"],
 		dateFields: ["updatedAt"],
 		defaults: {
 			voice: { logMode: false },
@@ -154,6 +154,9 @@ const MODEL_CONFIGS = {
 				staffRoleId: null,
 				allowUserClose: true,
 				logChannelId: null,
+			},
+			youtube: {
+				channels: [],
 			},
 		},
 		touchUpdatedAt: true,
@@ -271,7 +274,8 @@ const SQLITE_SCHEMA_SQL = [
 		"music_channel" TEXT,
 		"updatedAt" DATETIME,
 		"noitu" TEXT,
-		"ticket" TEXT
+		"ticket" TEXT,
+		"youtube" TEXT
 	)`,
 	`CREATE INDEX IF NOT EXISTS "ziguilds_guildId_idx" ON "ziguilds"("guildId")`,
 	`CREATE TABLE IF NOT EXISTS "ziconfesses" (
@@ -324,6 +328,7 @@ const SQLITE_ADDITIONAL_COLUMNS = {
 	ziguilds: [
 		["noitu", "TEXT"],
 		["ticket", "TEXT"],
+		["youtube", "TEXT"],
 	],
 };
 
