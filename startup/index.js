@@ -82,20 +82,24 @@ class StartupManager {
 				const PlayerClient = new Client({
 					intents: [
 						GatewayIntentBits.Guilds, // for guild related things
-						GatewayIntentBits.GuildVoiceStates, // for voice related things]
+						GatewayIntentBits.GuildVoiceStates, // for voice related things
 					],
 				});
-				PlayerClient.login(TOKEN);
-				PlayerClient.once("ready", (cle) => {
-					this.logger.info(`Connected to ${cle?.user?.displayName}`);
-				});
-				playerNetClient.push(PlayerClient);
+				try {
+					PlayerClient.login(TOKEN.trim());
+					PlayerClient.once("ready", (cle) => {
+						this.logger.info(`Connected to ${cle?.user?.displayName}`);
+						playerNetClient.push(PlayerClient);
+					});
+				} catch (error) {
+					this.logger.warn(`Failed to login with token: ${TOKEN.trim().slice(0, 22)}...`);
+					this.logger.warn(error);
+				}
 			});
 		} catch (e) {
 			this.logger.warn("Create bot PlayerNet Fall:");
 			this.logger.warn(e);
 		} finally {
-			if (!playerNetClient.length) return;
 			useHooks.set("playerNetClient", playerNetClient); //playerNetClient
 		}
 	}
