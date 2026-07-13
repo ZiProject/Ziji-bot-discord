@@ -175,3 +175,14 @@ test("StartupManager.initHooks initializes hooks and exposes config/logger", asy
 	assert.ok(useHooks.get("logger"), "Logger hook should be available");
 	assert.deepStrictEqual(manager.getConfig(), useHooks.get("config"));
 });
+
+test("Guild command utility modules load through the supported public discord.js API", () => {
+	assert.doesNotThrow(
+		() => require("../utils/guildCommandManager"),
+		"guildCommandManager should load without private discord.js internals",
+	);
+	assert.doesNotThrow(
+		() => require("../utils/guildCommandBuilderActions"),
+		"guildCommandBuilderActions should resolve its sibling builder module",
+	);
+});

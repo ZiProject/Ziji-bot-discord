@@ -1,9 +1,7 @@
-const { EmbedBuilder, REST, Routes } = require("discord.js");
+const { EmbedBuilder, REST, Routes, CommandInteractionOptionResolver } = require("discord.js");
 const { ApplicationCommandOptionType } = require("discord-api-types/v10");
 const { useHooks } = require("zihooks");
 const { parseComponentsLayout, buildComponentsReply } = require("./guildCommandComponents");
-
-const CommandInteractionOptionResolver = require("discord.js/src/structures/CommandInteractionOptionResolver");
 
 const MAX_GUILD_COMMANDS = 25;
 const MAX_NAME_LENGTH = 32;
@@ -62,7 +60,10 @@ const parseProxyTarget = (rawTarget) => {
 	return {
 		command: parts[0],
 		subcommandGroup: parts.length >= 3 ? parts[1] : null,
-		subcommand: parts.length >= 3 ? parts[2] : parts.length === 2 ? parts[1] : null,
+		subcommand:
+			parts.length >= 3 ? parts[2]
+			: parts.length === 2 ? parts[1]
+			: null,
 	};
 };
 
@@ -132,9 +133,7 @@ const buildOptionPayload = (def, value) => {
 const buildProxyOptionData = (interaction, subcommand, subcommandGroup, optionDefs = []) => {
 	if (!subcommand) return interaction.options.data;
 
-	const subOptions = optionDefs
-		.map((def) => buildOptionPayload(def, readOptionValue(interaction.options, def)))
-		.filter(Boolean);
+	const subOptions = optionDefs.map((def) => buildOptionPayload(def, readOptionValue(interaction.options, def))).filter(Boolean);
 
 	if (subcommandGroup) {
 		return [

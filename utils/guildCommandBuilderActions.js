@@ -1,7 +1,7 @@
 const { PermissionsBitField } = require("discord.js");
 const { useHooks } = require("zihooks");
-const { getBuilderSession, buildBuilderPreview } = require("../../utils/guildCommandBuilder");
-const { validateComponentsLayout } = require("../../utils/guildCommandComponents");
+const { getBuilderSession, buildBuilderPreview } = require("./guildCommandBuilder");
+const { validateComponentsLayout } = require("./guildCommandComponents");
 
 const requireBuilderSession = async (interaction) => {
 	if (!interaction.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
@@ -45,7 +45,7 @@ const saveBuilderSession = async (interaction, session) => {
 		existing.response = layoutCheck.value;
 		await existing.save();
 	} else {
-		const { getGuildCommandCount, MAX_GUILD_COMMANDS, syncToCache, deployGuildCommands } = require("../../utils/guildCommandManager");
+		const { getGuildCommandCount, MAX_GUILD_COMMANDS, syncToCache, deployGuildCommands } = require("./guildCommandManager");
 		const count = await getGuildCommandCount(session.guildId);
 		if (count >= MAX_GUILD_COMMANDS) {
 			return interaction.reply({ content: `Server đã đạt giới hạn ${MAX_GUILD_COMMANDS} lệnh.`, ephemeral: true });
@@ -81,6 +81,7 @@ const saveBuilderSession = async (interaction, session) => {
 };
 
 module.exports = {
+	getBuilderSession,
 	requireBuilderSession,
 	refreshBuilderPreview,
 	saveBuilderSession,
