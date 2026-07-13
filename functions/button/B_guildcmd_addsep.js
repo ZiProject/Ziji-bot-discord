@@ -1,5 +1,4 @@
-const { setBuilderSession } = require("../../utils/guildCommandBuilder");
-const { requireBuilderSession, refreshBuilderPreview } = require("../../utils/guildCommandBuilderActions");
+const { useHooks } = require("zihooks");
 
 module.exports.data = {
 	name: "B_guildcmd_addsep",
@@ -7,10 +6,18 @@ module.exports.data = {
 };
 
 module.exports.execute = async ({ interaction }) => {
-	const session = await requireBuilderSession(interaction);
+	const functions = useHooks.get("functions");
+	const builderActions = functions?.get("guildCommandBuilderActions");
+	const builder = functions?.get("guildCommandBuilder");
+	const session = await builderActions?.execute({ action: "requireBuilderSession", interaction });
 	if (!session) return;
 
 	session.layout.blocks.push({ type: "separator", divider: true, spacing: 1 });
-	setBuilderSession(interaction.user.id, interaction.guild.id, session);
-	return refreshBuilderPreview(interaction, session);
+	await builder?.execute({
+		action: "setBuilderSession",
+		userId: interaction.user.id,
+		guildId: interaction.guild.id,
+		session,
+	});
+	return builderActions?.execute({ action: "refreshBuilderPreview", interaction, session });
 };

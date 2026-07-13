@@ -1,5 +1,4 @@
 const { useHooks } = require("zihooks");
-const { loadAllToCache } = require("../utils/guildCommandManager");
 
 module.exports.data = {
 	name: "loadGuildCommands",
@@ -11,7 +10,8 @@ module.exports.data = {
 module.exports.execute = async () => {
 	useHooks.get("logger")?.debug?.("Starting loadGuildCommands...");
 	try {
-		const count = await loadAllToCache();
+		const manager = useHooks.get("functions")?.get("guildCommandManager");
+		const count = await manager?.execute({ action: "loadAllToCache" });
 		useHooks.get("logger")?.info?.(`Successfully loaded ${count} guild custom commands into cache.`);
 	} catch (error) {
 		useHooks.get("logger")?.error?.("Lỗi khi tải guild commands:", error);

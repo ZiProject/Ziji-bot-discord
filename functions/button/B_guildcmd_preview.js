@@ -1,4 +1,4 @@
-const { requireBuilderSession, refreshBuilderPreview } = require("../../utils/guildCommandBuilderActions");
+const { useHooks } = require("zihooks");
 
 module.exports.data = {
 	name: "B_guildcmd_preview",
@@ -6,7 +6,8 @@ module.exports.data = {
 };
 
 module.exports.execute = async ({ interaction }) => {
-	const session = await requireBuilderSession(interaction);
+	const builderActions = useHooks.get("functions")?.get("guildCommandBuilderActions");
+	const session = await builderActions?.execute({ action: "requireBuilderSession", interaction });
 	if (!session) return;
-	return refreshBuilderPreview(interaction, session);
+	return builderActions?.execute({ action: "refreshBuilderPreview", interaction, session });
 };

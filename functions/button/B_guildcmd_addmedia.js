@@ -2,7 +2,7 @@ const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = req
 const { useHooks } = require("zihooks");
 
 module.exports.data = {
-	name: "B_guildcmd_setcolor",
+	name: "B_guildcmd_addmedia",
 	type: "button",
 };
 
@@ -11,16 +11,16 @@ module.exports.execute = async ({ interaction }) => {
 	const session = await builderActions?.execute({ action: "requireBuilderSession", interaction });
 	if (!session) return;
 
-	const modal = new ModalBuilder().setCustomId("M_guildcmd_setcolor").setTitle("Đặt màu accent");
+	const modal = new ModalBuilder().setCustomId("M_guildcmd_addmedia").setTitle("Thêm block Media");
 	modal.addComponents(
 		new ActionRowBuilder().addComponents(
 			new TextInputBuilder()
-				.setCustomId("color")
-				.setLabel("RGB — vd: 88,101,242")
+				.setCustomId("url")
+				.setLabel("URL hình ảnh / video")
 				.setStyle(TextInputStyle.Short)
 				.setRequired(true)
-				.setMaxLength(20)
-				.setValue((session.layout.accentColor || [88, 101, 242]).join(",")),
+				.setMaxLength(300)
+				.setPlaceholder("https://example.com/image.jpg"),
 		),
 	);
 

@@ -2,7 +2,7 @@ const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = req
 const { useHooks } = require("zihooks");
 
 module.exports.data = {
-	name: "B_guildcmd_addtext",
+	name: "B_guildcmd_addsection",
 	type: "button",
 };
 
@@ -11,16 +11,25 @@ module.exports.execute = async ({ interaction }) => {
 	const session = await builderActions?.execute({ action: "requireBuilderSession", interaction });
 	if (!session) return;
 
-	const modal = new ModalBuilder().setCustomId("M_guildcmd_addtext").setTitle("Thêm block Text");
+	const modal = new ModalBuilder().setCustomId("M_guildcmd_addsection").setTitle("Thêm block Section");
 	modal.addComponents(
 		new ActionRowBuilder().addComponents(
 			new TextInputBuilder()
 				.setCustomId("content")
-				.setLabel("Nội dung (Markdown)")
+				.setLabel("Nội dung section")
 				.setStyle(TextInputStyle.Paragraph)
 				.setRequired(true)
 				.setMaxLength(4000)
-				.setPlaceholder("## Tiêu đề\nNội dung... Hỗ trợ {user}, {guild.name}, {memberCount}"),
+				.setPlaceholder("## Tiêu đề\nMô tả ngắn..."),
+		),
+		new ActionRowBuilder().addComponents(
+			new TextInputBuilder()
+				.setCustomId("buttonJson")
+				.setLabel("Button accessory (JSON, tùy chọn)")
+				.setStyle(TextInputStyle.Short)
+				.setRequired(false)
+				.setMaxLength(300)
+				.setPlaceholder('{"style":"primary","label":"Chi tiết","customId":"details"}'),
 		),
 	);
 

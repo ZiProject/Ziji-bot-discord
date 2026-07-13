@@ -1,5 +1,4 @@
-const { setBuilderSession } = require("../../utils/guildCommandBuilder");
-const { getBuilderSession, refreshBuilderPreview } = require("../../utils/guildCommandBuilderActions");
+const { useHooks } = require("zihooks");
 
 module.exports.data = {
 	name: "M_guildcmd_setcolor",
@@ -7,7 +6,14 @@ module.exports.data = {
 };
 
 module.exports.execute = async ({ interaction }) => {
-	const session = getBuilderSession(interaction.user.id, interaction.guild.id);
+	const functions = useHooks.get("functions");
+	const builder = functions?.get("guildCommandBuilder");
+	const builderActions = functions?.get("guildCommandBuilderActions");
+	const session = await builder?.execute({
+		action: "getBuilderSession",
+		userId: interaction.user.id,
+		guildId: interaction.guild.id,
+	});
 	if (!session) {
 		return interaction.reply({ content: "Phiên builder đã hết hạn.", ephemeral: true });
 	}
@@ -19,6 +25,11 @@ module.exports.execute = async ({ interaction }) => {
 	}
 
 	session.layout.accentColor = parts.map((value) => Math.max(0, Math.min(255, value)));
-	setBuilderSession(interaction.user.id, interaction.guild.id, session);
-	return refreshBuilderPreview(interaction, session);
+	await builder?.execute({
+		action: "setBuilderSession",
+		userId: interaction.user.id,
+		guildId: interaction.guild.id,
+		session,
+	});
+	return builderActions?.execute({ action: "refreshBuilderPreview", interaction, session });
 };

@@ -1,9 +1,9 @@
 const { REST, Routes } = require("discord.js");
 const { useHooks } = require("zihooks");
-const { buildSlashData } = require("../utils/guildCommandManager");
 
 module.exports = async (client) => {
 	const config = useHooks.get("config");
+	const manager = useHooks.get("functions")?.get("guildCommandManager");
 	const commands = { global: [], owner: [] };
 
 	await Promise.all(
@@ -18,9 +18,7 @@ module.exports = async (client) => {
 		if (body.length > 0) {
 			await rest.put(route, { body });
 			client?.errorLog?.(`Successfully reloaded ${body.length} ${commandType} application [/] commands.`);
-			useHooks
-				.get("logger")
-				?.info?.(`Successfully reloaded ${body.length} ${commandType} application [/] commands.`);
+			useHooks.get("logger")?.info?.(`Successfully reloaded ${body.length} ${commandType} application [/] commands.`);
 		}
 	};
 
@@ -28,7 +26,7 @@ module.exports = async (client) => {
 		const db = useHooks.get("db");
 		if (!db?.ZiGuildCommand) return [];
 		const records = await db.ZiGuildCommand.find({ guildId, enabled: true });
-		return records.map(buildSlashData);
+		return Promise.all(records.map(async (record) => manager?.execute({ action: "buildSlashData", record })));
 	};
 
 	try {
@@ -56,7 +54,7 @@ module.exports = async (client) => {
 			for (const record of allCustom) {
 				if (devGuildSet.has(record.guildId)) continue;
 				if (!grouped.has(record.guildId)) grouped.set(record.guildId, []);
-				grouped.get(record.guildId).push(buildSlashData(record));
+				grouped.get(record.guildId).push(await manager?.execute({ action: "buildSlashData", record }));
 			}
 
 			await Promise.all(

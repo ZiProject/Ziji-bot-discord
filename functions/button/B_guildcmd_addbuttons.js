@@ -2,7 +2,7 @@ const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = req
 const { useHooks } = require("zihooks");
 
 module.exports.data = {
-	name: "B_guildcmd_setcolor",
+	name: "B_guildcmd_addbuttons",
 	type: "button",
 };
 
@@ -11,16 +11,16 @@ module.exports.execute = async ({ interaction }) => {
 	const session = await builderActions?.execute({ action: "requireBuilderSession", interaction });
 	if (!session) return;
 
-	const modal = new ModalBuilder().setCustomId("M_guildcmd_setcolor").setTitle("Đặt màu accent");
+	const modal = new ModalBuilder().setCustomId("M_guildcmd_addbuttons").setTitle("Thêm block Buttons");
 	modal.addComponents(
 		new ActionRowBuilder().addComponents(
 			new TextInputBuilder()
-				.setCustomId("color")
-				.setLabel("RGB — vd: 88,101,242")
-				.setStyle(TextInputStyle.Short)
+				.setCustomId("buttonsJson")
+				.setLabel("Buttons JSON (mảng)")
+				.setStyle(TextInputStyle.Paragraph)
 				.setRequired(true)
-				.setMaxLength(20)
-				.setValue((session.layout.accentColor || [88, 101, 242]).join(",")),
+				.setMaxLength(2000)
+				.setPlaceholder('[{"style":"primary","label":"Open","customId":"open"}]'),
 		),
 	);
 
