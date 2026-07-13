@@ -14,7 +14,8 @@ const ApplicationCommandOptionType = Object.freeze({
 	Mentionable: 9,
 	Number: 10,
 	Attachment: 11,
-}
+});
+
 const ApplicationCommandOptionType = Object.freeze({
 	Subcommand: 1,
 	SubcommandGroup: 2,
@@ -216,12 +217,7 @@ const createProxyOptionsResolver = (interaction, optionData = []) => {
 			case ApplicationCommandOptionType.Role:
 				return resolved?.roles?.get(value) || null;
 			case ApplicationCommandOptionType.Mentionable:
-				return (
-					resolved?.members?.get(value) ||
-					resolved?.roles?.get(value) ||
-					resolved?.users?.get(value) ||
-					null
-				);
+				return resolved?.members?.get(value) || resolved?.roles?.get(value) || resolved?.users?.get(value) || null;
 			case ApplicationCommandOptionType.Attachment:
 				return resolved?.attachments?.get(value) || null;
 			default:
