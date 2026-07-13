@@ -16,20 +16,6 @@ const ApplicationCommandOptionType = Object.freeze({
 	Attachment: 11,
 });
 
-const ApplicationCommandOptionType = Object.freeze({
-	Subcommand: 1,
-	SubcommandGroup: 2,
-	String: 3,
-	Integer: 4,
-	Boolean: 5,
-	User: 6,
-	Channel: 7,
-	Role: 8,
-	Mentionable: 9,
-	Number: 10,
-	Attachment: 11,
-});
-
 const MAX_GUILD_COMMANDS = 25;
 const MAX_NAME_LENGTH = 32;
 const MAX_DESC_LENGTH = 100;

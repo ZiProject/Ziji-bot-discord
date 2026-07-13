@@ -10,7 +10,7 @@ const { useHooks } = require("zihooks");
 
 const { StartupLoader } = require("../startup/loader.js");
 const { StartupManager } = require("../startup/index.js");
-const { buildBuilderPreview, startBuilderSession } = require("../utils/guildCommandBuilder");
+const { buildBuilderPreview, startBuilderSession } = require("../functions/guildCommand/guildCommandBuilder.js");
 
 const createTempModule = async (dir, name, content) => {
 	const filePath = path.join(dir, `${name}.js`);
@@ -179,11 +179,11 @@ test("StartupManager.initHooks initializes hooks and exposes config/logger", asy
 
 test("Guild command utility modules load through the supported public discord.js API", () => {
 	assert.doesNotThrow(
-		() => require("../utils/guildCommandManager"),
+		() => require("../functions/guildCommand/guildCommandManager"),
 		"guildCommandManager should load without private discord.js internals",
 	);
 	assert.doesNotThrow(
-		() => require("../utils/guildCommandBuilderActions"),
+		() => require("../functions/guildCommand/guildCommandBuilderActions"),
 		"guildCommandBuilderActions should resolve its sibling builder module",
 	);
 });
