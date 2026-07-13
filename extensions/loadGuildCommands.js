@@ -1,0 +1,19 @@
+const { useHooks } = require("zihooks");
+const { loadAllToCache } = require("../utils/guildCommandManager");
+
+module.exports.data = {
+	name: "loadGuildCommands",
+	type: "extension",
+	enable: true,
+	priority: 3,
+};
+
+module.exports.execute = async () => {
+	useHooks.get("logger")?.debug?.("Starting loadGuildCommands...");
+	try {
+		const count = await loadAllToCache();
+		useHooks.get("logger")?.info?.(`Successfully loaded ${count} guild custom commands into cache.`);
+	} catch (error) {
+		useHooks.get("logger")?.error?.("Lỗi khi tải guild commands:", error);
+	}
+};

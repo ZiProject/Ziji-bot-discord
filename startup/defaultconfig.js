@@ -48,6 +48,7 @@ module.exports = {
 		prisma_DEBUG: false,
 		Giveaway: true,
 		AutoResponder: true,
+		GuildCommand: true,
 		welcomer: true,
 		ai: true,
 		aiAutoPlay: true,

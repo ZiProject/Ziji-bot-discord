@@ -135,6 +135,9 @@ module.exports.execute = async (interaction) => {
 	// Determine the interaction type and set the command
 	if (interaction.isChatInputCommand() || interaction.isAutocomplete() || interaction.isMessageContextMenuCommand()) {
 		command = Commands.get(interaction.commandName);
+		if (!command && interaction.guildId) {
+			command = useHooks.get("guildCommands")?.get(`${interaction.guildId}:${interaction.commandName.toLowerCase()}`);
+		}
 		commandType = "command";
 	} else if (interaction.isMessageComponent() || interaction.isModalSubmit()) {
 		command = Functions.get(interaction.customId);
