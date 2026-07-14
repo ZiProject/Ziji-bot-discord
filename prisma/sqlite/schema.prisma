@@ -142,3 +142,21 @@ model ZiData {
   @@map("zidata")
 }
 
+model ZiGuildCommand {
+  id          String   @id @default(cuid())
+  guildId     String
+  name        String
+  description String
+  type        String
+  response    String?
+  target      String?
+  enabled     Boolean  @default(true)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([guildId, name])
+  @@index([guildId])
+  @@map("ziguildcommands")
+}
+

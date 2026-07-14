@@ -6,7 +6,7 @@ const assert = require("node:assert");
 const { test } = require("node:test");
 const { useHooks } = require("zihooks");
 
-const { connectPrismaDatabase, _internals: prismaInternals } = require("../startup/prismaDB.js");
+const { initDatabase, connectPrismaDatabase, _internals: prismaInternals } = require("../startup/prismaDB.js");
 
 const removeTempDir = async (dir) => {
 	if (fs.existsSync(dir)) {
@@ -181,6 +181,9 @@ test("client ready falls back to LocalDB when Prisma providers fail", async () =
 		};
 
 		await readyEvent.execute(fakeClient);
+		await initDatabase({
+			client: fakeClient,
+		});
 
 		assert.ok(useHooks.get("db"));
 

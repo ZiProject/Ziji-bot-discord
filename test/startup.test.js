@@ -10,6 +10,7 @@ const { useHooks } = require("zihooks");
 
 const { StartupLoader } = require("../startup/loader.js");
 const { StartupManager } = require("../startup/index.js");
+const { buildBuilderPreview, startBuilderSession } = require("../functions/guildCommand/guildCommandBuilder.js");
 
 const createTempModule = async (dir, name, content) => {
 	const filePath = path.join(dir, `${name}.js`);
@@ -174,4 +175,34 @@ test("StartupManager.initHooks initializes hooks and exposes config/logger", asy
 	assert.ok(useHooks.get("functions") instanceof Collection, "Functions hook should be a Collection");
 	assert.ok(useHooks.get("logger"), "Logger hook should be available");
 	assert.deepStrictEqual(manager.getConfig(), useHooks.get("config"));
+});
+
+test("Guild command utility modules load through the supported public discord.js API", () => {
+	assert.doesNotThrow(
+		() => require("../functions/guildCommand/guildCommandManager"),
+		"guildCommandManager should load without private discord.js internals",
+	);
+	assert.doesNotThrow(
+		() => require("../functions/guildCommand/guildCommandBuilderActions"),
+		"guildCommandBuilderActions should resolve its sibling builder module",
+	);
+});
+
+test("Builder preview exposes add-section, add-buttons, and add-media actions", () => {
+	const session = startBuilderSession({
+		userId: "user-1",
+		guildId: "guild-1",
+		commandName: "builder_test",
+		layout: { accentColor: [88, 101, 242], blocks: [{ type: "text", content: "Hello" }] },
+	});
+
+	const payload = buildBuilderPreview(session, {
+		user: { id: "user-1", username: "tester" },
+		guild: { id: "guild-1", name: "Test Guild", memberCount: 3 },
+	});
+	const serialized = JSON.stringify(payload);
+
+	assert.ok(serialized.includes("B_guildcmd_addsection"), "Expected section add action to be present");
+	assert.ok(serialized.includes("B_guildcmd_addbuttons"), "Expected buttons add action to be present");
+	assert.ok(serialized.includes("B_guildcmd_addmedia"), "Expected media add action to be present");
 });

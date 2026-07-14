@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { useHooks } = require("zihooks");
+const { Database, createModel } = require("@zibot/db");
 
 const CLIENT_MODULES = {
 	mongodb: "../node_modules/.prisma/client-mongo",
@@ -191,6 +192,29 @@ const MODEL_CONFIGS = {
 		dateFields: ["createdAt", "updatedAt"],
 		defaults: {},
 	},
+	ZiGuildCommand: {
+		delegate: "ziGuildCommand",
+		fields: [
+			"id",
+			"guildId",
+			"name",
+			"description",
+			"type",
+			"response",
+			"target",
+			"enabled",
+			"createdBy",
+			"createdAt",
+			"updatedAt",
+		],
+		indexedFields: ["id", "guildId", "name"],
+		jsonFields: ["response"],
+		dateFields: ["createdAt", "updatedAt"],
+		defaults: {
+			enabled: true,
+			response: {},
+		},
+	},
 };
 
 const SQLITE_SCHEMA_SQL = [
@@ -307,6 +331,21 @@ const SQLITE_SCHEMA_SQL = [
 		"updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	)`,
 	`CREATE INDEX IF NOT EXISTS "zidata_type_key_idx" ON "zidata"("type", "key")`,
+	`CREATE TABLE IF NOT EXISTS "ziguildcommands" (
+		"id" TEXT NOT NULL PRIMARY KEY,
+		"guildId" TEXT NOT NULL,
+		"name" TEXT NOT NULL,
+		"description" TEXT NOT NULL,
+		"type" TEXT NOT NULL,
+		"response" TEXT,
+		"target" TEXT,
+		"enabled" BOOLEAN NOT NULL DEFAULT 1,
+		"createdBy" TEXT NOT NULL,
+		"createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		"updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	)`,
+	`CREATE UNIQUE INDEX IF NOT EXISTS "ziguildcommands_guildId_name_key" ON "ziguildcommands"("guildId", "name")`,
+	`CREATE INDEX IF NOT EXISTS "ziguildcommands_guildId_idx" ON "ziguildcommands"("guildId")`,
 ];
 
 const SQLITE_ADDITIONAL_COLUMNS = {
@@ -1283,8 +1322,65 @@ const connectPrismaDatabase = async (provider, options = {}) => {
 	return createDatabaseApi(prisma, provider);
 };
 
+const createLocalDatabase = () => {
+	const db = new Database("./jsons/ziDB.json");
+
+	return {
+		provider: "localdb",
+		ZiUser: createModel(db, "ZiUser"),
+		ZiAutoresponder: createModel(db, "ZiAutoresponder"),
+		ZiWelcome: createModel(db, "ZiWelcome"),
+		ZiGuild: createModel(db, "ZiGuild"),
+		ZiConfess: createModel(db, "ZiConfess"),
+		ZiGuildCommand: createModel(db, "ZiGuildCommand"),
+	};
+};
+
+const initDatabase = async (options = {}) => {
+	const logger = getLogger(options.logger);
+	const client = options.client;
+
+	const init = async () => {
+		try {
+			if (!process.env.MONGO) throw new Error("MONGO is not configured");
+			const db = await connectPrismaDatabase("mongodb", { logger });
+			useHooks.set("db", db);
+			logger?.info?.("Connected to MongoDB with Prisma!");
+			client?.errorLog?.("Connected to MongoDB with Prisma!");
+			return db;
+		} catch (mongoError) {
+			logger?.error?.(`MongoDB Prisma connection failed: ${mongoError.message}`);
+			try {
+				const db = await connectPrismaDatabase("sqlite", { logger });
+				useHooks.set("db", db);
+				logger?.info?.("Connected to SQLite with Prisma!");
+				client?.errorLog?.("Connected to SQLite with Prisma!");
+				return db;
+			} catch (sqliteError) {
+				logger?.error?.(`SQLite Prisma fallback failed: ${sqliteError.message}`);
+				try {
+					const db = createLocalDatabase();
+					useHooks.set("db", db);
+					logger?.warn?.("Using LocalDB fallback!");
+					client?.errorLog?.("Using LocalDB fallback!");
+					return db;
+				} catch (localError) {
+					logger?.error?.(`LocalDB fallback failed: ${localError.message}`);
+					throw new Error(
+						[`MongoDB: ${mongoError.message}`, `SQLite: ${sqliteError.message}`, `LocalDB: ${localError.message}`].join("; "),
+					);
+				}
+			}
+		}
+	};
+
+	return init();
+};
+
 module.exports = {
 	connectPrismaDatabase,
+	createLocalDatabase,
+	initDatabase,
 	_internals: {
 		addDefaults,
 		hydrateRow,

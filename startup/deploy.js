@@ -3,40 +3,64 @@ const { useHooks } = require("zihooks");
 
 module.exports = async (client) => {
 	const config = useHooks.get("config");
+	const manager = useHooks.get("functions")?.get("guildCommandManager");
 	const commands = { global: [], owner: [] };
 
-	// Load commands
 	await Promise.all(
 		useHooks.get("commands").map(async (command) => {
-			/**
-			 * useHooks.get("commands") đã xử lý các commands disable ở index.js file rồi.
-			 *  -> Nên không cần thiết xử lý lại ở đây
-			 */
 			commands[command.data.owner ? "owner" : "global"].push(command.data);
 		}),
 	).catch((e) => useHooks.get("logger")?.info?.(`Error reloaded commands:\n ${e}`));
 
 	const rest = new REST().setToken(process.env.TOKEN);
 
-	const deployCommands = async (commandType, route) => {
-		if (commands[commandType].length > 0) {
-			await rest.put(route, { body: commands[commandType] });
-			client?.errorLog(`Successfully reloaded ${commands[commandType].length} ${commandType} application [/] commands.`);
-			useHooks
-				.get("logger")
-				?.info?.(`Successfully reloaded ${commands[commandType].length} ${commandType} application [/] commands.`);
+	const deployCommands = async (commandType, route, body) => {
+		if (body.length > 0) {
+			await rest.put(route, { body });
+			client?.errorLog?.(`Successfully reloaded ${body.length} ${commandType} application [/] commands.`);
+			useHooks.get("logger")?.info?.(`Successfully reloaded ${body.length} ${commandType} application [/] commands.`);
 		}
 	};
 
-	try {
-		// Deploy global commands
-		await deployCommands("global", Routes.applicationCommands(client.user.id));
+	const getGuildCustomCommands = async (guildId) => {
+		const db = useHooks.get("db");
+		if (!db?.ZiGuildCommand) return [];
+		const records = await db.ZiGuildCommand.find({ guildId, enabled: true });
+		return Promise.all(records.map(async (record) => manager?.execute({ action: "buildSlashData", record })));
+	};
 
-		// Deploy owner commands to specific guilds
+	try {
+		await deployCommands("global", Routes.applicationCommands(client.user.id), commands.global);
+
 		const guildIds = config?.DevGuild || [];
-		if (guildIds.length > 0 && commands.owner.length > 0) {
+		const devGuildSet = new Set(guildIds);
+
+		if (guildIds.length > 0) {
 			await Promise.all(
-				guildIds.map((guildId) => deployCommands("owner", Routes.applicationGuildCommands(client.user.id, guildId))),
+				guildIds.map(async (guildId) => {
+					const customCommands = await getGuildCustomCommands(guildId);
+					const body = [...commands.owner, ...customCommands];
+					if (body.length > 0) {
+						await deployCommands("owner", Routes.applicationGuildCommands(client.user.id, guildId), body);
+					}
+				}),
+			);
+		}
+
+		const db = useHooks.get("db");
+		if (db?.ZiGuildCommand) {
+			const allCustom = await db.ZiGuildCommand.find({ enabled: true });
+			const grouped = new Map();
+			for (const record of allCustom) {
+				if (devGuildSet.has(record.guildId)) continue;
+				if (!grouped.has(record.guildId)) grouped.set(record.guildId, []);
+				grouped.get(record.guildId).push(await manager?.execute({ action: "buildSlashData", record }));
+			}
+
+			await Promise.all(
+				[...grouped.entries()].map(([guildId, body]) =>
+					deployCommands("guild-custom", Routes.applicationGuildCommands(client.user.id, guildId), body),
+				),
 			);
 		}
 	} catch (error) {

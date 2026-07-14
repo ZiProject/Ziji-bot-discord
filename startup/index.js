@@ -135,6 +135,7 @@ class StartupManager {
 		useHooks.set("Mcommands", new Collection()); // Message Commands
 		useHooks.set("functions", new Collection()); // Functions
 		useHooks.set("extensions", new Collection()); // Extensions
+		useHooks.set("guildCommands", new Collection()); // Guild custom slash commands
 		useHooks.set("logger", this.logger); // LoggerFactory
 		useHooks.set("wss", this.web.wss); // WebSocket Server
 		useHooks.set("server", this.web.server); // Web Server

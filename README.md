@@ -48,7 +48,22 @@ Powered by [Lrclib](https://lrclib.net) — supports both **synced** (real-time)
 
 ### 🛡️ Moderation
 
-Ban · Kick · Timeout · Purge · Auto-Responder · Giveaways · Ticket system · Welcomer
+Ban · Kick · Timeout · Purge · Auto-Responder · Giveaways · Ticket system · Welcomer · GuildCommand · join-to-create · youtube
+
+<img width="930" height="280" alt="WelcomeCard" src="https://github.com/user-attachments/assets/07a639cf-bff6-48c2-9637-f6df4deda41a" />
+
+<table>
+<tr>
+<td width="50%">
+<img width="569" height="720" alt="image" src="https://github.com/user-attachments/assets/f4b04b30-0aca-4a0f-9f6c-5915b731526a" />
+
+</td>
+<td width="50%">
+<img width="678" height="874" alt="image" src="https://github.com/user-attachments/assets/706ee7b7-105b-4041-80c6-8d9f1f753ccc" />
+
+</td>
+</tr>
+</table>
 
 ### 🌐 Web Interface
 
