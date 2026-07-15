@@ -70,7 +70,7 @@ module.exports = {
 		const track = tracks ?? player?.currentTrack ?? player?.previousTrack;
 
 		let requestedBy =
-			(track?.requestedBy === "auto" ? player.userdata.requestedBy : track?.requestedBy) ?? player.userdata.requestedBy;
+			(track?.requestedBy === "auto" ? player?.userdata?.requestedBy : track?.requestedBy) ?? player?.userdata?.requestedBy;
 
 		const lang = await useHooks.get("functions").get("ZiRank").execute({
 			user: requestedBy,
@@ -108,12 +108,12 @@ module.exports = {
 				)
 				.addTextDisplayComponents((text) =>
 					text.setContent(
-						`Volume: **${player.volume}%** | Host: ${player.userdata.requestedBy} | Loop: **${repeatMode(player.loop(), player.autoPlay())}** | Lyrics: **${player.userdata?.lyrcsActive ? "ON" : "OFF"}**`,
+						`Volume: **${player?.volume}%** | Host: ${player?.userdata?.requestedBy} | Loop: **${repeatMode(player?.loop?.(), player?.autoPlay?.())}** | Lyrics: **${player?.userdata?.lyrcsActive ? "ON" : "OFF"}**`,
 					),
 				)
 				.addTextDisplayComponents((text) =>
 					text.setContent(
-						`**${player.userdata?.voiceChannel}** | Text Channel: **${player.userdata?.channel}** | Bot: **${player?.userdata?.client.user}**`,
+						`**${player.userdata?.voiceChannel}** | Text Channel: **${player.userdata?.channel}** | Bot: **${player?.userdata?.client?.user}**`,
 					),
 				),
 		);
