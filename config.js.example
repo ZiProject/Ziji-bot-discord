@@ -220,6 +220,8 @@ module.exports = {
 		ai: true,
 		//enable AI AutoPlay suggestion
 		aiAutoPlay: true,
+		//enable AI GuildCommand
+		GuildCommand: true,
 		/** ============ Else ============ */
 		//enable logger (info | debug | warn | error | leave blank to enable all type)
 		logger: "info",
