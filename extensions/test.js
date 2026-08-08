@@ -1,6 +1,13 @@
 const { useHooks } = require("zihooks");
 const util = require("node:util");
-const { TextDisplayBuilder, MessageFlags, SectionBuilder, ButtonBuilder, ContainerBuilder,UserSelectMenuBuilder } = require("discord.js");
+const {
+	TextDisplayBuilder,
+	MessageFlags,
+	SectionBuilder,
+	ButtonBuilder,
+	ContainerBuilder,
+	UserSelectMenuBuilder,
+} = require("discord.js");
 /**
  * This extension file run at bot started.
  */
@@ -19,12 +26,10 @@ module.exports.execute = async (client) => {
 	const channel = await client.channels.fetch("1504721560156766305");
 	const container = new ContainerBuilder().setAccentColor([255, 125, 80]);
 	container
-		.addSectionComponents(
-			(section) =>
-				section
-					.addTextDisplayComponents(new TextDisplayBuilder().setContent("Hello World!"))
-					.setButtonAccessory(new ButtonBuilder().setCustomId("test_button").setLabel("Test Button").setStyle(1)),
-	
+		.addSectionComponents((section) =>
+			section
+				.addTextDisplayComponents(new TextDisplayBuilder().setContent("Hello World!"))
+				.setButtonAccessory(new ButtonBuilder().setCustomId("test_button").setLabel("Test Button").setStyle(1)),
 		)
 		.addSeparatorComponents((separator) => separator.setDivider(true).setSpacing(2))
 		.addMediaGalleryComponents((media) =>
