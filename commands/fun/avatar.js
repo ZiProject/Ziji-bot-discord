@@ -11,6 +11,7 @@ module.exports.data = {
 			type: 6,
 			required: false,
 		},
+		{ name: "force", description: "Buộc tải ảnh đại diện", type: 5, required: false },
 	],
 	integration_types: [0, 1],
 	contexts: [0, 1, 2],
@@ -25,7 +26,12 @@ module.exports.data = {
 
 module.exports.execute = async ({ interaction, lang }) => {
 	const user = interaction.options.getUser("user") || interaction.user;
+	const force = interaction.options.getBoolean("force") || false;
 	const url = user.displayAvatarURL({ size: 1024 });
+	if (force) {
+		const attachment = new AttachmentBuilder(url, { name: "avatar.png" });
+		return interaction.reply({ files: [attachment] });
+	}
 	interaction.reply({ files: [url] });
 	return;
 };
