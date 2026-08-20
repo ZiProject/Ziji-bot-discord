@@ -3,10 +3,26 @@ const client = useHooks.get("client");
 const logger = useHooks.get("logger");
 const { execFile } = require("child_process");
 
-const blockedCommands = ["rm", "chmod", "sudo", "su", "reboot", "shutdown", "poweroff", "halt", "dd", "mkfs", "mount", "umount"];
+// Only allow harmless, read-only system commands.
+// Do NOT allow shells/interpreters or commands capable of modifying the system.
+const SAFE_COMMANDS = new Set([
+	"ls",
+	"pwd",
+	"whoami",
+	"uname",
+	"df",
+	"free",
+	"uptime",
+]);
 
-// ✅ Graceful shutdown handler
+const MAX_ARGS = 32;
+const MAX_ARG_LENGTH = 256;
+const EXEC_TIMEOUT = 10_000;
+const MAX_BUFFER = 1024 * 1024;
+
+// Graceful shutdown handler
 let shuttingDown = false;
+
 const shutdown = async (signal) => {
 	if (shuttingDown) return;
 	shuttingDown = true;
@@ -17,6 +33,7 @@ const shutdown = async (signal) => {
 		if (client && client.isReady()) {
 			await client.destroy();
 		}
+
 		logger.info("Bot đã tắt an toàn.");
 	} catch (err) {
 		logger.error("Lỗi khi tắt bot:", err);
@@ -25,9 +42,94 @@ const shutdown = async (signal) => {
 	}
 };
 
-// ✅ Handle signals
+// Handle signals
 process.on("SIGINT", shutdown); // Ctrl+C
 process.on("SIGTERM", shutdown); // kill / Docker stop
+
+/**
+ * Execute a safe system command.
+ *
+ * IMPORTANT:
+ * - The executable is always hard-coded.
+ * - User input is used only as arguments.
+ * - execFile() does not invoke a shell.
+ * - Dangerous executables such as sh, bash, node, python, rm, sudo, etc.
+ *   are intentionally unavailable.
+ */
+const executeSafeCommand = (command, args) => {
+	if (!SAFE_COMMANDS.has(command)) {
+		console.log(`🚫 Lệnh "${command}" không được phép!`);
+		return;
+	}
+
+	if (args.length > MAX_ARGS) {
+		console.log(`🚫 Quá nhiều tham số! Tối đa ${MAX_ARGS} tham số.`);
+		return;
+	}
+
+	for (const arg of args) {
+		if (arg.length > MAX_ARG_LENGTH) {
+			console.log(`🚫 Tham số quá dài! Tối đa ${MAX_ARG_LENGTH} ký tự.`);
+			return;
+		}
+
+		// Prevent control characters from being passed to the child process.
+		if (/[\u0000-\u001F\u007F]/.test(arg)) {
+			console.log("🚫 Tham số chứa ký tự điều khiển không hợp lệ!");
+			return;
+		}
+	}
+
+	const options = {
+		timeout: EXEC_TIMEOUT,
+		maxBuffer: MAX_BUFFER,
+		windowsHide: true,
+	};
+
+	// The executable passed to execFile() must remain a literal.
+	switch (command) {
+		case "ls":
+			return execFile("ls", args, options, handleExecResult);
+
+		case "pwd":
+			return execFile("pwd", args, options, handleExecResult);
+
+		case "whoami":
+			return execFile("whoami", args, options, handleExecResult);
+
+		case "uname":
+			return execFile("uname", args, options, handleExecResult);
+
+		case "df":
+			return execFile("df", args, options, handleExecResult);
+
+		case "free":
+			return execFile("free", args, options, handleExecResult);
+
+		case "uptime":
+			return execFile("uptime", args, options, handleExecResult);
+
+		default:
+			// Should never be reached because of SAFE_COMMANDS.
+			console.log(`🚫 Lệnh "${command}" không được phép!`);
+	}
+};
+
+const handleExecResult = (error, stdout, stderr) => {
+	if (error) {
+		if (error.killed) {
+			return console.error("❌ Lệnh đã bị timeout.");
+		}
+
+		return console.error(`❌ Lỗi: ${error.message}`);
+	}
+
+	if (stderr) {
+		console.error(`⚠️ Cảnh báo: ${stderr}`);
+	}
+
+	console.log(`✅ Kết quả:\n${stdout}`);
+};
 
 module.exports = {
 	name: "line",
@@ -35,20 +137,41 @@ module.exports = {
 	enable: true,
 
 	execute: async (input) => {
-		logger.debug(`CONSOLE issued bot command: ${input}`);
-		const args = input.trim().split(/ +/);
-		const command = args.shift().toLowerCase();
+		if (typeof input !== "string") {
+			logger.error("Console input không hợp lệ.");
+			return;
+		}
+
+		const trimmedInput = input.trim();
+
+		if (!trimmedInput) {
+			return;
+		}
+
+		logger.debug(`CONSOLE issued bot command: ${trimmedInput}`);
+
+		const args = trimmedInput.split(/\s+/);
+		const command = args.shift()?.toLowerCase();
+
+		if (!command) {
+			return;
+		}
 
 		switch (command) {
 			case "status":
 			case "stat":
-				logger.info(`Bot đang ${client.isReady() ? "hoạt động" : "tắt"}`);
+				logger.info(
+					`Bot đang ${client.isReady() ? "hoạt động" : "tắt"}`,
+				);
 				break;
 
 			case "update":
 			case "up":
-				logger.info(`Update Starting...`);
-				useHooks.get("extensions")?.get("update")?.execute?.(true);
+				logger.info("Update Starting...");
+				useHooks
+					.get("extensions")
+					?.get("update")
+					?.execute?.(true);
 				break;
 
 			case "stop":
@@ -58,27 +181,42 @@ module.exports = {
 				break;
 
 			case "ping":
-				logger.info(`Pong! Độ trễ của bot là ${client.ws.ping}ms`);
+				logger.info(
+					`Pong! Độ trễ của bot là ${client.ws.ping}ms`,
+				);
 				break;
 
 			case "sh": {
-				const execCmd = args[0];
-				const execArgs = args.slice(1);
+				const execCmd = args.shift()?.toLowerCase();
 
-				if (!execCmd) return console.log("❌ Vui lòng nhập lệnh hệ thống!");
-				if (blockedCommands.some((b) => execCmd === b)) return console.log(`🚫 Lệnh "${execCmd}" bị cấm vì lý do bảo mật!`);
+				if (!execCmd) {
+					return console.log(
+						"❌ Vui lòng nhập lệnh hệ thống!",
+					);
+				}
 
-				execFile(execCmd, execArgs, (error, stdout, stderr) => {
-					if (error) return console.error(`❌ Lỗi: ${error.message}`);
-					if (stderr) return console.error(`⚠️ Cảnh báo: ${stderr}`);
-					console.log(`✅ Kết quả:\n${stdout}`);
-				});
+				executeSafeCommand(execCmd, args);
 				break;
 			}
 
 			case "help":
 			case "h":
-				logger.info(`Danh sách các lệnh:\n- help\n- ping\n- stop\n- status`);
+				logger.info(
+					[
+						"Danh sách các lệnh:",
+						"- help",
+						"- ping",
+						"- stop",
+						"- status",
+						"- sh ls [args]",
+						"- sh pwd",
+						"- sh whoami",
+						"- sh uname [args]",
+						"- sh df [args]",
+						"- sh free [args]",
+						"- sh uptime",
+					].join("\n"),
+				);
 				break;
 
 			default:
