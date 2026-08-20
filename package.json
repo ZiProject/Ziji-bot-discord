@@ -1,6 +1,6 @@
 {
 	"name": "ziji-bot-discord",
-	"version": "10.0.4",
+	"version": "10.0.5",
 	"description": "Ziji bot discord",
 	"main": "index.js",
 	"scripts": {
