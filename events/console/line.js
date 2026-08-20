@@ -1,7 +1,7 @@
 const { useHooks } = require("zihooks");
 const client = useHooks.get("client");
 const logger = useHooks.get("logger");
-const { exec } = require("child_process");
+const { execFile } = require("child_process");
 
 const blockedCommands = ["rm", "chmod", "sudo", "su", "reboot", "shutdown", "poweroff", "halt", "dd", "mkfs", "mount", "umount"];
 
@@ -61,18 +61,20 @@ module.exports = {
 				logger.info(`Pong! Độ trễ của bot là ${client.ws.ping}ms`);
 				break;
 
-			case "sh":
-				const cmd = args.join(" ");
+			case "sh": {
+				const execCmd = args[0];
+				const execArgs = args.slice(1);
 
-				if (!cmd) return console.log("❌ Vui lòng nhập lệnh hệ thống!");
-				if (blockedCommands.some((b) => cmd.includes(b))) return console.log(`🚫 Lệnh "${cmd}" bị cấm vì lý do bảo mật!`);
+				if (!execCmd) return console.log("❌ Vui lòng nhập lệnh hệ thống!");
+				if (blockedCommands.some((b) => execCmd === b)) return console.log(`🚫 Lệnh "${execCmd}" bị cấm vì lý do bảo mật!`);
 
-				exec(cmd, (error, stdout, stderr) => {
+				execFile(execCmd, execArgs, (error, stdout, stderr) => {
 					if (error) return console.error(`❌ Lỗi: ${error.message}`);
 					if (stderr) return console.error(`⚠️ Cảnh báo: ${stderr}`);
 					console.log(`✅ Kết quả:\n${stdout}`);
 				});
 				break;
+			}
 
 			case "help":
 			case "h":
