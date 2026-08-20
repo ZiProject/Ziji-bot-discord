@@ -5,15 +5,7 @@ const { execFile } = require("child_process");
 
 // Only allow harmless, read-only system commands.
 // Do NOT allow shells/interpreters or commands capable of modifying the system.
-const SAFE_COMMANDS = new Set([
-	"ls",
-	"pwd",
-	"whoami",
-	"uname",
-	"df",
-	"free",
-	"uptime",
-]);
+const SAFE_COMMANDS = new Set(["ls", "pwd", "whoami", "uname", "df", "free", "uptime"]);
 
 const MAX_ARGS = 32;
 const MAX_ARG_LENGTH = 256;
@@ -160,18 +152,13 @@ module.exports = {
 		switch (command) {
 			case "status":
 			case "stat":
-				logger.info(
-					`Bot đang ${client.isReady() ? "hoạt động" : "tắt"}`,
-				);
+				logger.info(`Bot đang ${client.isReady() ? "hoạt động" : "tắt"}`);
 				break;
 
 			case "update":
 			case "up":
 				logger.info("Update Starting...");
-				useHooks
-					.get("extensions")
-					?.get("update")
-					?.execute?.(true);
+				useHooks.get("extensions")?.get("update")?.execute?.(true);
 				break;
 
 			case "stop":
@@ -181,18 +168,14 @@ module.exports = {
 				break;
 
 			case "ping":
-				logger.info(
-					`Pong! Độ trễ của bot là ${client.ws.ping}ms`,
-				);
+				logger.info(`Pong! Độ trễ của bot là ${client.ws.ping}ms`);
 				break;
 
 			case "sh": {
 				const execCmd = args.shift()?.toLowerCase();
 
 				if (!execCmd) {
-					return console.log(
-						"❌ Vui lòng nhập lệnh hệ thống!",
-					);
+					return console.log("❌ Vui lòng nhập lệnh hệ thống!");
 				}
 
 				executeSafeCommand(execCmd, args);
