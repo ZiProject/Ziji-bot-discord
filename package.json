@@ -59,7 +59,7 @@
 		"jsonwebtoken": "^9.0.3",
 		"kuroshiro": "^1.2.0",
 		"kuroshiro-analyzer-kuromoji": "^1.1.0",
-		"makeitaquote": "^8.1.1",
+		"makeitaquote": "^9.0.1",
 		"mediaplex": "^1.0.0",
 		"mongoose": "^9.0.1",
 		"node-cron": "^4.4.1",
