@@ -1,4 +1,3 @@
-const { StartupLoader } = require("./loader.js");
 const { LoggerFactory } = require("./logger.js");
 const { useHooks } = require("zihooks");
 const { GatewayIntentBits, Client, Collection } = require("discord.js");
@@ -13,7 +12,6 @@ class StartupManager {
 		this.client = client;
 		this.config = this.initCongig();
 		this.logger = LoggerFactory.create(this.config);
-		this.loader = new StartupLoader(this.config, this.logger);
 		this.createFile("./jsons");
 		this.web = this.initWeb();
 		this.initPlayerNet();
@@ -35,11 +33,7 @@ class StartupManager {
 		this.logger.debug?.("Starting web...");
 		const app = express();
 		const server = http.createServer(app);
-		const wss = new WebSocket.Server({
-			server,
-			path: "/ws",
-		});
-
+		const wss = new WebSocket.Server({ server, path: "/ws" });
 		const corsOptions = {
 			origin: getAllowedOrigins(),
 			methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -51,10 +45,7 @@ class StartupManager {
 			if (req.method === "OPTIONS") {
 				res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
 				res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-				res.header(
-					"Access-Control-Allow-Headers",
-					req.headers["access-control-request-headers"] || "Content-Type, Authorization",
-				);
+				res.header("Access-Control-Allow-Headers", req.headers["access-control-request-headers"] || "Content-Type, Authorization");
 				res.header("Access-Control-Allow-Credentials", "true");
 				return res.sendStatus(204);
 			}
@@ -80,10 +71,7 @@ class StartupManager {
 		try {
 			playerNetTOKENs.forEach((TOKEN) => {
 				const PlayerClient = new Client({
-					intents: [
-						GatewayIntentBits.Guilds, // for guild related things
-						GatewayIntentBits.GuildVoiceStates, // for voice related things
-					],
+					intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
 				});
 				try {
 					PlayerClient.login(TOKEN.trim());
@@ -100,7 +88,7 @@ class StartupManager {
 			this.logger.warn("Create bot PlayerNet Fall:");
 			this.logger.warn(e);
 		} finally {
-			useHooks.set("playerNetClient", playerNetClient); //playerNetClient
+			useHooks.set("playerNetClient", playerNetClient);
 		}
 	}
 
@@ -112,50 +100,34 @@ class StartupManager {
 		return this.logger;
 	}
 
-	loadFiles(directory, collection) {
-		return this.loader.loadFiles(directory, collection);
-	}
-
-	loadEvents(directory, target) {
-		return this.loader.loadEvents(directory, target);
-	}
-
 	createFile(directory) {
-		return this.loader.createDirectory(directory);
+		const fs = require("node:fs");
+		if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true });
 	}
 
 	initHooks() {
-		useHooks.set("config", this.config); // Configuration
-		useHooks.set("client", this.client); // Discord client
-		useHooks.set("welcome", new Collection()); // Welcome messages
-		useHooks.set("cooldowns", new Collection()); // Cooldowns
-		useHooks.set("responder", new Collection()); // Auto Responder
-		useHooks.set("temp", new Collection()); // Temporary storage for various purposes
-		useHooks.set("commands", new Collection()); // Slash Commands
-		useHooks.set("Mcommands", new Collection()); // Message Commands
-		useHooks.set("functions", new Collection()); // Functions
-		useHooks.set("extensions", new Collection()); // Extensions
-		useHooks.set("guildCommands", new Collection()); // Guild custom slash commands
-		useHooks.set("logger", this.logger); // LoggerFactory
-		useHooks.set("wss", this.web.wss); // WebSocket Server
-		useHooks.set("server", this.web.server); // Web Server
-		useHooks.set("icon", zzicon); // Icon
+		useHooks.set("config", this.config);
+		useHooks.set("client", this.client);
+		useHooks.set("welcome", new Collection());
+		useHooks.set("cooldowns", new Collection());
+		useHooks.set("responder", new Collection());
+		useHooks.set("temp", new Collection());
+		useHooks.set("commands", new Collection());
+		useHooks.set("Mcommands", new Collection());
+		useHooks.set("functions", new Collection());
+		useHooks.set("extensions", new Collection());
+		useHooks.set("guildCommands", new Collection());
+		useHooks.set("logger", this.logger);
+		useHooks.set("wss", this.web.wss);
+		useHooks.set("server", this.web.server);
+		useHooks.set("icon", zzicon);
 	}
 }
 
 const getAllowedOrigins = () => {
 	const raw = process.env.CORS_ORIGIN;
-
-	// 1. Trường hợp không định nghĩa hoặc là '*'
 	if (!raw || raw === "*") return "*";
-
-	// 2. Trường hợp là một mảng giả lập (chuỗi cách nhau bởi dấu phẩy)
-	// Ví dụ: CORS_ORIGIN=http://localhost:3000,https://ziji.world
-	if (raw.includes(",")) {
-		return raw.split(",").map((origin) => origin.trim());
-	}
-
-	// 3. Trường hợp là một String duy nhất
+	if (raw.includes(",")) return raw.split(",").map((origin) => origin.trim());
 	return raw;
 };
 
