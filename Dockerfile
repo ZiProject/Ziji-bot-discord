@@ -4,9 +4,13 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install --force --ignore-scripts
+ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
+
+RUN npm install --force
 
 COPY . .
+
+ENV PRISMA_SKIP_POSTINSTALL_GENERATE=false
 
 RUN npm run prisma:generate
 
