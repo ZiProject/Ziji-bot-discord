@@ -57,6 +57,8 @@
 		"ffmpeg-static": "^5.2.0",
 		"http": "^0.0.1-security",
 		"jsonwebtoken": "^9.0.3",
+		"kuroshiro": "^1.2.0",
+		"kuroshiro-analyzer-kuromoji": "^1.1.0",
 		"makeitaquote": "^8.1.1",
 		"mediaplex": "^1.0.0",
 		"mongoose": "^9.0.1",
