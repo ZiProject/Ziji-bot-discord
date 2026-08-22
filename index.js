@@ -78,14 +78,26 @@ const initialize = async () => {
 			init(module, ctx) {
 				const disabled = config?.disabledCommands?.includes(module?.data?.name) || module?.data?.enable === false;
 				if (disabled) return;
+
 				if (collection) collection.set(module.data.name, module);
 				const messageCommands = useHooks.get("Mcommands");
+				const aliases = Array.isArray(module.data?.alias) ? module.data.alias : [];
+
 				if (messageCommands) {
 					messageCommands.set(module.data.name, module);
-					for (const alias of module.data?.alias ?? []) {
+					for (const alias of aliases) {
 						if (!messageCommands.has(alias)) messageCommands.set(alias, module);
 					}
 				}
+
+				ctx.signal.addEventListener("abort", () => {
+					if (collection?.get(module.data.name) === module) collection.delete(module.data.name);
+					if (!messageCommands) return;
+					if (messageCommands.get(module.data.name) === module) messageCommands.delete(module.data.name);
+					for (const alias of aliases) {
+						if (messageCommands.get(alias) === module) messageCommands.delete(alias);
+					}
+				}, { once: true });
 			},
 		});
 		loaders.push(loader);
