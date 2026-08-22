@@ -15,20 +15,11 @@
 		"check": "prettier --ignore-path .gitignore --check .",
 		"format": "prettier --ignore-path .gitignore --write ."
 	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/zijipia/Ziji-bot-discord.git"
-	},
-	"keywords": [
-		"ziji",
-		"ziji-bot-discord",
-		"zibot"
-	],
+	"repository": {"type": "git", "url": "git+https://github.com/zijipia/Ziji-bot-discord.git"},
+	"keywords": ["ziji", "ziji-bot-discord", "zibot"],
 	"author": "Ziji",
 	"license": "MIT",
-	"bugs": {
-		"url": "https://github.com/zijipia/Ziji-bot-discord/issues"
-	},
+	"bugs": {"url": "https://github.com/zijipia/Ziji-bot-discord/issues"},
 	"homepage": "https://github.com/zijipia/Ziji-bot-discord#readme",
 	"dependencies": {
 		"@google/generative-ai": "^0.24.0",
@@ -37,6 +28,7 @@
 		"@prisma/client": "^6.19.3",
 		"@zibot/db": "^0.0.3",
 		"@zibot/ziencryptor": "^0.0.1",
+		"@ziji/loader": "^0.0.0",
 		"@ziplayer/extension": "^0.3.3",
 		"@ziplayer/infinity": "^0.0.3",
 		"@ziplayer/plugin": "^0.3.8",
@@ -77,17 +69,10 @@
 		"zihooks": "^2.0.0",
 		"ziplayer": "^0.3.14"
 	},
-	"devDependencies": {
-		"nodemon": "^3.1.14",
-		"prettier": "^3.3.2"
-	},
+	"devDependencies": {"nodemon": "^3.1.14", "prettier": "^3.3.2"},
 	"overrides": {
-		"@iamtraction/google-translate": {
-			"undici": "^6.25.0"
-		},
-		"discord-giveaways": {
-			"serialize-javascript": "^7.0.5"
-		}
+		"@iamtraction/google-translate": {"undici": "^6.25.0"},
+		"discord-giveaways": {"serialize-javascript": "^7.0.5"}
 	},
 	"allowScripts": {
 		"cloudflared@0.7.3": true,
