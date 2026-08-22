@@ -7,7 +7,7 @@
 		"start": "cross-env NODE_ENV=production node index.js",
 		"dev": "cross-env NODE_ENV=development nodemon index.js",
 		"deploy": "node ./deploy.js",
-		"postinstall": "npm run prisma:generate",
+		"postinstall": "test -n \"$PRISMA_SKIP_POSTINSTALL_GENERATE\" || npm run prisma:generate",
 		"prisma:generate": "cross-env MONGO=mongodb://localhost:27017/ziji SQLITE_DATABASE_URL=file:./jsons/ziDB.sqlite prisma generate --schema prisma/mongo/schema.prisma && cross-env SQLITE_DATABASE_URL=file:./jsons/ziDB.sqlite prisma generate --schema prisma/sqlite/schema.prisma",
 		"prisma:push:mongo": "prisma db push --schema prisma/mongo/schema.prisma",
 		"prisma:push:sqlite": "cross-env SQLITE_DATABASE_URL=file:./jsons/ziDB.sqlite prisma db push --schema prisma/sqlite/schema.prisma",
