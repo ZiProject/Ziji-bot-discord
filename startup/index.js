@@ -11,7 +11,7 @@ const { Loader } = require("@ziji/loader");
 class StartupManager {
 	constructor(client) {
 		this.client = client;
-		this.config = this.initCongig();
+		this.config = this.initConfig();
 		this.logger = LoggerFactory.create(this.config);
 		this.createFile("./jsons");
 		this.web = this.initWeb();
@@ -19,7 +19,7 @@ class StartupManager {
 		this.loaders = [];
 	}
 
-	initCongig() {
+	initConfig() {
 		try {
 			this.config = require("../config");
 		} catch {
@@ -116,6 +116,7 @@ class StartupManager {
 			watch: process.env.NODE_ENV === "development",
 			debounce: 150,
 			throwOnError: false,
+			debug: this.config.DevConfig?.loaderDebug ? this.logger.debug : false,
 			check(module) {
 				return !!module && typeof module === "object" && "data" in module && typeof module.execute === "function";
 			},
@@ -162,6 +163,8 @@ class StartupManager {
 			watch: process.env.NODE_ENV === "development",
 			debounce: 150,
 			throwOnError: false,
+			debug: this.config.DevConfig?.loaderDebug ? this.logger.debug : false,
+
 			check(module) {
 				return !!module && typeof module === "object" && typeof module.name === "string" && typeof module.execute === "function";
 			},
