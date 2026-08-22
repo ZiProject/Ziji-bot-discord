@@ -6,6 +6,7 @@ const cors = require("cors");
 const http = require("http");
 const WebSocket = require("ws");
 const zzicon = require("./../utility/icon.js");
+const { Loader } = require("@ziji/loader");
 
 class StartupManager {
 	constructor(client) {
@@ -15,6 +16,7 @@ class StartupManager {
 		this.createFile("./jsons");
 		this.web = this.initWeb();
 		this.initPlayerNet();
+		this.loaders = [];
 	}
 
 	initCongig() {
@@ -45,7 +47,10 @@ class StartupManager {
 			if (req.method === "OPTIONS") {
 				res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
 				res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-				res.header("Access-Control-Allow-Headers", req.headers["access-control-request-headers"] || "Content-Type, Authorization");
+				res.header(
+					"Access-Control-Allow-Headers",
+					req.headers["access-control-request-headers"] || "Content-Type, Authorization",
+				);
 				res.header("Access-Control-Allow-Credentials", "true");
 				return res.sendStatus(204);
 			}
@@ -103,6 +108,88 @@ class StartupManager {
 	createFile(directory) {
 		const fs = require("node:fs");
 		if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true });
+	}
+
+	async loadModules(directory, collection) {
+		const loader = new Loader({
+			recursive: true,
+			watch: process.env.NODE_ENV === "development",
+			debounce: 150,
+			throwOnError: false,
+			check(module) {
+				return !!module && typeof module === "object" && "data" in module && typeof module.execute === "function";
+			},
+			init(module, ctx) {
+				const config = useHooks.get("config");
+				const disabled = config?.disabledCommands?.includes(module?.data?.name) || module?.data?.enable === false;
+				if (disabled) return;
+
+				if (collection) collection.set(module.data.name, module);
+				const messageCommands = useHooks.get("Mcommands");
+				const aliases = Array.isArray(module.data?.alias) ? module.data.alias : [];
+
+				if (messageCommands) {
+					messageCommands.set(module.data.name, module);
+					for (const alias of aliases) {
+						if (!messageCommands.has(alias)) messageCommands.set(alias, module);
+					}
+				}
+
+				ctx.signal.addEventListener(
+					"abort",
+					() => {
+						if (collection?.get(module.data.name) === module) collection.delete(module.data.name);
+						if (!messageCommands) return;
+						if (messageCommands.get(module.data.name) === module) messageCommands.delete(module.data.name);
+						for (const alias of aliases) {
+							if (messageCommands.get(alias) === module) messageCommands.delete(alias);
+						}
+					},
+					{ once: true },
+				);
+			},
+		});
+		this.loaders.push(loader);
+		const result = await loader.load(directory);
+		for (const failure of result.failed) this.logger.error(`Failed to load ${failure.path}:`, failure.error);
+		this.logger.debug?.(`Loaded ${result.loaded.length} modules from ${directory}`);
+		return result;
+	}
+
+	async loadEvents(directory, target) {
+		const loader = new Loader({
+			recursive: true,
+			watch: process.env.NODE_ENV === "development",
+			debounce: 150,
+			throwOnError: false,
+			check(module) {
+				return !!module && typeof module === "object" && typeof module.name === "string" && typeof module.execute === "function";
+			},
+			init(module, ctx) {
+				if (module.enable === false) return;
+				const handler = async (...args) => {
+					try {
+						await module.execute(...args);
+					} catch (error) {
+						this.logger.error(`Error executing event ${module.name}:`, error);
+					}
+				};
+				if (module.once) target.once(module.name, handler);
+				else target.on(module.name, handler);
+				ctx.signal.addEventListener(
+					"abort",
+					() => {
+						target.off(module.name, handler);
+					},
+					{ once: true },
+				);
+			},
+		});
+		this.loaders.push(loader);
+		const result = await loader.load(directory);
+		for (const failure of result.failed) this.logger.error(`Failed to load event ${failure.path}:`, failure.error);
+		this.logger.debug?.(`Loaded ${result.loaded.length} events from ${directory}`);
+		return result;
 	}
 
 	initHooks() {
