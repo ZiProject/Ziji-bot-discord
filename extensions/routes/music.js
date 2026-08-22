@@ -48,55 +48,55 @@ router.get("/music/search", authenticate, async (req, res) => {
 });
 
 router.get("/music/lyrics", authenticate, async (req, res) => {
-    try {
-        const q = req.query?.query || req.query?.q;
-        if (!q) return res.status(400).json({ error: "Missing query" });
-        const lyricsext = new lyricsExt();
-        const lyrics = await lyricsext.fetch({ title: q });
+	try {
+		const q = req.query?.query || req.query?.q;
+		if (!q) return res.status(400).json({ error: "Missing query" });
+		const lyricsext = new lyricsExt();
+		const lyrics = await lyricsext.fetch({ title: q });
 
-        if (!kuroshiroInited) {
-            await kuroshiro.init(new KuromojiAnalyzer());
-            kuroshiroInited = true;
-        }
+		if (!kuroshiroInited) {
+			await kuroshiro.init(new KuromojiAnalyzer());
+			kuroshiroInited = true;
+		}
 
-        let romanizedLyrics = null;
+		let romanizedLyrics = null;
 
-        if (lyrics.synced) {
-            // Tách thành từng dòng
-            const lines = lyrics.synced.split("\n");
+		if (lyrics.synced) {
+			// Tách thành từng dòng
+			const lines = lyrics.synced.split("\n");
 
-            const processedLines = await Promise.all(
-                lines.map(async (line) => {
-                    // Regex bóc tách phần timestamp [00:00.00] và phần text riêng
-                    const match = line.match(/^(\[\d{2}:\d{2}\.\d{2}\])(.*)$/);
-                    
-                    if (match) {
-                        const [, timestamp, text] = match;
-                        // Chỉ cho phần text qua kuroshiro với mode: spaced
-                        const romanizedText = await kuroshiro.convert(text, {
-                            to: "romaji",
-                            mode: "spaced",
-                            romajiSystem: "hepburn"
-                        });
-                        return `${timestamp}${romanizedText}`;
-                    }
+			const processedLines = await Promise.all(
+				lines.map(async (line) => {
+					// Regex bóc tách phần timestamp [00:00.00] và phần text riêng
+					const match = line.match(/^(\[\d{2}:\d{2}\.\d{2}\])(.*)$/);
 
-                    // Nếu dòng không chứa timestamp (dòng trống hoặc header), convert bình thường
-                    return await kuroshiro.convert(line, {
-                        to: "romaji",
-                        mode: "spaced",
-                        romajiSystem: "hepburn"
-                    });
-                })
-            );
+					if (match) {
+						const [, timestamp, text] = match;
+						// Chỉ cho phần text qua kuroshiro với mode: spaced
+						const romanizedText = await kuroshiro.convert(text, {
+							to: "romaji",
+							mode: "spaced",
+							romajiSystem: "hepburn",
+						});
+						return `${timestamp}${romanizedText}`;
+					}
 
-            romanizedLyrics = processedLines.join("\n");
-        }
+					// Nếu dòng không chứa timestamp (dòng trống hoặc header), convert bình thường
+					return await kuroshiro.convert(line, {
+						to: "romaji",
+						mode: "spaced",
+						romajiSystem: "hepburn",
+					});
+				}),
+			);
 
-        res.json({ ...lyrics, lyrics_romanization: romanizedLyrics });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+			romanizedLyrics = processedLines.join("\n");
+		}
+
+		res.json({ ...lyrics, lyrics_romanization: romanizedLyrics });
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+	}
 });
 
 router.post("/music/join", authenticate, async (req, res) => {
