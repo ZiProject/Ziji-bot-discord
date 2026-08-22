@@ -7,6 +7,12 @@ const express = require("express");
 const router = express.Router();
 const { pipeline } = require("stream/promises");
 
+const Kuroshiro = require("kuroshiro").default;
+const KuromojiAnalyzer = require("kuroshiro-analyzer-kuromoji");
+
+const kuroshiro = new Kuroshiro();
+let kuroshiroInited = false;
+
 module.exports.data = {
 	name: "musicRoutes",
 	description: "Music route for querying tracks",
@@ -19,6 +25,7 @@ const authenticate = (req, res, next) => {
 	const authHeader = req.headers.authorization;
 	if (!authHeader) return res.status(401).send("No token provided");
 	const token = authHeader.split(" ")[1];
+	// console.log(token);
 	try {
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
 		req.user = decoded;
@@ -46,7 +53,47 @@ router.get("/music/lyrics", authenticate, async (req, res) => {
 		if (!q) return res.status(400).json({ error: "Missing query" });
 		const lyricsext = new lyricsExt();
 		const lyrics = await lyricsext.fetch({ title: q });
-		res.json(lyrics);
+
+		if (!kuroshiroInited) {
+			await kuroshiro.init(new KuromojiAnalyzer());
+			kuroshiroInited = true;
+		}
+
+		let romanizedLyrics = null;
+
+		if (lyrics.synced) {
+			// Tách thành từng dòng
+			const lines = lyrics.synced.split("\n");
+
+			const processedLines = await Promise.all(
+				lines.map(async (line) => {
+					// Regex bóc tách phần timestamp [00:00.00] và phần text riêng
+					const match = line.match(/^(\[\d{2}:\d{2}\.\d{2}\])(.*)$/);
+
+					if (match) {
+						const [, timestamp, text] = match;
+						// Chỉ cho phần text qua kuroshiro với mode: spaced
+						const romanizedText = await kuroshiro.convert(text, {
+							to: "romaji",
+							mode: "spaced",
+							romajiSystem: "hepburn",
+						});
+						return `${timestamp}${romanizedText}`;
+					}
+
+					// Nếu dòng không chứa timestamp (dòng trống hoặc header), convert bình thường
+					return await kuroshiro.convert(line, {
+						to: "romaji",
+						mode: "spaced",
+						romajiSystem: "hepburn",
+					});
+				}),
+			);
+
+			romanizedLyrics = processedLines.join("\n");
+		}
+
+		res.json({ ...lyrics, lyrics_romanization: romanizedLyrics });
 	} catch (error) {
 		res.status(500).json({ error: error.message });
 	}
