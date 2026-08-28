@@ -11,7 +11,6 @@ const readline = require("readline");
 const { default: PlayerManager } = require("ziplayer");
 const { TTSPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin, AttachmentsPlugin } = require("@ziplayer/plugin");
 const { lyricsExt, voiceExt, lavalinkExt, AiAutoplayExtension } = require("@ziplayer/extension");
-const { YTexec } = require("@ziplayer/ytexecplug");
 const { InfinityPlugin } = require("@ziplayer/infinity");
 
 const client = new Client({
@@ -34,10 +33,17 @@ const startup = new StartupManager(client);
 const logger = startup.getLogger();
 const config = startup.getConfig();
 
-const ytbplg = new YouTubePlugin({ fallbackStream: new YTexec().getStream });
-
 const manager = new PlayerManager({
-	plugins: [new TTSPlugin(), ytbplg, new SoundCloudPlugin(), new SpotifyPlugin(), new InfinityPlugin(), new AttachmentsPlugin()],
+	plugins: [
+		new TTSPlugin(),
+		new YouTubePlugin({
+			// debug: console.log
+		}),
+		new SoundCloudPlugin(),
+		new SpotifyPlugin(),
+		new InfinityPlugin(),
+		new AttachmentsPlugin(),
+	],
 	extensions: [
 		new AiAutoplayExtension(process.env.GEMINI_API_KEY),
 		new lyricsExt(),

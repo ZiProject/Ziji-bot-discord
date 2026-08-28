@@ -116,7 +116,7 @@ class StartupManager {
 			watch: process.env.NODE_ENV === "development",
 			debounce: 150,
 			throwOnError: false,
-			debug: this.config.DevConfig?.loaderDebug ? this.logger.debug : false,
+			debug: this.config.DevConfig?.loaderDebug ?? false,
 			check(module) {
 				return !!module && typeof module === "object" && "data" in module && typeof module.execute === "function";
 			},
@@ -163,7 +163,7 @@ class StartupManager {
 			watch: process.env.NODE_ENV === "development",
 			debounce: 150,
 			throwOnError: false,
-			debug: this.config.DevConfig?.loaderDebug ? this.logger.debug : false,
+			debug: this.config.DevConfig?.loaderDebug ?? false,
 
 			check(module) {
 				return !!module && typeof module === "object" && typeof module.name === "string" && typeof module.execute === "function";
@@ -174,7 +174,8 @@ class StartupManager {
 					try {
 						await module.execute(...args);
 					} catch (error) {
-						this.logger.error(`Error executing event ${module.name}:`, error);
+						const logger = useHooks.get("logger");
+						logger.error(`Error executing event ${module.name}:`, error);
 					}
 				};
 				if (module.once) target.once(module.name, handler);
