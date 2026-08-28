@@ -1,21 +1,30 @@
-const { parentPort, workerData } = require("worker_threads");
 const { MusicSearchCard } = require("./MusicSearchCard");
 
 async function buildImage(searchPlayer, query) {
 	const card = new MusicSearchCard().setPlayers(searchPlayer).setTitle(query);
-
-	const buffer = await card.build({ format: "png" });
-	parentPort.postMessage(buffer.buffer); // Send as ArrayBuffer
+	return card.build({ format: "png" });
 }
 
-// Listen for termination signal
-parentPort.on("message", (message) => {
-	if (message === "terminate") {
-		process.exit(0); // Gracefully exit
-	}
-});
-
-buildImage(workerData.searchPlayer, workerData.query).catch((error) => {
-	console.error("Error in worker:", error);
-	process.exit(1);
-});
+// This file is intentionally executed with child_process.fork().
+// Keeping the renderer in a separate OS process prevents native image
+// rendering failures from taking down the Discord bot process.
+if (typeof process.send === "function") {
+	process.once("message", async ({ searchPlayer, query }) => {
+		try {
+			const buffer = await buildImage(searchPlayer, query);
+			process.send({ type: "result", data: buffer.toString("base64") }, () => {
+				if (process.connected) process.disconnect();
+			});
+		} catch (error) {
+			const message = error instanceof Error ? error.stack || error.message : String(error);
+			if (process.connected) {
+				process.send({ type: "error", error: message }, () => {
+					process.disconnect();
+					process.exitCode = 1;
+				});
+			} else {
+				process.exitCode = 1;
+			}
+		}
+	});
+}
