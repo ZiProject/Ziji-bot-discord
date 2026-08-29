@@ -6,6 +6,9 @@ const jwt = require("jsonwebtoken");
 const express = require("express");
 const router = express.Router();
 const { pipeline } = require("stream/promises");
+const { Readable } = require("stream");
+const { spawn, execFile } = require("child_process");
+
 
 const Kuroshiro = require("kuroshiro").default;
 const KuromojiAnalyzer = require("kuroshiro-analyzer-kuromoji");
@@ -183,8 +186,27 @@ router.post("/music/join", authenticate, async (req, res) => {
 	}
 });
 
+const extractRawUrl = (req) => {
+	let targetUrl = req.query.url;
+	if (typeof targetUrl !== "string" && !req.query.id) return null;
+
+	if (req.originalUrl && req.originalUrl.includes("url=")) {
+		const rawPart = req.originalUrl.substring(req.originalUrl.indexOf("url=") + 4);
+		if (/^https?%3A/i.test(rawPart)) {
+			try {
+				targetUrl = decodeURIComponent(rawPart);
+			} catch {
+				targetUrl = rawPart;
+			}
+		} else if (rawPart.startsWith("http://") || rawPart.startsWith("https://")) {
+			targetUrl = rawPart;
+		}
+	}
+	return targetUrl;
+};
+
 router.get("/proxy/image", async (req, res) => {
-	const url = req.query.url;
+	const url = extractRawUrl(req);
 
 	if (!url) {
 		return res.status(400).json({
@@ -195,7 +217,7 @@ router.get("/proxy/image", async (req, res) => {
 	try {
 		const response = await fetch(url, {
 			headers: {
-				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 			},
 		});
 
@@ -204,19 +226,229 @@ router.get("/proxy/image", async (req, res) => {
 		}
 
 		res.setHeader("Content-Type", response.headers.get("content-type") || "image/jpeg");
-
 		res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
 
-		await pipeline(response.body, res);
+		const nodeStream = Readable.fromWeb(response.body);
+		await pipeline(nodeStream, res);
 	} catch (err) {
-		console.error(err);
+		console.error("[ProxyImage]: Error:", err);
+		if (!res.headersSent) {
+			res.status(500).json({
+				error: "Proxy error",
+			});
+		}
+	}
+});
 
+router.get("/music/video/url", async (req, res) => {
+	const id = req.query.id;
+	if (!id) {
+		return res.status(400).json({
+			error: "Missing video ID",
+		});
+	}
+
+	try {
+		const ytTarget = id.startsWith("http://") || id.startsWith("https://")
+			? id
+			: `https://www.youtube.com/watch?v=${id}`;
+
+		execFile("yt-dlp", ["--no-warnings", "-g", ytTarget], (error, stdout, stderr) => {
+			if (error) {
+				console.error(`[API] [yt-dlp]: Execution error`, error, stderr);
+				return res.status(500).json({
+					error: "Error while executing download process on the server-side.",
+				});
+			}
+
+			const urls = stdout.trim().split(/\r?\n/).filter(Boolean);
+			if (!urls.length) {
+				return res.status(404).json({
+					error: "No stream URL found.",
+				});
+			}
+
+			res.status(200).json({
+				success: true,
+				video: urls[0] || null,
+				audio: urls[1] || urls[0] || null,
+				urls: urls,
+			});
+		});
+	} catch (err) {
+		console.error("[API]: Error: ", err);
 		res.status(500).json({
-			error: "Proxy error",
+			error: "Error on server-side.",
 		});
 	}
 });
 
+const rewriteM3U8 = (content, baseUrl, proxyPrefix) => {
+	const lines = content.split(/\r?\n/);
+	const rewritten = lines.map((line) => {
+		const trimmed = line.trim();
+		if (!trimmed) return line;
+
+		if (trimmed.startsWith("#")) {
+			// Rewrite URI="..." in tags like #EXT-X-MAP, #EXT-X-KEY, #EXT-X-MEDIA
+			return line.replace(/URI="([^"]+)"/g, (match, uri) => {
+				try {
+					const abs = new URL(uri, baseUrl).href;
+					return `URI="${proxyPrefix}${encodeURIComponent(abs)}"`;
+				} catch {
+					return match;
+				}
+			});
+		}
+
+		// Segment URI or sub-playlist URI line
+		try {
+			const abs = new URL(trimmed, baseUrl).href;
+			return `${proxyPrefix}${encodeURIComponent(abs)}`;
+		} catch {
+			return line;
+		}
+	});
+
+	return rewritten.join("\n");
+};
+
+router.options("/proxy/stream", (req, res) => {
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+	res.setHeader("Access-Control-Allow-Headers", "*");
+	res.sendStatus(204);
+});
+
+router.get("/proxy/stream", async (req, res) => {
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+	res.setHeader("Access-Control-Allow-Headers", "*");
+	res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges, Content-Type");
+
+	let videoUrl = extractRawUrl(req);
+	const videoId = req.query.id;
+
+	if (!videoUrl && !videoId) {
+		return res.status(400).json({ error: "Missing url or id parameter..." });
+	}
+
+	// AbortController is required to kill the remote fetch when the user leaves/pauses
+	const abortController = new AbortController();
+
+	req.on("close", () => {
+		abortController.abort();
+	});
+
+	try {
+		// If videoUrl is a YouTube URL or if only videoId was passed, dynamically resolve stream URL
+		if (!videoUrl || videoUrl.includes("youtube.com/watch") || videoUrl.includes("youtu.be/")) {
+			const ytTarget = videoUrl || (videoId.startsWith("http") ? videoId : `https://www.youtube.com/watch?v=${videoId}`);
+			const urls = await new Promise((resolve, reject) => {
+				const child = spawn("yt-dlp", ["--no-warnings", "-g", ytTarget]);
+				let stdout = "";
+				let stderr = "";
+				child.stdout.on("data", (d) => (stdout += d.toString()));
+				child.stderr.on("data", (d) => (stderr += d.toString()));
+				child.on("close", (code) => {
+					if (code !== 0) return reject(new Error(stderr || `yt-dlp exited with code ${code}`));
+					resolve(stdout.trim().split(/\r?\n/).filter(Boolean));
+				});
+			});
+
+			if (!urls.length) {
+				return res.status(404).json({ error: "Could not extract stream URL" });
+			}
+
+			videoUrl = req.query.type === "audio" ? (urls[1] || urls[0]) : urls[0];
+		}
+
+		const headers = {
+			"Accept": "*/*",
+			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+			"Referer": "https://www.youtube.com/",
+			"Origin": "https://www.youtube.com",
+			"Connection": "keep-alive",
+		};
+
+		// Pass down incoming range (crucial for seeking & buffering audio/video)
+		if (req.headers.range) {
+			headers["Range"] = req.headers.range;
+		}
+
+		const response = await fetch(videoUrl, {
+			method: "GET",
+			headers: headers,
+			signal: abortController.signal,
+		});
+
+		// 200 = Full Video, 206 = Video Chunk/Partial Content
+		if (!response.ok && response.status !== 206) {
+			return res.status(response.status).json({
+				code: response.status,
+				error: `Cannot stream from URL (HTTP ${response.status})`,
+			});
+		}
+
+		const contentType = (response.headers.get("content-type") || "").toLowerCase();
+		const urlWithoutQuery = videoUrl.split("?")[0];
+		const isSegment = urlWithoutQuery.endsWith(".ts") || videoUrl.includes("/file/seg.ts") || videoUrl.includes("mime=video") || videoUrl.includes("mime=audio");
+		const isM3U8 = !isSegment && (contentType.includes("mpegurl") || contentType.includes("application/x-mpegurl") || urlWithoutQuery.endsWith(".m3u8"));
+
+		if (isM3U8) {
+			const rawText = await response.text();
+			if (rawText.trim().startsWith("#EXTM3U")) {
+				const proxyPrefix = "/proxy/stream?url=";
+				const rewritten = rewriteM3U8(rawText, videoUrl, proxyPrefix);
+
+				res.status(200);
+				res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+				res.setHeader("Content-Length", Buffer.byteLength(rewritten));
+				return res.send(rewritten);
+			} else {
+				res.status(response.status);
+				res.setHeader("Content-Type", contentType || "text/plain");
+				return res.send(rawText);
+			}
+		}
+
+		// Set the correct status code (Express expects res.status(code))
+		res.status(response.status);
+
+		// Forward vital headers back to the browser
+		const passHeaders = ["content-type", "content-length", "content-range", "accept-ranges"];
+		passHeaders.forEach((header) => {
+			const val = response.headers.get(header);
+			if (val) {
+				res.setHeader(header, val);
+			}
+		});
+
+		if (response.body) {
+			const nodeStream = Readable.fromWeb(response.body);
+			nodeStream.pipe(res);
+
+			// Clean up resources if the node stream encounters an error
+			nodeStream.on("error", (err) => {
+				console.error("[StreamProxy]: Node stream error", err.message);
+				abortController.abort();
+				if (!res.headersSent) res.end();
+			});
+		} else {
+			res.end();
+		}
+	} catch (error) {
+		// Ignore errors caused by intentional aborting when client disconnects
+		if (error.name === "AbortError") {
+			return;
+		}
+
+		console.error("[StreamProxy]: Error while processing stream", error);
+		if (!res.headersSent) {
+			res.status(500).json({ error: "Error on server-side." });
+		}
+	}
+});
 module.exports.execute = () => {
 	const server = useHooks.get("server");
 	server.use("/", router);
