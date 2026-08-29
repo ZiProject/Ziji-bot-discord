@@ -9,7 +9,6 @@ const { pipeline } = require("stream/promises");
 const { Readable } = require("stream");
 const { spawn, execFile } = require("child_process");
 
-
 const Kuroshiro = require("kuroshiro").default;
 const KuromojiAnalyzer = require("kuroshiro-analyzer-kuromoji");
 
@@ -217,7 +216,8 @@ router.get("/proxy/image", async (req, res) => {
 	try {
 		const response = await fetch(url, {
 			headers: {
-				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+				"User-Agent":
+					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 			},
 		});
 
@@ -249,9 +249,7 @@ router.get("/music/video/url", async (req, res) => {
 	}
 
 	try {
-		const ytTarget = id.startsWith("http://") || id.startsWith("https://")
-			? id
-			: `https://www.youtube.com/watch?v=${id}`;
+		const ytTarget = id.startsWith("http://") || id.startsWith("https://") ? id : `https://www.youtube.com/watch?v=${id}`;
 
 		execFile("yt-dlp", ["--no-warnings", "-g", ytTarget], (error, stdout, stderr) => {
 			if (error) {
@@ -360,15 +358,16 @@ router.get("/proxy/stream", async (req, res) => {
 				return res.status(404).json({ error: "Could not extract stream URL" });
 			}
 
-			videoUrl = req.query.type === "audio" ? (urls[1] || urls[0]) : urls[0];
+			videoUrl = req.query.type === "audio" ? urls[1] || urls[0] : urls[0];
 		}
 
 		const headers = {
-			"Accept": "*/*",
-			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			"Referer": "https://www.youtube.com/",
-			"Origin": "https://www.youtube.com",
-			"Connection": "keep-alive",
+			Accept: "*/*",
+			"User-Agent":
+				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+			Referer: "https://www.youtube.com/",
+			Origin: "https://www.youtube.com",
+			Connection: "keep-alive",
 		};
 
 		// Pass down incoming range (crucial for seeking & buffering audio/video)
@@ -392,8 +391,14 @@ router.get("/proxy/stream", async (req, res) => {
 
 		const contentType = (response.headers.get("content-type") || "").toLowerCase();
 		const urlWithoutQuery = videoUrl.split("?")[0];
-		const isSegment = urlWithoutQuery.endsWith(".ts") || videoUrl.includes("/file/seg.ts") || videoUrl.includes("mime=video") || videoUrl.includes("mime=audio");
-		const isM3U8 = !isSegment && (contentType.includes("mpegurl") || contentType.includes("application/x-mpegurl") || urlWithoutQuery.endsWith(".m3u8"));
+		const isSegment =
+			urlWithoutQuery.endsWith(".ts") ||
+			videoUrl.includes("/file/seg.ts") ||
+			videoUrl.includes("mime=video") ||
+			videoUrl.includes("mime=audio");
+		const isM3U8 =
+			!isSegment &&
+			(contentType.includes("mpegurl") || contentType.includes("application/x-mpegurl") || urlWithoutQuery.endsWith(".m3u8"));
 
 		if (isM3U8) {
 			const rawText = await response.text();
