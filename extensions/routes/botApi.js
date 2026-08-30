@@ -84,67 +84,63 @@ module.exports.execute = (client) => {
 	});
 
 	router.get("/auth/discord/callback", async (req, res) => {
-        const { code } = req.query;
-        if (!code) return res.status(400).send("No code provided");
+		const { code } = req.query;
+		if (!code) return res.status(400).send("No code provided");
 
-        try {
-            const tokenResponse = await axios.post(
-                "https://discord.com/api/oauth2/token",
-                new URLSearchParams({
-                    client_id: client.user?.id,
-                    client_secret: process.env.DISCORD_CLIENT_SECRET,
-                    grant_type: "authorization_code",
-                    code: code.toString(),
-                    redirect_uri: REDIRECT_URI,
-                }),
-                { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
-            );
+		try {
+			const tokenResponse = await axios.post(
+				"https://discord.com/api/oauth2/token",
+				new URLSearchParams({
+					client_id: client.user?.id,
+					client_secret: process.env.DISCORD_CLIENT_SECRET,
+					grant_type: "authorization_code",
+					code: code.toString(),
+					redirect_uri: REDIRECT_URI,
+				}),
+				{ headers: { "Content-Type": "application/x-www-form-urlencoded" } },
+			);
 
-            const { access_token } = tokenResponse.data;
+			const { access_token } = tokenResponse.data;
 
-            const userResponse = await axios.get("https://discord.com/api/users/@me", {
-                headers: { Authorization: `Bearer ${access_token}` },
-            });
+			const userResponse = await axios.get("https://discord.com/api/users/@me", {
+				headers: { Authorization: `Bearer ${access_token}` },
+			});
 
-            const userData = userResponse.data;
+			const userData = userResponse.data;
 
-            //put guids to db
-            const guild = await axios.get("https://discord.com/api/users/@me/guilds", {
-                headers: { Authorization: `Bearer ${access_token}` },
-            });
+			//put guids to db
+			const guild = await axios.get("https://discord.com/api/users/@me/guilds", {
+				headers: { Authorization: `Bearer ${access_token}` },
+			});
 
-            const guildss = guild.data;
+			const guildss = guild.data;
 
-            const db = useHooks.get("db");
-            await db.ZiUser.findOneAndUpdate(
-                { userID: userData.id },
-                {
-                    userID: userData.id,
-                    username: userData.username,
-                    avatar: userData.avatar,
-                    guilds: guildss.map((g) => ({
-                        id: g.id,
-                        name: g.name,
-                        permissions: g.permissions,
-                        permissionsNew: g.permissions_new,
-                        owner: g.owner,
-                    })),
-                    lastLogin: new Date(),
-                    $inc: { loginCount: 1 },
-                    $setOnInsert: { createdAt: new Date() },
-                },
-                { upsert: true },
-            );
+			const db = useHooks.get("db");
+			await db.ZiUser.findOneAndUpdate(
+				{ userID: userData.id },
+				{
+					userID: userData.id,
+					username: userData.username,
+					avatar: userData.avatar,
+					guilds: guildss.map((g) => ({
+						id: g.id,
+						name: g.name,
+						permissions: g.permissions,
+						permissionsNew: g.permissions_new,
+						owner: g.owner,
+					})),
+					lastLogin: new Date(),
+					$inc: { loginCount: 1 },
+					$setOnInsert: { createdAt: new Date() },
+				},
+				{ upsert: true },
+			);
 
-            const token = jwt.sign(
-                { id: userData.id, username: userData.username, avatar: userData.avatar },
-                process.env.JWT_SECRET,
-                {
-                    expiresIn: "7d",
-                },
-            );
-            const dashboardUrl = process.env.DASHBOARD_URL?.trim();
-            return res.send(`
+			const token = jwt.sign({ id: userData.id, username: userData.username, avatar: userData.avatar }, process.env.JWT_SECRET, {
+				expiresIn: "7d",
+			});
+			const dashboardUrl = process.env.DASHBOARD_URL?.trim();
+			return res.send(`
                 <!DOCTYPE html>
                 <html lang="vi">
                 <head>
@@ -275,11 +271,11 @@ module.exports.execute = (client) => {
                 </body>
                 </html>
             `);
-        } catch (error) {
-            console.error("Auth error:", error.response?.data || error.message);
-            res.status(500).send("Authentication failed");
-        }
-    });
+		} catch (error) {
+			console.error("Auth error:", error.response?.data || error.message);
+			res.status(500).send("Authentication failed");
+		}
+	});
 
 	router.get("/user/me", async (req, res) => {
 		const authHeader = req.headers.authorization;
