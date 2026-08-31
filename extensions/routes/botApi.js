@@ -136,17 +136,141 @@ module.exports.execute = (client) => {
 				{ upsert: true },
 			);
 
-			const token = jwt.sign(
-				{ id: userData.id, username: userData.username, avatar: userData.avatar }, //aaaaa
-				process.env.JWT_SECRET,
-				{
-					expiresIn: "7d",
-				},
-			);
+			const token = jwt.sign({ id: userData.id, username: userData.username, avatar: userData.avatar }, process.env.JWT_SECRET, {
+				expiresIn: "7d",
+			});
+			const dashboardUrl = process.env.DASHBOARD_URL?.trim();
+			return res.send(`
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Xác thực thành công - Authorization Successful</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+					<link rel="preconnect" href="https://fonts.googleapis.com">
+					<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+					<link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
 
-			// Redirect back to frontend with token
-			// Using HashRouter so token is passed as query param which frontend will pick up
-			res.redirect(`${process.env.DASHBOARD_URL}/#/login-success?token=${token}`);
+                    <style>
+                        body { font-family: 'Google Sans', sans-serif; }
+                        @keyframes pulse-ring {
+                            0% { transform: scale(0.95); opacity: 0.8; }
+                            50% { transform: scale(1.1); opacity: 0.4; }
+                            100% { transform: scale(0.95); opacity: 0.8; }
+                        }
+                        .pulse-animation { animation: pulse-ring 2.5s infinite ease-in-out; }
+                    </style>
+                </head>
+                <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4 relative overflow-hidden selection:bg-indigo-500 selection:text-white">
+
+                    <!-- Background Decorative Elements -->
+                    <div class="absolute -top-32 -left-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <!-- Main Container Card -->
+                    <main class="relative z-10 w-full max-w-lg bg-slate-800/80 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-indigo-950/50 text-center">
+                        
+                        <!-- Icon Success Badge -->
+                        <div class="relative w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                            <div class="absolute inset-0 bg-emerald-500/20 rounded-full pulse-animation"></div>
+                            <div class="relative z-10 w-16 h-16 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                                <i class="fa-solid fa-check text-slate-950 text-3xl font-bold"></i>
+                            </div>
+                        </div>
+
+                        <!-- Title & Subtitle -->
+                        <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2 tracking-tight">
+                            Xác thực thành công!
+                        </h1>
+                        <p class="text-emerald-400 text-sm font-semibold tracking-wide uppercase mb-4">
+                            Authorization Successful
+                        </p>
+                        
+                        <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
+                            Nếu ứng dụng không tự mở, vui lòng sao chép mã token dưới đây và dán vào ứng dụng của bạn.
+                        </p>
+
+                        <!-- Token Box Section -->
+                        <div class="text-left mb-6">
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                <span>Authorization Token</span>
+                                <span class="text-emerald-400 text-[10px] font-normal lowercase flex items-center gap-1">
+                                    <i class="fa-solid fa-shield-halved"></i> Bearer Token
+                                </span>
+                            </label>
+                            <div class="relative group">
+                                <textarea 
+                                    id="token-input" 
+                                    readonly 
+                                    rows="3" 
+                                    class="w-full bg-slate-950/80 border border-slate-700/80 rounded-2xl p-3.5 pr-12 text-xs sm:text-sm font-mono text-indigo-300 focus:outline-none focus:border-indigo-500 resize-none selection:bg-indigo-500 selection:text-white transition"
+                                >${token}</textarea>
+                                
+                                <button 
+                                    id="copy-btn" 
+                                    title="Sao chép Token"
+                                    class="absolute right-3 top-3 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-600/50 transition duration-150 flex items-center justify-center"
+                                >
+                                    <i id="copy-icon" class="fa-regular fa-copy text-sm"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Notification Toast Message -->
+                            <div id="toast" class="opacity-0 transition-opacity duration-300 mt-2 text-xs text-emerald-400 font-medium flex items-center gap-1.5 justify-end">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>Đã sao chép token vào bộ nhớ tạm!</span>
+                            </div>
+                        </div>
+
+                        <!-- Footer / Instructions -->
+                        <div class="border-t border-slate-700/50 pt-4 text-xs text-slate-500 flex items-center justify-between">
+                            <span class="flex items-center gap-1">
+                                <i class="fa-regular fa-circle-question"></i> Bạn có thể đóng cửa sổ này.
+                            </span>
+                            <span class="font-mono text-[10px] text-slate-600">v1.0.0</span>
+                        </div>
+                    </main>
+
+                    <script>
+                        const tokenInput = document.getElementById('token-input');
+                        const copyBtn = document.getElementById('copy-btn');
+                        const copyIcon = document.getElementById('copy-icon');
+                        const toast = document.getElementById('toast');
+						const dashboardUrl = ${JSON.stringify(dashboardUrl || null)};
+						const token = ${JSON.stringify(token)};
+
+						if (typeof dashboardUrl === 'string' && dashboardUrl.trim()) {
+							let seconds = 1;
+							const timer = setInterval(() => {
+								seconds--;
+								if (seconds <= 0) {
+									clearInterval(timer);
+									window.location.href = \`\${dashboardUrl}/#/login-success?token=\${token}\`;
+								}
+							}, 1000);
+						}
+                        copyBtn.addEventListener('click', () => {
+                            tokenInput.select();
+                            try {
+                                document.execCommand('copy');
+                            } catch (err) {
+                                navigator.clipboard.writeText(tokenInput.value);
+                            }
+
+                            copyIcon.className = 'fa-solid fa-check text-emerald-400';
+                            toast.classList.remove('opacity-0');
+
+                            setTimeout(() => {
+                                copyIcon.className = 'fa-regular fa-copy';
+                                toast.classList.add('opacity-0');
+                            }, 2500);
+                        });
+                    </script>
+                </body>
+                </html>
+            `);
 		} catch (error) {
 			console.error("Auth error:", error.response?.data || error.message);
 			res.status(500).send("Authentication failed");
