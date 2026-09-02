@@ -86,8 +86,8 @@ async function buildImageInWorker(searchPlayer, query) {
 module.exports.execute = async ({ interaction, player, Nextpage = true }) => {
 	if (!player.queue?.tracks?.length) return interaction.reply({ content: "There is no music playing in this server" });
 	await interaction.deferReply();
-	const fieldName = interaction?.message?.embeds?.at(0)?.data?.fields?.at(0);
-	const mainRequire = fieldName?.value?.includes("﹏");
+	const fieldName = interaction?.message?.components?.at(0)?.components?.at(3)?.content;
+	const mainRequire = fieldName?.includes("﹏");
 	const pageData = fieldName?.name?.replace("Page:", " ").trim().split("/");
 	const queuetrack = [];
 	let code = { content: "" };

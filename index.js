@@ -2,19 +2,16 @@ require("dotenv").config();
 const { useHooks } = require("zihooks");
 const path = require("node:path");
 const { GiveawaysManager } = require("discord-giveaways");
-
 const { StartupManager } = require("./startup");
-const { Client, GatewayIntentBits, Partials } = require("discord.js");
 const readline = require("readline");
-
-//music player
+const { Client, GatewayIntentBits, Partials } = require("discord.js");
 const { default: PlayerManager } = require("ziplayer");
 const { TTSPlugin, SoundCloudPlugin, YouTubePlugin, SpotifyPlugin, AttachmentsPlugin } = require("@ziplayer/plugin");
-const { lyricsExt, voiceExt, lavalinkExt, AiAutoplayExtension } = require("@ziplayer/extension");
+const { lyricsExt, voiceExt, AiAutoplayExtension } = require("@ziplayer/extension");
 const { InfinityPlugin } = require("@ziplayer/infinity");
 
 const client = new Client({
-	rest: [{ timeout: 60_000 }],
+	// rest: [{ timeout: 60_000 }],
 	intents: [
 		GatewayIntentBits.Guilds,
 		GatewayIntentBits.GuildVoiceStates,
@@ -41,7 +38,7 @@ const manager = new PlayerManager({
 		}),
 		new SoundCloudPlugin(),
 		new SpotifyPlugin(),
-		new InfinityPlugin(),
+		// new InfinityPlugin(),
 		new AttachmentsPlugin(),
 	],
 	extensions: [
@@ -50,6 +47,7 @@ const manager = new PlayerManager({
 		new voiceExt(null, { client, minimalVoiceMessageDuration: 1 }),
 	],
 	enableStatsCollection: true,
+	debugLevel: "verbose",
 });
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -77,12 +75,15 @@ const initialize = async () => {
 		startup.loadModules(path.join(__dirname, "functions"), useHooks.get("functions")),
 		startup.loadModules(path.join(__dirname, "extensions"), useHooks.get("extensions")),
 	]);
-
-	useHooks.set("loaders", startup.loaders);
-	client.login(process.env?.TOKEN ?? config?.botConfig?.TOKEN).catch((error) => {
-		logger.error("Error logging in:", error);
-		logger.error("The Bot Token You Entered Into Your Project Is Incorrect Or Your Bot's INTENTS Are OFF!");
-	});
+	client
+		.login(process.env?.TOKEN ?? config?.botConfig?.TOKEN)
+		.then(() => {
+			startup.loadExtensions().catch((error) => logger.error("Error loading extensions:", error));
+		})
+		.catch((error) => {
+			logger.error("Error logging in:", error);
+			logger.error("The Bot Token You Entered Into Your Project Is Incorrect Or Your Bot's INTENTS Are OFF!");
+		});
 };
 
 initialize().catch((error) => logger.error("Error during initialization:", error));

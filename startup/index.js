@@ -150,8 +150,8 @@ class StartupManager {
 				);
 			},
 		});
-		this.loaders.push(loader);
 		const result = await loader.load(directory);
+		this.loaders.push({ loader, result });
 		for (const failure of result.failed) this.logger.error(`Failed to load ${failure.path}:`, failure.error);
 		this.logger.debug?.(`Loaded ${result.loaded.length} modules from ${directory}`);
 		return result;
@@ -189,11 +189,28 @@ class StartupManager {
 				);
 			},
 		});
-		this.loaders.push(loader);
 		const result = await loader.load(directory);
+		this.loaders.push({ loader, result });
 		for (const failure of result.failed) this.logger.error(`Failed to load event ${failure.path}:`, failure.error);
 		this.logger.debug?.(`Loaded ${result.loaded.length} events from ${directory}`);
 		return result;
+	}
+
+	async loadExtensions() {
+		for (let priority = 1; priority <= 10; priority++) {
+			await Promise.all(
+				useHooks.get("extensions").map(async (extension) => {
+					extension.data.priority = extension.data?.priority ?? 10;
+					if (extension.data.enable && extension.data.priority === priority && typeof extension.execute === "function") {
+						this.logger?.debug?.(`Loaded extension: ${extension.data.name} (priority: ${priority})`);
+						return await extension.execute(this.client);
+					}
+				}),
+			).catch((error) => {
+				console.log(error);
+				this.logger.debug("Error loading extensions with priority", priority, ":", error);
+			});
+		}
 	}
 
 	initHooks() {
@@ -212,6 +229,7 @@ class StartupManager {
 		useHooks.set("wss", this.web.wss);
 		useHooks.set("server", this.web.server);
 		useHooks.set("icon", zzicon);
+		useHooks.set("loaders", this.loaders);
 	}
 }
 
