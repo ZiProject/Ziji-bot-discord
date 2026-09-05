@@ -1,7 +1,8 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, BaseInteraction, AttachmentBuilder } = require("discord.js");
 const { useHooks } = require("zihooks");
 const { ButtonStyle, StringSelectMenuOptionBuilder, StringSelectMenuBuilder } = require("discord.js");
-const { Worker } = require("worker_threads");
+const { fork } = require("child_process");
+const path = require("path");
 const ZiIcons = require("../../utility/icon");
 const { getManager, getPlayer } = require("ziplayer");
 const config = useHooks.get("config");
@@ -15,7 +16,6 @@ module.exports.data = {
 
 function msToTime(s) {
 	if (typeof s !== "number") return s;
-	// Pad to 2 or 3 digits, default is 2
 	var pad = (n, z = 2) => ("00" + n).slice(-z);
 	return pad((s / 3.6e6) | 0) + ":" + pad(((s % 3.6e6) / 6e4) | 0) + ":" + pad(((s % 6e4) / 1000) | 0);
 }
@@ -24,37 +24,73 @@ function msToTime(s) {
 async function buildImageInWorker(searchPlayer, query) {
 	logger.debug("Starting buildImageInWorker");
 	return new Promise((resolve, reject) => {
-		logger.debug("Creating new worker thread");
-		const worker = new Worker("./utility/musicImage.js", {
-			workerData: { searchPlayer, query },
+		const workerPath = path.resolve(__dirname, "../../utility/musicImage.js");
+		logger.debug(`Creating isolated image process: ${workerPath}`);
+
+		let settled = false;
+		let timeout;
+		const child = fork(workerPath, [], {
+			stdio: ["ignore", "ignore", "ignore", "ipc"],
 		});
 
-		worker.on("message", (arrayBuffer) => {
-			logger.debug("Received message from worker");
-			try {
-				const buffer = Buffer.from(arrayBuffer);
-				if (!Buffer.isBuffer(buffer)) {
-					throw new Error("Received data is not a buffer");
-				}
-				const attachment = new AttachmentBuilder(buffer, { name: "search.png" });
-				resolve(attachment);
-			} catch (error) {
-				reject(error);
-			} finally {
-				worker.postMessage("terminate");
+		const cleanup = () => {
+			clearTimeout(timeout);
+			child.removeAllListeners("message");
+			child.removeAllListeners("error");
+			child.removeAllListeners("exit");
+			if (child.connected) child.disconnect();
+			if (!child.killed) child.kill();
+		};
+
+		const settle = (callback) => {
+			if (settled) return;
+			settled = true;
+			cleanup();
+			callback();
+		};
+
+		timeout = setTimeout(() => {
+			settle(() => reject(new Error("Image worker timed out after 30 seconds")));
+		}, 30_000);
+
+		child.once("message", (message) => {
+			if (!message || typeof message !== "object") {
+				return settle(() => reject(new Error("Invalid response from image worker")));
 			}
-			logger.debug("Message processed successfully");
+
+			if (message.type === "error") {
+				return settle(() => reject(new Error(message.error || "Image worker failed")));
+			}
+
+			if (message.type !== "result" || typeof message.data !== "string") {
+				return settle(() => reject(new Error("Invalid image data from image worker")));
+			}
+
+			try {
+				const buffer = Buffer.from(message.data, "base64");
+				const attachment = new AttachmentBuilder(buffer, { name: "search.png" });
+				settle(() => resolve(attachment));
+			} catch (error) {
+				settle(() => reject(error));
+			}
 		});
 
-		worker.on("error", (error) => {
-			logger.error(`Worker encountered an error: ${JSON.stringify(error)}`);
-			reject(error);
+		child.once("error", (error) => {
+			logger.error("Image worker process encountered an error", error);
+			settle(() => reject(error));
 		});
 
-		worker.on("exit", (code) => {
-			logger.debug(`Worker exited with code ${code}`);
-			if (code !== 0) {
-				reject(new Error(`Worker stopped with exit code ${code}`));
+		child.once("exit", (code, signal) => {
+			logger.debug(`Image worker process exited with code ${code}${signal ? ` (${signal})` : ""}`);
+			if (!settled) {
+				settle(() => reject(new Error(`Image worker stopped with code ${code}${signal ? ` (${signal})` : ""}`)));
+			}
+		});
+
+		child.send({ searchPlayer, query }, (error) => {
+			if (error) {
+				logger.error("Failed to send data to image worker", error);
+				settle(() => reject(error));
 			}
 		});
 	});
@@ -88,9 +124,7 @@ module.exports.execute = async ({ interaction, query, lang }) => {
 	};
 
 	const results = await searchWithFallback();
-
 	const tracks = filterTracks(results?.tracks);
-
 	logger.debug(`Search results:  ${tracks?.length}`);
 
 	if (!tracks?.length) {

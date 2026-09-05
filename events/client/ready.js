@@ -35,17 +35,6 @@ module.exports = {
 			},
 		});
 
-		for (let priority = 1; priority <= 10; priority++) {
-			await Promise.all(
-				useHooks.get("extensions").map(async (extension) => {
-					extension.data.priority = extension.data?.priority ?? 10;
-					if (extension.data.enable && extension.data.priority === priority && typeof extension.execute === "function") {
-						logger?.debug?.(`Loaded extension: ${extension.data.name} (priority: ${priority})`);
-						return await extension.execute(client);
-					}
-				}),
-			);
-		}
 		logger?.info?.(`Ready! Logged in as ${client.user.tag}`);
 		client.errorLog(`Ready! Logged in as ${client.user.tag}`);
 	},

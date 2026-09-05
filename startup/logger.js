@@ -7,23 +7,39 @@ class LoggerFactory {
 	}
 
 	create() {
+		const customFormat = (includeTimestamp = true) =>
+			winston.format.printf((info) => {
+				const { level, message, timestamp, ...meta } = info;
+
+				const cleanMeta = Object.keys(meta)
+					.filter((key) => typeof key !== "symbol")
+					.reduce((acc, key) => {
+						acc[key] = meta[key];
+						return acc;
+					}, {});
+
+				const prefix = includeTimestamp && timestamp ? `[${timestamp}] [${level.toUpperCase()}]:` : `[${level.toUpperCase()}]:`;
+
+				const msgString =
+					typeof message === "string" ? message : util.inspect(message, { showHidden: false, depth: 4, colors: true });
+
+				const metaString =
+					Object.keys(cleanMeta).length > 0 ? " " + util.inspect(cleanMeta, { showHidden: false, depth: 4, colors: true }) : "";
+
+				return `${prefix} ${msgString}${metaString}`;
+			});
+
 		return winston.createLogger({
-			level: this.config?.DevConfig?.logger || "",
-			format: winston.format.combine(
-				winston.format.timestamp(),
-				winston.format.printf(({ level, message, timestamp }) => {
-					const prefix = `[${timestamp}] [${level.toUpperCase()}]:`;
-					return prefix + util.inspect(message, { showHidden: false, depth: 2, colors: true });
-				}),
-			),
+			level: this.config?.DevConfig?.logger || "info",
 			transports: [
 				new winston.transports.Console({
-					format: winston.format.printf(({ level, message }) => {
-						const prefix = `[${level.toUpperCase()}]:`;
-						return prefix + util.inspect(message, { showHidden: false, depth: 2, colors: true });
-					}),
+					format: winston.format.combine(winston.format.splat(), customFormat(false)),
 				}),
-				new winston.transports.File({ filename: "./jsons/bot.log", level: "error" }),
+				new winston.transports.File({
+					filename: "./jsons/bot.log",
+					level: "error",
+					format: winston.format.combine(winston.format.timestamp(), winston.format.splat(), customFormat(true)),
+				}),
 			],
 		});
 	}

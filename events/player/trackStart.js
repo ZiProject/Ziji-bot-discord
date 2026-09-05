@@ -18,7 +18,6 @@ module.exports = {
 		try {
 			await player.userdata.mess.edit(Gui);
 		} catch (e) {
-			console.log(e);
 			player.userdata.mess = await player.userdata.channel.send(Gui);
 		}
 

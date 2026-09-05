@@ -1,4 +1,3 @@
-const { StartupLoader } = require("./loader.js");
 const { LoggerFactory } = require("./logger.js");
 const { useHooks } = require("zihooks");
 const { GatewayIntentBits, Client, Collection } = require("discord.js");
@@ -7,19 +6,20 @@ const cors = require("cors");
 const http = require("http");
 const WebSocket = require("ws");
 const zzicon = require("./../utility/icon.js");
+const { Loader } = require("@ziji/loader");
 
 class StartupManager {
 	constructor(client) {
 		this.client = client;
-		this.config = this.initCongig();
+		this.config = this.initConfig();
 		this.logger = LoggerFactory.create(this.config);
-		this.loader = new StartupLoader(this.config, this.logger);
 		this.createFile("./jsons");
 		this.web = this.initWeb();
 		this.initPlayerNet();
+		this.loaders = [];
 	}
 
-	initCongig() {
+	initConfig() {
 		try {
 			this.config = require("../config");
 		} catch {
@@ -35,11 +35,7 @@ class StartupManager {
 		this.logger.debug?.("Starting web...");
 		const app = express();
 		const server = http.createServer(app);
-		const wss = new WebSocket.Server({
-			server,
-			path: "/ws",
-		});
-
+		const wss = new WebSocket.Server({ server, path: "/ws" });
 		const corsOptions = {
 			origin: getAllowedOrigins(),
 			methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -80,10 +76,7 @@ class StartupManager {
 		try {
 			playerNetTOKENs.forEach((TOKEN) => {
 				const PlayerClient = new Client({
-					intents: [
-						GatewayIntentBits.Guilds, // for guild related things
-						GatewayIntentBits.GuildVoiceStates, // for voice related things
-					],
+					intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
 				});
 				try {
 					PlayerClient.login(TOKEN.trim());
@@ -100,7 +93,7 @@ class StartupManager {
 			this.logger.warn("Create bot PlayerNet Fall:");
 			this.logger.warn(e);
 		} finally {
-			useHooks.set("playerNetClient", playerNetClient); //playerNetClient
+			useHooks.set("playerNetClient", playerNetClient);
 		}
 	}
 
@@ -112,50 +105,138 @@ class StartupManager {
 		return this.logger;
 	}
 
-	loadFiles(directory, collection) {
-		return this.loader.loadFiles(directory, collection);
-	}
-
-	loadEvents(directory, target) {
-		return this.loader.loadEvents(directory, target);
-	}
-
 	createFile(directory) {
-		return this.loader.createDirectory(directory);
+		const fs = require("node:fs");
+		if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true });
+	}
+
+	async loadModules(directory, collection) {
+		const loader = new Loader({
+			recursive: true,
+			watch: process.env.NODE_ENV === "development",
+			debounce: 150,
+			throwOnError: false,
+			debug: this.config.DevConfig?.loaderDebug ?? false,
+			check(module) {
+				return !!module && typeof module === "object" && "data" in module && typeof module.execute === "function";
+			},
+			init(module, ctx) {
+				const config = useHooks.get("config");
+				const disabled = config?.disabledCommands?.includes(module?.data?.name) || module?.data?.enable === false;
+				if (disabled) return;
+
+				if (collection) collection.set(module.data.name, module);
+				const messageCommands = useHooks.get("Mcommands");
+				const aliases = Array.isArray(module.data?.alias) ? module.data.alias : [];
+
+				if (messageCommands) {
+					messageCommands.set(module.data.name, module);
+					for (const alias of aliases) {
+						if (!messageCommands.has(alias)) messageCommands.set(alias, module);
+					}
+				}
+
+				ctx.signal.addEventListener(
+					"abort",
+					() => {
+						if (collection?.get(module.data.name) === module) collection.delete(module.data.name);
+						if (!messageCommands) return;
+						if (messageCommands.get(module.data.name) === module) messageCommands.delete(module.data.name);
+						for (const alias of aliases) {
+							if (messageCommands.get(alias) === module) messageCommands.delete(alias);
+						}
+					},
+					{ once: true },
+				);
+			},
+		});
+		const result = await loader.load(directory);
+		this.loaders.push({ loader, result });
+		for (const failure of result.failed) this.logger.error(`Failed to load ${failure.path}:`, failure.error);
+		this.logger.debug?.(`Loaded ${result.loaded.length} modules from ${directory}`);
+		return result;
+	}
+
+	async loadEvents(directory, target) {
+		const loader = new Loader({
+			recursive: true,
+			watch: process.env.NODE_ENV === "development",
+			debounce: 150,
+			throwOnError: false,
+			debug: this.config.DevConfig?.loaderDebug ?? false,
+
+			check(module) {
+				return !!module && typeof module === "object" && typeof module.name === "string" && typeof module.execute === "function";
+			},
+			init(module, ctx) {
+				if (module.enable === false) return;
+				const handler = async (...args) => {
+					try {
+						await module.execute(...args);
+					} catch (error) {
+						const logger = useHooks.get("logger");
+						logger.error(`Error executing event ${module.name}:`, error);
+					}
+				};
+				if (module.once) target.once(module.name, handler);
+				else target.on(module.name, handler);
+				ctx.signal.addEventListener(
+					"abort",
+					() => {
+						target.off(module.name, handler);
+					},
+					{ once: true },
+				);
+			},
+		});
+		const result = await loader.load(directory);
+		this.loaders.push({ loader, result });
+		for (const failure of result.failed) this.logger.error(`Failed to load event ${failure.path}:`, failure.error);
+		this.logger.debug?.(`Loaded ${result.loaded.length} events from ${directory}`);
+		return result;
+	}
+
+	async loadExtensions() {
+		for (let priority = 1; priority <= 10; priority++) {
+			await Promise.all(
+				useHooks.get("extensions").map(async (extension) => {
+					extension.data.priority = extension.data?.priority ?? 10;
+					if (extension.data.enable && extension.data.priority === priority && typeof extension.execute === "function") {
+						this.logger?.debug?.(`Loaded extension: ${extension.data.name} (priority: ${priority})`);
+						return await extension.execute(this.client);
+					}
+				}),
+			).catch((error) => {
+				console.log(error);
+				this.logger.debug("Error loading extensions with priority", priority, ":", error);
+			});
+		}
 	}
 
 	initHooks() {
-		useHooks.set("config", this.config); // Configuration
-		useHooks.set("client", this.client); // Discord client
-		useHooks.set("welcome", new Collection()); // Welcome messages
-		useHooks.set("cooldowns", new Collection()); // Cooldowns
-		useHooks.set("responder", new Collection()); // Auto Responder
-		useHooks.set("temp", new Collection()); // Temporary storage for various purposes
-		useHooks.set("commands", new Collection()); // Slash Commands
-		useHooks.set("Mcommands", new Collection()); // Message Commands
-		useHooks.set("functions", new Collection()); // Functions
-		useHooks.set("extensions", new Collection()); // Extensions
-		useHooks.set("guildCommands", new Collection()); // Guild custom slash commands
-		useHooks.set("logger", this.logger); // LoggerFactory
-		useHooks.set("wss", this.web.wss); // WebSocket Server
-		useHooks.set("server", this.web.server); // Web Server
-		useHooks.set("icon", zzicon); // Icon
+		useHooks.set("config", this.config);
+		useHooks.set("client", this.client);
+		useHooks.set("welcome", new Collection());
+		useHooks.set("cooldowns", new Collection());
+		useHooks.set("responder", new Collection());
+		useHooks.set("temp", new Collection());
+		useHooks.set("commands", new Collection());
+		useHooks.set("Mcommands", new Collection());
+		useHooks.set("functions", new Collection());
+		useHooks.set("extensions", new Collection());
+		useHooks.set("guildCommands", new Collection());
+		useHooks.set("logger", this.logger);
+		useHooks.set("wss", this.web.wss);
+		useHooks.set("server", this.web.server);
+		useHooks.set("icon", zzicon);
+		useHooks.set("loaders", this.loaders);
 	}
 }
 
 const getAllowedOrigins = () => {
 	const raw = process.env.CORS_ORIGIN;
-
-	// 1. Trường hợp không định nghĩa hoặc là '*'
 	if (!raw || raw === "*") return "*";
-
-	// 2. Trường hợp là một mảng giả lập (chuỗi cách nhau bởi dấu phẩy)
-	// Ví dụ: CORS_ORIGIN=http://localhost:3000,https://ziji.world
-	if (raw.includes(",")) {
-		return raw.split(",").map((origin) => origin.trim());
-	}
-
-	// 3. Trường hợp là một String duy nhất
+	if (raw.includes(",")) return raw.split(",").map((origin) => origin.trim());
 	return raw;
 };
 

@@ -8,38 +8,72 @@ const {
 } = require("discord.js");
 const ZiIcons = require("./../../utility/icon");
 const { useHooks } = require("zihooks");
-
-const { Worker } = require("worker_threads");
+const { fork } = require("child_process");
+const path = require("path");
 
 async function buildImageInWorker(searchPlayer, query) {
 	return new Promise((resolve, reject) => {
-		const worker = new Worker("./utility/musicImage.js", {
-			workerData: { searchPlayer, query },
+		const workerPath = path.resolve(__dirname, "../../utility/musicImage.js");
+		let settled = false;
+		let timeout;
+		const child = fork(workerPath, [], {
+			stdio: ["ignore", "ignore", "ignore", "ipc"],
 		});
 
-		worker.on("message", (arrayBuffer) => {
-			const buffer = Buffer.from(arrayBuffer);
+		const cleanup = () => {
+			clearTimeout(timeout);
+			child.removeAllListeners("message");
+			child.removeAllListeners("error");
+			child.removeAllListeners("exit");
+			if (child.connected) child.disconnect();
+			if (!child.killed) child.kill();
+		};
 
-			if (!Buffer.isBuffer(buffer)) {
-				console.error("Type of received data:", typeof buffer);
-				reject(new Error("Received data is not a buffer"));
-			} else {
+		const settle = (callback) => {
+			if (settled) return;
+			settled = true;
+			cleanup();
+			callback();
+		};
+
+		timeout = setTimeout(() => {
+			settle(() => reject(new Error("Image worker timed out after 30 seconds")));
+		}, 30_000);
+
+		child.once("message", (message) => {
+			if (!message || typeof message !== "object") {
+				return settle(() => reject(new Error("Invalid response from image worker")));
+			}
+
+			if (message.type === "error") {
+				return settle(() => reject(new Error(message.error || "Image worker failed")));
+			}
+
+			if (message.type !== "result" || typeof message.data !== "string") {
+				return settle(() => reject(new Error("Invalid image data from image worker")));
+			}
+
+			try {
+				const buffer = Buffer.from(message.data, "base64");
 				const attachment = new AttachmentBuilder(buffer, { name: "queue.png" });
-				resolve(attachment);
+				settle(() => resolve(attachment));
+			} catch (error) {
+				settle(() => reject(error));
 			}
-			// Send termination signal after receiving the result
-			worker.postMessage("terminate");
 		});
 
-		worker.on("error", (error) => {
-			reject(error);
-			worker.postMessage("terminate"); // Optionally send terminate signal on error
+		child.once("error", (error) => {
+			settle(() => reject(error));
 		});
 
-		worker.on("exit", (code) => {
-			if (code !== 0) {
-				reject(new Error(`Worker stopped with exit code ${code}`));
+		child.once("exit", (code, signal) => {
+			if (!settled) {
+				settle(() => reject(new Error(`Image worker stopped with code ${code}${signal ? ` (${signal})` : ""}`)));
 			}
+		});
+
+		child.send({ searchPlayer, query }, (error) => {
+			if (error) settle(() => reject(error));
 		});
 	});
 }
@@ -52,8 +86,8 @@ async function buildImageInWorker(searchPlayer, query) {
 module.exports.execute = async ({ interaction, player, Nextpage = true }) => {
 	if (!player.queue?.tracks?.length) return interaction.reply({ content: "There is no music playing in this server" });
 	await interaction.deferReply();
-	const fieldName = interaction?.message?.embeds?.at(0)?.data?.fields?.at(0);
-	const mainRequire = fieldName?.value?.includes("﹏");
+	const fieldName = interaction?.message?.components?.at(0)?.components?.at(3)?.content;
+	const mainRequire = fieldName?.includes("﹏");
 	const pageData = fieldName?.name?.replace("Page:", " ").trim().split("/");
 	const queuetrack = [];
 	let code = { content: "" };

@@ -207,6 +207,8 @@ module.exports = {
 
 		//db debug
 		prisma_DEBUG: false,
+
+		loaderDebug: false,
 		/** ============ Else ============ */
 		//enable Giveaway
 		Giveaway: true,

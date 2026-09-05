@@ -48,6 +48,7 @@ function cleanOldFiles() {
 
 module.exports.execute = async () => {
 	useHooks.get("logger")?.info?.("Starting autoDeleteTranscripts...");
+	
 	cron.schedule("0 0 * * *", () => {
 		cleanOldFiles();
 	});
