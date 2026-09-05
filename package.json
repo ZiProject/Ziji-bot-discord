@@ -41,7 +41,8 @@
 		"@ziplayer/extension": "^0.3.3",
 		"@ziplayer/infinity": "^0.0.3",
 		"@ziplayer/plugin": "^0.3.8",
-		"axios": "^1.13.5",
+		"@ziplayer/ytexecplug": "^0.0.4",
+		"axios": "^1.20.0",
 		"axios-cookiejar-support": "^7.0.0",
 		"canvacord": "^6.0.2",
 		"canvacord-gif": "^1.0.1",
@@ -93,8 +94,8 @@
 		"cloudflared@0.7.3": true,
 		"ffmpeg-static@5.3.0": true,
 		"prisma@6.19.3": true,
-		"youtube-dl-exec@3.1.12": true,
 		"@prisma/engines@6.19.3": true,
-		"@prisma/client@6.19.3": true
+		"@prisma/client@6.19.3": true,
+		"youtube-dl-exec@3.1.13": true
 	}
 }
