@@ -40,7 +40,7 @@
 		"@ziji/loader": "^0.0.2",
 		"@ziplayer/extension": "^1.0.0",
 		"@ziplayer/infinity": "^0.0.3",
-		"@ziplayer/plugin": "^1.0.0",
+		"@ziplayer/plugin": "file:../ZiPlayer/plugins",
 		"axios": "^1.13.5",
 		"axios-cookiejar-support": "^7.0.0",
 		"canvacord": "^6.0.2",
@@ -75,7 +75,7 @@
 		"winston": "^3.17.0",
 		"ws": "^8.18.0",
 		"zihooks": "^2.0.0",
-		"ziplayer": "^1.0.1"
+		"ziplayer": "^1.0.2"
 	},
 	"devDependencies": {
 		"nodemon": "^3.1.14",

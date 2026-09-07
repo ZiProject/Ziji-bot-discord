@@ -16,12 +16,16 @@ module.exports.data = {
 	integration_types: [0, 1],
 	contexts: [0, 1, 2],
 };
-
+/**
+ * @param { object } command - object command
+ * @param { import ("discord.js").CommandInteraction } command.interaction - interaction
+ * @param { import('../../lang/vi.js') } command.lang - language
+ */
 module.exports.execute = async ({ interaction, lang }) => {
 	const db = useHooks.get("db");
 	const reason = interaction.options.getString("reason") || "Không có lý do";
 	const afkTime = new Date();
-
+	await interaction.deferReply({ ephemeral: true });
 	await db.ZiUser.updateOne(
 		{ userID: interaction.user.id },
 		{
@@ -50,5 +54,5 @@ module.exports.execute = async ({ interaction, lang }) => {
 		.setDescription(`💤 **${interaction.user.username}** hiện đã ở trạng thái AFK.\n**Lý do:** ${reason}`)
 		.setTimestamp();
 
-	await interaction.reply({ embeds: [embed] });
+	await interaction.editReply({ embeds: [embed] });
 };

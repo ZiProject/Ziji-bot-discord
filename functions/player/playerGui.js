@@ -68,7 +68,6 @@ module.exports = {
 
 	execute: async ({ player, tracks }) => {
 		const track = tracks ?? player?.currentTrack ?? player?.previousTrack;
-		console.log(player?.isPlaying);
 		let requestedBy =
 			(track?.requestedBy === "auto" ? player?.userdata?.requestedBy : track?.requestedBy) ?? player?.userdata?.requestedBy;
 
