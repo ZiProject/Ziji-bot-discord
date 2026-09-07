@@ -40,7 +40,7 @@
 		"@ziji/loader": "^0.0.2",
 		"@ziplayer/extension": "^1.0.0",
 		"@ziplayer/infinity": "^0.0.3",
-		"@ziplayer/plugin": "file:../ZiPlayer/plugins",
+		"@ziplayer/plugin": "^1.0.0",
 		"axios": "^1.13.5",
 		"axios-cookiejar-support": "^7.0.0",
 		"canvacord": "^6.0.2",
