@@ -8,7 +8,6 @@ const { EventEmitter } = require("node:events");
 const { Collection } = require("discord.js");
 const { useHooks } = require("zihooks");
 
-const { StartupLoader } = require("../startup/loader.js");
 const { StartupManager } = require("../startup/index.js");
 const { buildBuilderPreview, startBuilderSession } = require("../functions/guildCommand/guildCommandBuilder.js");
 
@@ -19,9 +18,25 @@ const createTempModule = async (dir, name, content) => {
 };
 
 const removeTempDir = async (dir) => {
-	if (fs.existsSync(dir)) {
-		await fsPromises.rm(dir, { recursive: true, force: true });
+	if (fs.existsSync(dir)) await fsPromises.rm(dir, { recursive: true, force: true });
+};
+
+const createTestManager = (client = { id: "test-client" }) => {
+	class TestStartupManager extends StartupManager {
+		initWeb() {
+			return { server: null, wss: null };
+		}
+
+		initPlayerNet() {
+			useHooks.set("playerNetClient", [this.client]);
+		}
+
+		createFile() {
+			return null;
+		}
 	}
+
+	return new TestStartupManager(client);
 };
 
 const buildCommandModules = async (dir) => {
@@ -30,9 +45,7 @@ const buildCommandModules = async (dir) => {
 		"validCommand",
 		`module.exports = {
 			data: { name: "foo" },
-			execute: async () => {
-				return "ok";
-			},
+			execute: async () => "ok",
 		};`,
 	);
 
@@ -41,9 +54,7 @@ const buildCommandModules = async (dir) => {
 		"disabledCommand",
 		`module.exports = {
 			data: { name: "bar", enable: false },
-			execute: async () => {
-				return "should not load";
-			},
+			execute: async () => "should not load",
 		};`,
 	);
 
@@ -52,12 +63,8 @@ const buildCommandModules = async (dir) => {
 		"messageCommand",
 		`module.exports = {
 			data: { name: "baz", alias: ["bz"] },
-			execute: async () => {
-				return "ok";
-			},
-			run: async () => {
-				return "message";
-			},
+			execute: async () => "ok",
+			run: async () => "message",
 		};`,
 	);
 };
@@ -88,9 +95,7 @@ const buildEventModules = async (dir) => {
 	);
 };
 
-const createLoader = () => new StartupLoader(useHooks.get("config"), console);
-
-test("StartupLoader.loadFiles loads valid commands and registers Mcommands aliases", async () => {
+test("StartupManager.loadModules uses @ziji/loader for commands and aliases", async () => {
 	const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "ziji-startup-test-"));
 	try {
 		useHooks.set("config", { disabledCommands: [] });
@@ -100,9 +105,8 @@ test("StartupLoader.loadFiles loads valid commands and registers Mcommands alias
 		useHooks.set("Mcommands", mcommands);
 
 		await buildCommandModules(tempDir);
-
-		const loader = createLoader();
-		await loader.loadFiles(tempDir, commands);
+		const manager = createTestManager();
+		await manager.loadModules(tempDir, commands);
 
 		assert.strictEqual(commands.has("foo"), true, "Expected valid command to be loaded");
 		assert.strictEqual(commands.has("bar"), false, "Disabled command should not be loaded");
@@ -114,7 +118,7 @@ test("StartupLoader.loadFiles loads valid commands and registers Mcommands alias
 	}
 });
 
-test("StartupLoader.loadFiles loads actual command modules from commands folder", async () => {
+test("StartupManager.loadModules loads actual command modules from commands folder", async () => {
 	useHooks.set("config", require("../startup/defaultconfig"));
 	const commands = new Collection();
 	const mcommands = new Collection();
@@ -122,29 +126,30 @@ test("StartupLoader.loadFiles loads actual command modules from commands folder"
 	useHooks.set("Mcommands", mcommands);
 	useHooks.set("functions", new Collection());
 
-	const loader = createLoader();
-	await loader.loadFiles(path.join(__dirname, "..", "commands"), commands);
+	const manager = createTestManager();
+	const result = await manager.loadModules(path.join(__dirname, "..", "commands"), commands);
 
-	assert.ok(commands.size > 0, "Expected at least one actual command to be loaded");
+	assert.ok(result.loaded.length > 0, "Expected at least one actual command to be loaded");
+	assert.ok(commands.size > 0, "Expected at least one actual command to be registered");
 	assert.ok(commands.has("ping"), "Expected actual ping command to be loaded");
 });
 
-test("StartupLoader.loadEvents attaches event handlers and executes fake events", async () => {
+test("StartupManager.loadEvents attaches event handlers and executes fake events", async () => {
 	const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "ziji-startup-event-test-"));
 	try {
 		process.__ziji_test_on_count = 0;
 		process.__ziji_test_once_count = 0;
-
 		await buildEventModules(tempDir);
 
 		const emitter = new EventEmitter();
-		const loader = createLoader();
-		await loader.loadEvents(tempDir, emitter);
+		const manager = createTestManager();
+		await manager.loadEvents(tempDir, emitter);
 
 		emitter.emit("testOn");
 		emitter.emit("testOn");
 		emitter.emit("testOnce");
 		emitter.emit("testOnce");
+		await new Promise((resolve) => setImmediate(resolve));
 
 		assert.strictEqual(process.__ziji_test_on_count, 2, "Expected on event to fire twice");
 		assert.strictEqual(process.__ziji_test_once_count, 1, "Expected once event to fire only once");
@@ -156,18 +161,8 @@ test("StartupLoader.loadEvents attaches event handlers and executes fake events"
 });
 
 test("StartupManager.initHooks initializes hooks and exposes config/logger", async () => {
-	class TestStartupManager extends StartupManager {
-		initWeb() {
-			return { server: null, wss: null };
-		}
-
-		createFile() {
-			return null;
-		}
-	}
-
 	const fakeClient = { id: "fake-client" };
-	const manager = new TestStartupManager(fakeClient);
+	const manager = createTestManager(fakeClient);
 	manager.initHooks();
 
 	assert.strictEqual(useHooks.get("client"), fakeClient, "Client hook should be initialized");
