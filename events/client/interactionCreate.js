@@ -8,12 +8,6 @@ const Commands = useHooks.get("commands");
 const Functions = useHooks.get("functions");
 const { getPlayer } = require("ziplayer");
 
-/**
- * @param { CommandInteraction } interaction
- * @param { Client } client
- * @param { import('../../lang/vi.js') } lang - language
- */
-
 async function checkStatus(interaction, client, lang) {
 	if (interaction.guild) {
 		const hasPermission = interaction.channel
@@ -29,9 +23,7 @@ async function checkStatus(interaction, client, lang) {
 	}
 
 	const configPath = path.join(__dirname, "../../jsons/developer.json");
-	if (!fs.existsSync(configPath)) {
-		fs.writeFileSync(configPath, JSON.stringify({ bannedUsers: [] }, null, 4));
-	}
+	if (!fs.existsSync(configPath)) fs.writeFileSync(configPath, JSON.stringify({ bannedUsers: [] }, null, 4));
 	const devConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
 	if (devConfig.bannedUsers.includes(interaction.user.id)) {
 		const response = { content: lang.until.banned, flags: MessageFlags.Ephemeral };
@@ -64,12 +56,6 @@ async function checkStatus(interaction, client, lang) {
 	return false;
 }
 
-/**
- * @param { object } fns
- * @param { CommandInteraction } fns.interaction
- * @param { object } fns.command
- * @param { import("./../../lang/vi.js") } fns.lang
- */
 async function checkMusicstat({ interaction, command, lang }) {
 	const ops = { status: false };
 	if (!interaction?.guild) {
@@ -112,25 +98,33 @@ async function checkMusicstat({ interaction, command, lang }) {
 	return ops;
 }
 
-module.exports = {
-	name: Events.InteractionCreate,
-	type: "events",
-};
+module.exports = { name: Events.InteractionCreate, type: "events" };
 
-/**
- * Resolve the acknowledgement options before the interaction is deferred.
- * `data.ephemeral` is intentionally non-enumerable on commands so it never
- * becomes part of Discord's application-command JSON payload.
- */
+// Commands that historically selected an ephemeral initial ACK. The value is
+// resolved here because Discord fixes ephemeral/public visibility at defer time.
+const EPHEMERAL_COMMANDS = new Set(["afk", "jtc", "encrypt", "decrypt", "listservers", "youtube", "noitu"]);
+
 async function getAckOptions(command, interaction) {
 	const value = command?.data?.ephemeral;
-	const ephemeral = typeof value === "function" ? await value(interaction) : value === true;
+	let ephemeral = typeof value === "function" ? await value(interaction) : value === true;
+
+	if (!ephemeral && EPHEMERAL_COMMANDS.has(interaction.commandName)) ephemeral = true;
+
+	// These commands only defer ephemerally for specific subcommands.
+	if (interaction.commandName === "genshin") {
+		ephemeral = ephemeral || interaction.options?.getSubcommand?.(false) === "claim";
+	}
+	if (interaction.commandName === "confession") {
+		ephemeral = ephemeral || interaction.options?.getSubcommand?.(false) === "write";
+	}
+	if (interaction.commandName === "guildcommand") {
+		const subcommand = interaction.options?.getSubcommand?.(false);
+		ephemeral = ephemeral || subcommand === "create" || subcommand === "list";
+	}
+
 	return ephemeral ? { flags: MessageFlags.Ephemeral } : undefined;
 }
 
-/**
- * @param { CommandInteraction } interaction
- */
 module.exports.execute = async (interaction) => {
 	const { client, user } = interaction;
 	if (!client.isReady()) return;
@@ -142,9 +136,7 @@ module.exports.execute = async (interaction) => {
 
 	if (interaction.isChatInputCommand() || interaction.isAutocomplete() || interaction.isMessageContextMenuCommand()) {
 		command = Commands.get(interaction.commandName);
-		if (!command && interaction.guildId) {
-			command = useHooks.get("guildCommands")?.get(`${interaction.guildId}:${interaction.commandName.toLowerCase()}`);
-		}
+		if (!command && interaction.guildId) command = useHooks.get("guildCommands")?.get(`${interaction.guildId}:${interaction.commandName.toLowerCase()}`);
 		commandType = "command";
 	} else if (interaction.isMessageComponent() || interaction.isModalSubmit()) {
 		command = Functions.get(interaction.customId);
@@ -159,6 +151,9 @@ module.exports.execute = async (interaction) => {
 	const shouldDefer = interaction.isChatInputCommand() || interaction.isMessageContextMenuCommand();
 	if (shouldDefer && !interaction.deferred && !interaction.replied) {
 		await interaction.deferReply(await getAckOptions(command, interaction));
+
+		// Compatibility contract for legacy command modules: the dispatcher owns
+		// the initial ACK, commands only edit that response afterwards.
 		interaction.reply = async (options) => interaction.editReply(options);
 		interaction.deferReply = async () => interaction;
 	}
@@ -180,9 +175,7 @@ module.exports.execute = async (interaction) => {
 
 			if (command?.data.category == "musix") {
 				const sts = await checkMusicstat({ interaction, command, lang });
-				logger.debug(
-					`Music status check for ${interaction?.commandName || interaction?.customId}: ${sts.status ? "Passed" : "Failed"}`,
-				);
+				logger.debug(`Music status check for ${interaction?.commandName || interaction?.customId}: ${sts.status ? "Passed" : "Failed"}`);
 				if (!sts.status) return;
 				cmdops = sts;
 			}
@@ -194,10 +187,7 @@ module.exports.execute = async (interaction) => {
 		console.error(error);
 		const response = { content: "There was an error while executing this command!", ephemeral: true };
 		if (interaction.isAutocomplete()) return;
-		if (interaction.replied || interaction.deferred) {
-			await interaction.editReply(response).catch(() => {});
-		} else {
-			await interaction.reply(response).catch(() => {});
-		}
+		if (interaction.replied || interaction.deferred) await interaction.editReply(response).catch(() => {});
+		else await interaction.reply(response).catch(() => {});
 	}
 };
