@@ -130,9 +130,7 @@ function prepareMessengerEdit(value, messenger) {
 
 	// Loading is a server-side interaction state. Do not copy Ephemeral/Loading
 	// into Message.edit(); only IsComponentsV2 is a message-editable interaction flag.
-	const isComponentsV2 =
-		hasComponentsV2(value) ||
-		(currentFlags & MessageFlags.IsComponentsV2) === MessageFlags.IsComponentsV2;
+	const isComponentsV2 = hasComponentsV2(value) || (currentFlags & MessageFlags.IsComponentsV2) === MessageFlags.IsComponentsV2;
 
 	if (isComponentsV2) {
 		edit.flags = requestedFlags | MessageFlags.IsComponentsV2;
