@@ -22,7 +22,9 @@ async function checkStatus(interaction, client, lang) {
 			.has([PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ViewChannel]);
 
 		if (!hasPermission) {
-			await interaction.reply({ content: lang.until.NOPermission, ephemeral: true });
+			const response = { content: lang.until.NOPermission, ephemeral: true };
+			if (interaction.deferred || interaction.replied) await interaction.editReply(response);
+			else await interaction.reply(response);
 			return true;
 		}
 	}
@@ -33,12 +35,12 @@ async function checkStatus(interaction, client, lang) {
 	}
 	let devConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
 	if (devConfig.bannedUsers.includes(interaction.user.id)) {
-		await interaction
-			.reply({
-				content: lang.until.banned,
-				flags: MessageFlags.Ephemeral,
-			})
-			.catch(() => {});
+		const response = {
+			content: lang.until.banned,
+			flags: MessageFlags.Ephemeral,
+		};
+		if (interaction.deferred || interaction.replied) await interaction.editReply(response).catch(() => {});
+		else await interaction.reply(response).catch(() => {});
 		return true;
 	}
 
@@ -54,14 +56,14 @@ async function checkStatus(interaction, client, lang) {
 
 	if (Cooldowns.has(interaction.user.id) && now < expirationTime) {
 		const expiredTimestamp = Math.round(expirationTime / 1_000);
-		await interaction
-			.reply({
-				content: lang.until.cooldown
-					.replace("{command}", interaction.commandName || interaction.customId)
-					.replace("{time}", `<t:${expiredTimestamp}:R>`),
-				ephemeral: true,
-			})
-			.catch(() => {});
+		const response = {
+			content: lang.until.cooldown
+				.replace("{command}", interaction.commandName || interaction.customId)
+				.replace("{time}", `<t:${expiredTimestamp}:R>`),
+			ephemeral: true,
+		};
+		if (interaction.deferred || interaction.replied) await interaction.editReply(response).catch(() => {});
+		else await interaction.reply(response).catch(() => {});
 		return true;
 	}
 	// Set cooldown
@@ -80,7 +82,9 @@ async function checkMusicstat({ interaction, command, lang }) {
 		status: false,
 	};
 	if (!interaction?.guild) {
-		await interaction.reply({ embeds: [new EmbedBuilder().setColor("Red").setDescription(`${lang.until.noGuild} `)] });
+		const response = { embeds: [new EmbedBuilder().setColor("Red").setDescription(`${lang.until.noGuild} `)] };
+		if (interaction.deferred || interaction.replied) await interaction.editReply(response);
+		else await interaction.reply(response);
 		return ops;
 	}
 	const voiceChannel = interaction.member?.voice?.channel;
@@ -89,16 +93,16 @@ async function checkMusicstat({ interaction, command, lang }) {
 
 	if (command.data?.lock) {
 		if (!player?.connection) {
-			await interaction
-				.reply({ content: lang.music.NoPlaying, ephemeral: true })
-				.catch((e) => interaction.followUp({ content: lang.music.NoPlaying, ephemeral: true }));
+			const response = { content: lang.music.NoPlaying, ephemeral: true };
+			if (interaction.deferred || interaction.replied) await interaction.editReply(response).catch(() => {});
+			else await interaction.reply(response).catch(() => {});
 			return ops;
 		}
 		// Kiểm tra xem có khóa player không
 		if (player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id) {
-			await interaction
-				.reply({ content: lang.until.noPermission, ephemeral: true })
-				.catch((e) => interaction.followUp({ content: lang.until.noPermission, ephemeral: true }));
+			const response = { content: lang.until.noPermission, ephemeral: true };
+			if (interaction.deferred || interaction.replied) await interaction.editReply(response).catch(() => {});
+			else await interaction.reply(response).catch(() => {});
 			return ops;
 		}
 	}
@@ -106,8 +110,9 @@ async function checkMusicstat({ interaction, command, lang }) {
 		const botVoiceChannel = interaction.guild.members.me.voice.channel;
 		const userVoiceChannel = interaction.member.voice.channel;
 		if (!userVoiceChannel) {
-			//!botVoiceChannel || botVoiceChannel.id !== userVoiceChannel?.id) {
-			await interaction.followUp({ content: lang.music.NOvoiceMe, ephemeral: true });
+			const response = { content: lang.music.NOvoiceMe, ephemeral: true };
+			if (interaction.deferred || interaction.replied) await interaction.editReply(response).catch(() => {});
+			else await interaction.reply(response).catch(() => {});
 			return ops;
 		}
 	}
@@ -150,6 +155,22 @@ module.exports.execute = async (interaction) => {
 		return;
 	}
 
+	/**
+	 * Acknowledge command interactions before any potentially slow work.
+	 * Components, modals and autocomplete have their own response semantics
+	 * and must not be deferred here.
+	 */
+	const shouldDefer = interaction.isChatInputCommand() || interaction.isMessageContextMenuCommand();
+	if (shouldDefer && !interaction.deferred && !interaction.replied) {
+		await interaction.deferReply();
+
+		// Commands historically handled their own acknowledgement. Keep them
+		// compatible while the dispatcher owns the initial ACK:
+		// reply() -> editReply(), deferReply() -> no-op.
+		interaction.reply = async (options) => interaction.editReply(options);
+		interaction.deferReply = async () => interaction;
+	}
+
 	// Get the user's language preference
 	const langfunc = Functions.get("ZiRank");
 	const lang = await langfunc.execute({ user, XpADD: interaction.isAutocomplete() ? 0 : 1 });
@@ -187,7 +208,7 @@ module.exports.execute = async (interaction) => {
 		};
 		if (interaction.isAutocomplete()) return;
 		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp(response).catch(() => {});
+			await interaction.editReply(response).catch(() => {});
 		} else {
 			await interaction.reply(response).catch(() => {});
 		}
