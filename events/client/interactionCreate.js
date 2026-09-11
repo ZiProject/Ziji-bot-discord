@@ -15,7 +15,6 @@ const { getPlayer } = require("ziplayer");
  */
 
 async function checkStatus(interaction, client, lang) {
-	// Check permission
 	if (interaction.guild) {
 		const hasPermission = interaction.channel
 			.permissionsFor(client.user)
@@ -28,32 +27,25 @@ async function checkStatus(interaction, client, lang) {
 			return true;
 		}
 	}
-	// Check banned
+
 	const configPath = path.join(__dirname, "../../jsons/developer.json");
 	if (!fs.existsSync(configPath)) {
 		fs.writeFileSync(configPath, JSON.stringify({ bannedUsers: [] }, null, 4));
 	}
-	let devConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+	const devConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
 	if (devConfig.bannedUsers.includes(interaction.user.id)) {
-		const response = {
-			content: lang.until.banned,
-			flags: MessageFlags.Ephemeral,
-		};
+		const response = { content: lang.until.banned, flags: MessageFlags.Ephemeral };
 		if (interaction.deferred || interaction.replied) await interaction.editReply(response).catch(() => {});
 		else await interaction.reply(response).catch(() => {});
 		return true;
 	}
 
-	// Check owner
 	if (config.OwnerID.includes(interaction.user.id)) return false;
-
-	// Check modal
 	if (interaction.isModalSubmit()) return false;
-	// Check cooldown
+
 	const now = Date.now();
 	const cooldownDuration = config.defaultCooldownDuration ?? 3000;
 	const expirationTime = Cooldowns.get(interaction.user.id) + cooldownDuration;
-
 	if (Cooldowns.has(interaction.user.id) && now < expirationTime) {
 		const expiredTimestamp = Math.round(expirationTime / 1_000);
 		const response = {
@@ -66,11 +58,12 @@ async function checkStatus(interaction, client, lang) {
 		else await interaction.reply(response).catch(() => {});
 		return true;
 	}
-	// Set cooldown
+
 	Cooldowns.set(interaction.user.id, now);
 	setTimeout(() => Cooldowns.delete(interaction.user.id), cooldownDuration);
 	return false;
 }
+
 /**
  * @param { object } fns
  * @param { CommandInteraction } fns.interaction
@@ -78,15 +71,14 @@ async function checkStatus(interaction, client, lang) {
  * @param { import("./../../lang/vi.js") } fns.lang
  */
 async function checkMusicstat({ interaction, command, lang }) {
-	let ops = {
-		status: false,
-	};
+	const ops = { status: false };
 	if (!interaction?.guild) {
 		const response = { embeds: [new EmbedBuilder().setColor("Red").setDescription(`${lang.until.noGuild} `)] };
 		if (interaction.deferred || interaction.replied) await interaction.editReply(response);
 		else await interaction.reply(response);
 		return ops;
 	}
+
 	const voiceChannel = interaction.member?.voice?.channel;
 	const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
 	ops.player = player;
@@ -98,7 +90,6 @@ async function checkMusicstat({ interaction, command, lang }) {
 			else await interaction.reply(response).catch(() => {});
 			return ops;
 		}
-		// Kiểm tra xem có khóa player không
 		if (player.userdata.LockStatus && player.userdata.requestedBy?.id !== interaction.user?.id) {
 			const response = { content: lang.until.noPermission, ephemeral: true };
 			if (interaction.deferred || interaction.replied) await interaction.editReply(response).catch(() => {});
@@ -106,8 +97,8 @@ async function checkMusicstat({ interaction, command, lang }) {
 			return ops;
 		}
 	}
+
 	if (command.data?.ckeckVoice) {
-		const botVoiceChannel = interaction.guild.members.me.voice.channel;
 		const userVoiceChannel = interaction.member.voice.channel;
 		if (!userVoiceChannel) {
 			const response = { content: lang.music.NOvoiceMe, ephemeral: true };
@@ -116,6 +107,7 @@ async function checkMusicstat({ interaction, command, lang }) {
 			return ops;
 		}
 	}
+
 	ops.status = true;
 	return ops;
 }
@@ -124,6 +116,17 @@ module.exports = {
 	name: Events.InteractionCreate,
 	type: "events",
 };
+
+/**
+ * Resolve the acknowledgement options before the interaction is deferred.
+ * `data.ephemeral` is intentionally non-enumerable on commands so it never
+ * becomes part of Discord's application-command JSON payload.
+ */
+async function getAckOptions(command, interaction) {
+	const value = command?.data?.ephemeral;
+	const ephemeral = typeof value === "function" ? await value(interaction) : value === true;
+	return ephemeral ? { flags: MessageFlags.Ephemeral } : undefined;
+}
 
 /**
  * @param { CommandInteraction } interaction
@@ -137,7 +140,6 @@ module.exports.execute = async (interaction) => {
 	let cmdops = null;
 	const logger = useHooks.get("logger");
 
-	// Determine the interaction type and set the command
 	if (interaction.isChatInputCommand() || interaction.isAutocomplete() || interaction.isMessageContextMenuCommand()) {
 		command = Commands.get(interaction.commandName);
 		if (!command && interaction.guildId) {
@@ -149,33 +151,21 @@ module.exports.execute = async (interaction) => {
 		commandType = "function";
 	}
 
-	// If no command was found, log the error and return
 	if (!command) {
 		logger.debug(`No ${commandType} matching ${interaction.commandName || interaction.customId} was found.`);
 		return;
 	}
 
-	/**
-	 * Acknowledge command interactions before any potentially slow work.
-	 * Components, modals and autocomplete have their own response semantics
-	 * and must not be deferred here.
-	 */
 	const shouldDefer = interaction.isChatInputCommand() || interaction.isMessageContextMenuCommand();
 	if (shouldDefer && !interaction.deferred && !interaction.replied) {
-		await interaction.deferReply();
-
-		// Commands historically handled their own acknowledgement. Keep them
-		// compatible while the dispatcher owns the initial ACK:
-		// reply() -> editReply(), deferReply() -> no-op.
+		await interaction.deferReply(await getAckOptions(command, interaction));
 		interaction.reply = async (options) => interaction.editReply(options);
 		interaction.deferReply = async () => interaction;
 	}
 
-	// Get the user's language preference
 	const langfunc = Functions.get("ZiRank");
 	const lang = await langfunc.execute({ user, XpADD: interaction.isAutocomplete() ? 0 : 1 });
 
-	// Try to execute the command and handle errors
 	try {
 		if (interaction.isAutocomplete()) {
 			await command?.autocomplete({ interaction, lang });
@@ -202,10 +192,7 @@ module.exports.execute = async (interaction) => {
 		client.errorLog(`**${error.message}**`);
 		client.errorLog(error.stack);
 		console.error(error);
-		const response = {
-			content: "There was an error while executing this command!",
-			ephemeral: true,
-		};
+		const response = { content: "There was an error while executing this command!", ephemeral: true };
 		if (interaction.isAutocomplete()) return;
 		if (interaction.replied || interaction.deferred) {
 			await interaction.editReply(response).catch(() => {});
