@@ -9,21 +9,14 @@ const { useHooks } = require("zihooks");
 const { initDatabase, connectPrismaDatabase, _internals: prismaInternals } = require("../startup/prismaDB.js");
 
 const removeTempDir = async (dir) => {
-	if (fs.existsSync(dir)) {
-		await fsPromises.rm(dir, { recursive: true, force: true });
-	}
+	if (fs.existsSync(dir)) await fsPromises.rm(dir, { recursive: true, force: true });
 };
+
 test("Prisma adapter keeps null JSON values instead of replacing them with defaults", async () => {
 	const config = {
-		defaults: {
-			huntStats: {},
-			userInfo: {},
-			guilds: [],
-			battleStats: { wins: 0, losses: 0, total: 0 },
-		},
+		defaults: { huntStats: {}, userInfo: {}, guilds: [], battleStats: { wins: 0, losses: 0, total: 0 } },
 		jsonFields: ["huntStats", "userInfo", "guilds", "battleStats"],
 	};
-
 	const hydrated = prismaInternals.addDefaults({ huntStats: null, userInfo: null, guilds: null, battleStats: null }, config);
 
 	assert.strictEqual(hydrated.huntStats, null, "null JSON fields should remain null");
@@ -33,10 +26,7 @@ test("Prisma adapter keeps null JSON values instead of replacing them with defau
 });
 
 test("Prisma hydration fills missing fields without overwriting existing null values", () => {
-	const config = {
-		defaults: { level: 1, coin: 0, volume: 100, huntStats: {}, guilds: [] },
-		jsonFields: ["huntStats", "guilds"],
-	};
+	const config = { defaults: { level: 1, coin: 0, volume: 100, huntStats: {}, guilds: [] }, jsonFields: ["huntStats", "guilds"] };
 	const row = { id: "doc-id", userID: "abc", huntStats: null, guilds: null, level: 1, coin: 5 };
 	const hydrated = prismaInternals.hydrateRow(row, config, "sqlite", { _saveDocument: async () => null });
 
@@ -81,32 +71,22 @@ test("Prisma SQLite adapter exposes Mongoose-like model API", async () => {
 });
 
 test("client ready falls back to LocalDB when Prisma providers fail", async () => {
-	const prismaDbPath = require.resolve("../startup/prismaDB.js");
 	const readyEventPath = require.resolve("../events/client/ready.js");
-	const previousPrismaCache = require.cache[prismaDbPath];
 	const previousMongo = process.env.MONGO;
+	const previousSqliteUrl = process.env.SQLITE_DATABASE_URL;
 	const previousDb = useHooks.get("db");
 	let statusSet = false;
 	let activitySet = false;
 
 	try {
-		process.env.MONGO = "mongodb://localhost:27017/ziji";
+		// Deliberately make both Prisma providers unusable so the third fallback is deterministic.
+		process.env.MONGO = "not-a-mongodb-uri";
+		process.env.SQLITE_DATABASE_URL = "file:/dev/null";
 		useHooks.set("config", { deploy: false, botConfig: {} });
 		useHooks.set("logger", { error: () => {}, info: () => {}, warn: () => {}, debug: () => {} });
 		useHooks.set("db", null);
 
 		delete require.cache[readyEventPath];
-		require.cache[prismaDbPath] = {
-			id: prismaDbPath,
-			filename: prismaDbPath,
-			loaded: true,
-			exports: {
-				connectPrismaDatabase: async () => {
-					throw new Error("database failed");
-				},
-			},
-		};
-
 		const readyEvent = require("../events/client/ready.js");
 		const fakeClient = {
 			channels: { fetch: async () => null },
@@ -133,10 +113,10 @@ test("client ready falls back to LocalDB when Prisma providers fail", async () =
 		assert.strictEqual(activitySet, true);
 	} finally {
 		delete require.cache[readyEventPath];
-		if (previousPrismaCache) require.cache[prismaDbPath] = previousPrismaCache;
-		else delete require.cache[prismaDbPath];
 		if (previousMongo === undefined) delete process.env.MONGO;
 		else process.env.MONGO = previousMongo;
+		if (previousSqliteUrl === undefined) delete process.env.SQLITE_DATABASE_URL;
+		else process.env.SQLITE_DATABASE_URL = previousSqliteUrl;
 		useHooks.set("db", previousDb);
 	}
 });
@@ -145,10 +125,7 @@ test("Prisma Mongo adapter uses appName as database name when URI path is empty"
 	const mongoUrl = "mongodb+srv://user:pass@example.mongodb.net/?retryWrites=true&w=majority&appName=Divahost";
 	const normalizedUrl = prismaInternals.normalizeMongoUrl(mongoUrl);
 	assert.strictEqual(prismaInternals.getMongoDatabaseName(normalizedUrl), "Divahost");
-	assert.strictEqual(
-		normalizedUrl,
-		"mongodb+srv://user:pass@example.mongodb.net/Divahost?retryWrites=true&w=majority&appName=Divahost",
-	);
+	assert.strictEqual(normalizedUrl, "mongodb+srv://user:pass@example.mongodb.net/Divahost?retryWrites=true&w=majority&appName=Divahost");
 });
 
 test("Prisma where builder treats empty filters as unconstrained queries", () => {
