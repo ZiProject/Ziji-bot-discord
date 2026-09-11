@@ -16,6 +16,7 @@ module.exports.data = {
 	integration_types: [0, 1],
 	contexts: [0, 1, 2],
 };
+Object.defineProperty(module.exports.data, "ephemeral", { value: true });
 /**
  * @param { object } command - object command
  * @param { import ("discord.js").CommandInteraction } command.interaction - interaction
@@ -25,7 +26,6 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const db = useHooks.get("db");
 	const reason = interaction.options.getString("reason") || "Không có lý do";
 	const afkTime = new Date();
-	await interaction.deferReply({ ephemeral: true });
 	await db.ZiUser.updateOne(
 		{ userID: interaction.user.id },
 		{
