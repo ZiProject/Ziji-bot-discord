@@ -6,7 +6,6 @@ const afkCommand = require("../commands/utility/afk.js");
 const messageCreateEvent = require("../events/client/messageCreate.js");
 
 test("loadTemp extension initializes empty afkCache when no DB or empty DB is present", async () => {
-	// Setup mock hooks
 	useHooks.set("logger", { debug: () => {}, error: () => {} });
 	useHooks.set("temp", new Map());
 	useHooks.set("db", null);
@@ -19,7 +18,6 @@ test("loadTemp extension initializes empty afkCache when no DB or empty DB is pr
 });
 
 test("loadTemp extension populates afkCache with AFK users from DB", async () => {
-	// Setup mock hooks
 	useHooks.set("logger", { debug: () => {}, error: () => {} });
 	useHooks.set("temp", new Map());
 
@@ -74,11 +72,10 @@ test("afk command updates both database and afkCache", async () => {
 	};
 	useHooks.set("db", mockDb);
 
-	// Reset cache
 	const afkCache = new Map();
 	useHooks.set("afkCache", afkCache);
 
-	let replied = false;
+	let edited = false;
 	const mockInteraction = {
 		user: { id: "54321", username: "TestUser" },
 		options: {
@@ -87,9 +84,9 @@ test("afk command updates both database and afkCache", async () => {
 				return null;
 			},
 		},
-		reply: async (options) => {
+		editReply: async (options) => {
 			assert.ok(options.embeds);
-			replied = true;
+			edited = true;
 		},
 	};
 
@@ -99,7 +96,7 @@ test("afk command updates both database and afkCache", async () => {
 	assert.ok(afkCache.has("54321"));
 	assert.strictEqual(afkCache.get("54321").afk, true);
 	assert.strictEqual(afkCache.get("54321").afkReason, "Sleeping");
-	assert.strictEqual(replied, true);
+	assert.strictEqual(edited, true);
 });
 
 test("messageCreate event handles returning AFK users using afkCache", async () => {
@@ -119,29 +116,19 @@ test("messageCreate event handles returning AFK users using afkCache", async () 
 	afkCache.set("99999", {
 		afk: true,
 		afkReason: "Out for lunch",
-		afkTime: new Date(Date.now() - 60000), // 1 minute ago
+		afkTime: new Date(Date.now() - 60000),
 	});
 	useHooks.set("afkCache", afkCache);
 
 	let replied = false;
 	const mockMessage = {
-		client: {
-			isReady: () => true,
-		},
-		author: {
-			bot: false,
-			id: "99999",
-			username: "LunchGuy",
-		},
-		mentions: {
-			users: new Map(),
-		},
+		client: { isReady: () => true },
+		author: { bot: false, id: "99999", username: "LunchGuy" },
+		mentions: { users: new Map() },
 		reply: async (text) => {
 			assert.ok(text.includes("Chào mừng bạn quay trở lại"));
 			replied = true;
-			return {
-				delete: async () => {},
-			};
+			return { delete: async () => {} };
 		},
 	};
 
@@ -172,17 +159,9 @@ test("messageCreate event keeps AFK cache if database update fails", async () =>
 
 	let replied = false;
 	const mockMessage = {
-		client: {
-			isReady: () => true,
-		},
-		author: {
-			bot: false,
-			id: "99999",
-			username: "LunchGuy",
-		},
-		mentions: {
-			users: new Map(),
-		},
+		client: { isReady: () => true },
+		author: { bot: false, id: "99999", username: "LunchGuy" },
+		mentions: { users: new Map() },
 		reply: async () => {
 			replied = true;
 		},
@@ -199,23 +178,15 @@ test("messageCreate event checks mentioned users using afkCache", async () => {
 	afkCache.set("11111", {
 		afk: true,
 		afkReason: "Coding",
-		afkTime: new Date(Date.now() - 120000), // 2 minutes ago
+		afkTime: new Date(Date.now() - 120000),
 	});
 	useHooks.set("afkCache", afkCache);
 
 	let replyCount = 0;
 	const mockMessage = {
-		client: {
-			isReady: () => true,
-		},
-		author: {
-			bot: false,
-			id: "22222",
-			username: "OtherGuy",
-		},
-		mentions: {
-			users: new Map([["11111", { id: "11111", username: "Coder" }]]),
-		},
+		client: { isReady: () => true },
+		author: { bot: false, id: "22222", username: "OtherGuy" },
+		mentions: { users: new Map([["11111", { id: "11111", username: "Coder" }]]) },
 		reply: async (text) => {
 			assert.ok(text.includes("Coder"));
 			assert.ok(text.includes("Coding"));
