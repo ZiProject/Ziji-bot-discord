@@ -24,10 +24,7 @@ test("Prisma adapter keeps null JSON values instead of replacing them with defau
 		jsonFields: ["huntStats", "userInfo", "guilds", "battleStats"],
 	};
 
-	const hydrated = prismaInternals.addDefaults(
-		{ huntStats: null, userInfo: null, guilds: null, battleStats: null },
-		config,
-	);
+	const hydrated = prismaInternals.addDefaults({ huntStats: null, userInfo: null, guilds: null, battleStats: null }, config);
 
 	assert.strictEqual(hydrated.huntStats, null, "null JSON fields should remain null");
 	assert.strictEqual(hydrated.userInfo, null, "null JSON fields should remain null");
@@ -115,8 +112,12 @@ test("client ready falls back to LocalDB when Prisma providers fail", async () =
 			channels: { fetch: async () => null },
 			user: {
 				tag: "Test#0001",
-				setStatus() { statusSet = true; },
-				setActivity() { activitySet = true; },
+				setStatus() {
+					statusSet = true;
+				},
+				setActivity() {
+					activitySet = true;
+				},
 			},
 		};
 
@@ -144,7 +145,10 @@ test("Prisma Mongo adapter uses appName as database name when URI path is empty"
 	const mongoUrl = "mongodb+srv://user:pass@example.mongodb.net/?retryWrites=true&w=majority&appName=Divahost";
 	const normalizedUrl = prismaInternals.normalizeMongoUrl(mongoUrl);
 	assert.strictEqual(prismaInternals.getMongoDatabaseName(normalizedUrl), "Divahost");
-	assert.strictEqual(normalizedUrl, "mongodb+srv://user:pass@example.mongodb.net/Divahost?retryWrites=true&w=majority&appName=Divahost");
+	assert.strictEqual(
+		normalizedUrl,
+		"mongodb+srv://user:pass@example.mongodb.net/Divahost?retryWrites=true&w=majority&appName=Divahost",
+	);
 });
 
 test("Prisma where builder treats empty filters as unconstrained queries", () => {
