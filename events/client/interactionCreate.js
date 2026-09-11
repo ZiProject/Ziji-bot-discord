@@ -100,8 +100,6 @@ async function checkMusicstat({ interaction, command, lang }) {
 
 module.exports = { name: Events.InteractionCreate, type: "events" };
 
-// Commands that historically selected an ephemeral initial ACK. The value is
-// resolved here because Discord fixes ephemeral/public visibility at defer time.
 const EPHEMERAL_COMMANDS = new Set(["afk", "jtc", "encrypt", "decrypt", "listservers", "youtube", "noitu"]);
 
 async function getAckOptions(command, interaction) {
@@ -109,20 +107,41 @@ async function getAckOptions(command, interaction) {
 	let ephemeral = typeof value === "function" ? await value(interaction) : value === true;
 
 	if (!ephemeral && EPHEMERAL_COMMANDS.has(interaction.commandName)) ephemeral = true;
-
-	// These commands only defer ephemerally for specific subcommands.
-	if (interaction.commandName === "genshin") {
-		ephemeral = ephemeral || interaction.options?.getSubcommand?.(false) === "claim";
-	}
-	if (interaction.commandName === "confession") {
-		ephemeral = ephemeral || interaction.options?.getSubcommand?.(false) === "write";
-	}
+	if (interaction.commandName === "genshin") ephemeral = ephemeral || interaction.options?.getSubcommand?.(false) === "claim";
+	if (interaction.commandName === "confession") ephemeral = ephemeral || interaction.options?.getSubcommand?.(false) === "write";
 	if (interaction.commandName === "guildcommand") {
 		const subcommand = interaction.options?.getSubcommand?.(false);
 		ephemeral = ephemeral || subcommand === "create" || subcommand === "list";
 	}
 
 	return ephemeral ? { flags: MessageFlags.Ephemeral } : undefined;
+}
+
+async function bindMessenger(interaction, ackOptions) {
+	const response = await interaction.deferReply({
+		...(ackOptions || {}),
+		withResponse: true,
+	});
+
+	const messenger = response?.resource?.message || (await interaction.fetchReply());
+	if (!messenger?.edit) throw new Error("Unable to create interaction messenger from deferred reply");
+
+	interaction.messenger = messenger;
+	interaction.replyValue = undefined;
+
+	interaction.editReply = async (value) => {
+		interaction.replyValue = value;
+		return interaction.messenger.edit(value);
+	};
+
+	interaction.reply = async (value) => {
+		interaction.replyValue = value;
+		return interaction.editReply(value);
+	};
+
+	interaction.deferReply = async () => interaction;
+
+	return messenger;
 }
 
 module.exports.execute = async (interaction) => {
@@ -151,12 +170,7 @@ module.exports.execute = async (interaction) => {
 
 	const shouldDefer = interaction.isChatInputCommand() || interaction.isMessageContextMenuCommand();
 	if (shouldDefer && !interaction.deferred && !interaction.replied) {
-		await interaction.deferReply(await getAckOptions(command, interaction));
-
-		// Compatibility contract for legacy command modules: the dispatcher owns
-		// the initial ACK, commands only edit that response afterwards.
-		interaction.reply = async (options) => interaction.editReply(options);
-		interaction.deferReply = async () => interaction;
+		await bindMessenger(interaction, await getAckOptions(command, interaction));
 	}
 
 	const langfunc = Functions.get("ZiRank");
