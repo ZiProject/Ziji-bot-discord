@@ -117,6 +117,35 @@ async function getAckOptions(command, interaction) {
 	return ephemeral ? { flags: MessageFlags.Ephemeral } : undefined;
 }
 
+function hasComponentsV2(value) {
+	return Boolean(value?.flags && (Number(value.flags) & MessageFlags.IsComponentsV2) === MessageFlags.IsComponentsV2);
+}
+
+function prepareMessengerEdit(value, messenger) {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+
+	const edit = { ...value };
+	const currentFlags = Number(messenger?.flags?.bitfield ?? messenger?.flags ?? 0);
+	const requestedFlags = Number(edit.flags?.bitfield ?? edit.flags ?? 0);
+
+	// Loading is a server-side interaction state. Do not copy Ephemeral/Loading
+	// into Message.edit(); only IsComponentsV2 is a message-editable interaction flag.
+	const isComponentsV2 =
+		hasComponentsV2(value) ||
+		(currentFlags & MessageFlags.IsComponentsV2) === MessageFlags.IsComponentsV2;
+
+	if (isComponentsV2) {
+		edit.flags = requestedFlags | MessageFlags.IsComponentsV2;
+	} else if (edit.flags !== undefined) {
+		// Strip flags that Message.edit() cannot modify. Preserve only flags that
+		// are valid for message editing, notably IsComponentsV2 and SuppressEmbeds.
+		edit.flags = requestedFlags & (MessageFlags.IsComponentsV2 | MessageFlags.SuppressEmbeds);
+		if (!edit.flags) delete edit.flags;
+	}
+
+	return edit;
+}
+
 async function bindMessenger(interaction, ackOptions) {
 	const response = await interaction.deferReply({
 		...(ackOptions || {}),
@@ -131,7 +160,7 @@ async function bindMessenger(interaction, ackOptions) {
 
 	interaction.editReply = async (value) => {
 		interaction.replyValue = value;
-		return interaction.messenger.edit(value);
+		return interaction.messenger.edit(prepareMessengerEdit(value, interaction.messenger));
 	};
 
 	interaction.reply = async (value) => {
