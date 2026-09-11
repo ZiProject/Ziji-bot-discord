@@ -20,9 +20,10 @@ module.exports.data = {
 
 module.exports.execute = async ({ interaction, lang }) => {
 	try {
-		const initialResponse = await interaction.reply({ content: "🏓 Pinging...", withResponse: true });
-
-		const roundTripLatency = initialResponse.resource.message.createdTimestamp - interaction.createdTimestamp;
+		// InteractionCreate already ACKs this command with deferReply().
+		// Do not call reply() here: editReply() updates the deferred response.
+		await interaction.editReply({ content: "🏓 Pinging..." });
+		const roundTripLatency = Date.now() - interaction.createdTimestamp;
 		const botPing = interaction.client.ws.ping;
 		const req = await axios.get(`http://127.0.0.1:${process.env.SERVER_PORT || 2003}`);
 		const webPing = req.data.status;
@@ -77,9 +78,17 @@ module.exports.execute = async ({ interaction, lang }) => {
 		await interaction.editReply({ content: null, embeds: [informationEmbed] });
 	} catch (error) {
 		console.error("Error executing ping command:", error);
-		await interaction.followUp({
-			content: "❌ There was an error executing the ping command.",
-			ephemeral: true,
-		});
+		if (interaction.deferred || interaction.replied) {
+			await interaction.editReply({
+				content: "❌ There was an error executing the ping command.",
+				embeds: [],
+				components: [],
+			}).catch(() => {});
+		} else {
+			await interaction.reply({
+				content: "❌ There was an error executing the ping command.",
+				ephemeral: true,
+			}).catch(() => {});
+		}
 	}
 };
