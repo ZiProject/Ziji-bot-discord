@@ -136,7 +136,8 @@ module.exports.execute = async (interaction) => {
 
 	if (interaction.isChatInputCommand() || interaction.isAutocomplete() || interaction.isMessageContextMenuCommand()) {
 		command = Commands.get(interaction.commandName);
-		if (!command && interaction.guildId) command = useHooks.get("guildCommands")?.get(`${interaction.guildId}:${interaction.commandName.toLowerCase()}`);
+		if (!command && interaction.guildId)
+			command = useHooks.get("guildCommands")?.get(`${interaction.guildId}:${interaction.commandName.toLowerCase()}`);
 		commandType = "command";
 	} else if (interaction.isMessageComponent() || interaction.isModalSubmit()) {
 		command = Functions.get(interaction.customId);
@@ -175,7 +176,9 @@ module.exports.execute = async (interaction) => {
 
 			if (command?.data.category == "musix") {
 				const sts = await checkMusicstat({ interaction, command, lang });
-				logger.debug(`Music status check for ${interaction?.commandName || interaction?.customId}: ${sts.status ? "Passed" : "Failed"}`);
+				logger.debug(
+					`Music status check for ${interaction?.commandName || interaction?.customId}: ${sts.status ? "Passed" : "Failed"}`,
+				);
 				if (!sts.status) return;
 				cmdops = sts;
 			}
