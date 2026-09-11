@@ -70,7 +70,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 		return this.ask(interaction, prompt, lang);
 	}
 
-	if (!player) return this.ask(interaction, prompt, lang);
+	// if (!player) return this.ask(interaction, prompt, lang);
 
 	if (!voiceChannel) {
 		return this.ask(interaction, prompt, lang);
