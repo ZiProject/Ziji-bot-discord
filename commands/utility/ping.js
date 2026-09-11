@@ -79,16 +79,20 @@ module.exports.execute = async ({ interaction, lang }) => {
 	} catch (error) {
 		console.error("Error executing ping command:", error);
 		if (interaction.deferred || interaction.replied) {
-			await interaction.editReply({
-				content: "❌ There was an error executing the ping command.",
-				embeds: [],
-				components: [],
-			}).catch(() => {});
+			await interaction
+				.editReply({
+					content: "❌ There was an error executing the ping command.",
+					embeds: [],
+					components: [],
+				})
+				.catch(() => {});
 		} else {
-			await interaction.reply({
-				content: "❌ There was an error executing the ping command.",
-				ephemeral: true,
-			}).catch(() => {});
+			await interaction
+				.reply({
+					content: "❌ There was an error executing the ping command.",
+					ephemeral: true,
+				})
+				.catch(() => {});
 		}
 	}
 };
