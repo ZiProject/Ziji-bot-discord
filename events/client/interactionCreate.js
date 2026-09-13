@@ -151,14 +151,23 @@ async function bindMessenger(interaction, ackOptions) {
 	});
 
 	const messenger = response?.resource?.message || (await interaction.fetchReply());
-	if (!messenger?.edit) throw new Error("Unable to create interaction messenger from deferred reply");
+
+	if (!messenger?.edit) {
+		throw new Error("Unable to create interaction messenger from deferred reply");
+	}
 
 	interaction.messenger = messenger;
 	interaction.replyValue = undefined;
 
 	interaction.editReply = async (value) => {
 		interaction.replyValue = value;
-		return interaction.messenger.edit(prepareMessengerEdit(value, interaction.messenger));
+
+		const editValue = {
+			...(value || {}),
+			content: value?.content ?? "",
+		};
+
+		return interaction.messenger.edit(prepareMessengerEdit(editValue, interaction.messenger));
 	};
 
 	interaction.reply = async (value) => {

@@ -35,7 +35,7 @@ const manager = new PlayerManager({
 	plugins: [
 		new TTSPlugin(),
 		new YouTubePlugin({
-			// debug: console.log
+			// debug: console.log,
 		}),
 		new SoundCloudPlugin(),
 		new SpotifyPlugin(),
@@ -48,7 +48,7 @@ const manager = new PlayerManager({
 		new voiceExt(null, { client, minimalVoiceMessageDuration: 1 }),
 	],
 	enableStatsCollection: true,
-	debugLevel: "info",
+	debugLevel: "none",
 });
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });

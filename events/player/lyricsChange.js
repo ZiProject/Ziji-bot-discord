@@ -39,6 +39,7 @@ module.exports = {
 					const lrcmess = await player?.userdata?.mess?.reply({ embeds: [embed] }).catch(async (e) => {
 						return await player?.userdata?.channel?.send({ embeds: [embed] });
 					});
+					player.userdata.lrcmess = lrcmess;
 				});
 			} else {
 				const lrcmess = await player.userdata.mess.reply({ embeds: [embed] });
