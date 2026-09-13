@@ -159,6 +159,8 @@ async function bindMessenger(interaction, ackOptions) {
 	interaction.messenger = messenger;
 	interaction.replyValue = undefined;
 
+	const nativeEditReply = interaction.editReply.bind(interaction);
+
 	interaction.editReply = async (value) => {
 		interaction.replyValue = value;
 
@@ -167,12 +169,20 @@ async function bindMessenger(interaction, ackOptions) {
 			content: value?.content ?? "",
 		};
 
-		return interaction.messenger.edit(prepareMessengerEdit(editValue, interaction.messenger));
+		return nativeEditReply(prepareMessengerEdit(editValue, interaction.messenger));
 	};
+
+	const nativeReply = interaction.reply?.bind(interaction);
 
 	interaction.reply = async (value) => {
 		interaction.replyValue = value;
-		return interaction.editReply(value);
+
+		const editValue = {
+			...(value || {}),
+			content: value?.content ?? "",
+		};
+
+		return nativeEditReply(prepareMessengerEdit(editValue, interaction.messenger));
 	};
 
 	interaction.deferReply = async () => interaction;
