@@ -48,7 +48,7 @@ const manager = new PlayerManager({
 		new voiceExt(null, { client, minimalVoiceMessageDuration: 1 }),
 	],
 	enableStatsCollection: true,
-	debugLevel: "none",
+	debugLevel: config?.DevConfig?.debugLevel ?? "info",
 });
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });

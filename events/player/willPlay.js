@@ -1,4 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
+const { useHooks } = require("zihooks");
 
 module.exports = {
 	name: "willPlay",
@@ -30,5 +31,10 @@ module.exports = {
 			const replied = await player?.userdata?.channel?.send({ embeds: [embed], fetchReply: true }).catch(() => {});
 			setTimeout(() => replied?.delete().catch(() => {}), 5000);
 		} catch {}
+
+		const playerGui = useHooks.get("functions").get("playerGui");
+		if (!playerGui) return;
+		const res = await playerGui.execute({ player });
+		if (player.userdata.mess) return player.userdata.mess.edit(res).catch((e) => {});
 	},
 };

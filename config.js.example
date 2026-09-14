@@ -201,7 +201,8 @@ module.exports = {
 		DJS_DEBUG: false,
 		//player debug
 		Player_DEBUG: false,
-
+		//"off" | "error" | "warn" | "info" | "debug" | "verbose" | "time"
+		debugLevel: "info",
 		//voiceExtension events debug
 		voiceExt_DEBUG: false,
 
@@ -221,8 +222,8 @@ module.exports = {
 		//enable AI
 		ai: true,
 		//enable AI AutoPlay suggestion
-		aiAutoPlay: true,
-		//enable AI GuildCommand
+		aiAutoPlay: false,
+		//enable GuildCommand
 		GuildCommand: true,
 		/** ============ Else ============ */
 		//enable logger (info | debug | warn | error | leave blank to enable all type)
