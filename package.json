@@ -52,7 +52,7 @@
 		"discord-gamecord": "^4.4.2",
 		"discord-giveaways": "^6.0.1",
 		"discord.js": "^14.27.0",
-		"dotenv": "^17.0.0",
+		"dotenv": "^18.0.0",
 		"express": "^5.1.0",
 		"ffmpeg-static": "^5.2.0",
 		"http": "^0.0.1-security",
