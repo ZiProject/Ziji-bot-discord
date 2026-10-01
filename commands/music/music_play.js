@@ -155,8 +155,8 @@ module.exports.autocomplete = async ({ interaction, lang }) => {
 			return await interaction
 				.respond(
 					players.map((plr) => ({
-						name: `${plr.guildId} - ${plr?.queue?.currentTrack?.title ?? "No Tracks"}`.slice(0, 100),
-						value: plr.guildId,
+						name: `${plr.id} - ${plr?.queue?.currentTrack?.title ?? "No Tracks"}`.slice(0, 100),
+						value: plr.id,
 					})),
 				)
 				.catch(() => {});

@@ -2,7 +2,7 @@ const { useHooks } = require("zihooks");
 const client = useHooks.get("client");
 const logger = useHooks.get("logger");
 const { execFile } = require("child_process");
-
+const { getManager } = require("ziplayer");
 // Only allow harmless, read-only system commands.
 // Do NOT allow shells/interpreters or commands capable of modifying the system.
 const SAFE_COMMANDS = new Set(["ls", "pwd", "whoami", "uname", "df", "free", "uptime"]);
@@ -32,6 +32,35 @@ const shutdown = async (signal) => {
 	} finally {
 		process.exit(0);
 	}
+};
+
+const helpCmd = () => {
+	logger.info(
+		[
+			"Danh sách các lệnh:",
+			"- help",
+			"- ping",
+			"- stop",
+			"- status",
+			"- sh ls [args]",
+			"- sh pwd",
+			"- sh whoami",
+			"- sh uname [args]",
+			"- sh df [args]",
+			"- sh free [args]",
+			"- sh uptime",
+			"- update",
+			"clear/cls",
+		].join("\n"),
+		[
+			"Danh sách các lệnh player:",
+			"- player list",
+			"- player info <playerId>",
+			"- player queue <playerId>",
+			"- player connection <playerId>",
+			"- player dev <playerId>",
+		].join("\n"),
+	);
 };
 
 // Handle signals
@@ -184,26 +213,96 @@ module.exports = {
 
 			case "help":
 			case "h":
-				logger.info(
-					[
-						"Danh sách các lệnh:",
-						"- help",
-						"- ping",
-						"- stop",
-						"- status",
-						"- sh ls [args]",
-						"- sh pwd",
-						"- sh whoami",
-						"- sh uname [args]",
-						"- sh df [args]",
-						"- sh free [args]",
-						"- sh uptime",
-					].join("\n"),
-				);
+				helpCmd();
 				break;
 
+			case "clear":
+			case "cls":
+				console.clear();
+				break;
+			//player cmd
+			case "player":
+				const playerCmd = args.shift()?.toLowerCase();
+				if (!playerCmd) {
+					logger.info("❌ Vui lòng nhập lệnh player!");
+					logger.info(
+						[
+							"Danh sách các lệnh player:",
+							"- player list",
+							"- player info <playerId>",
+							"- player queue <playerId>",
+							"- player connection <playerId>",
+							"- player dev <playerId>",
+						].join("\n"),
+					);
+					return;
+				}
+				const manager = getManager(); // Assuming you have a function to get the player manager
+				if (playerCmd === "list") {
+					const players = manager.getAll();
+					logger.info("Danh sách player:");
+					players.forEach((player) => {
+						logger.info(`- ${player.id}`);
+					});
+					return;
+				}
+				const PlayerId = args.shift();
+				if (!PlayerId) {
+					return console.log("❌ Vui lòng nhập ID player!");
+				}
+				const player = manager.get(PlayerId);
+				if (!player) {
+					return console.log(`❌ Không tìm thấy player với ID: ${PlayerId}`);
+				}
+				switch (playerCmd) {
+					case "queue":
+						logger.info(`Player trong hàng đợi: ${PlayerId}`);
+						logger.info(player.queue);
+						break;
+					case "connection":
+						logger.info(`Kết nối player: ${PlayerId}`);
+						logger.info(player.connection);
+						break;
+					case "info":
+						logger.info(`Thông tin player: ${PlayerId}`);
+						logger.info(`Total Tracks: ${player.queueSize}`);
+						logger.info(`Is Playing: ${player.isPlaying}`);
+						logger.info(`Is Paused: ${player.isPaused}`);
+						logger.info(`Is Live: ${player.isLive}`);
+						logger.info(`Is Idle: ${player.isIdle}`);
+						logger.info(`Is Buffering: ${player.isBuffering}`);
+						logger.info(`Volume: ${player.volume}`);
+						logger.info(`Previous Track: ${player.previousTrack}`);
+						logger.info(`Upcoming Tracks: ${player.upcomingTracks.length}`);
+						logger.info(`Previous Tracks: ${player.previousTracks.length}`);
+						logger.info(`Available Plugins: ${player.availablePlugins.join(", ")}`);
+						logger.info(`Plugin Names: ${player.pluginNames.join(", ")}`);
+						logger.info(`Extension Names: ${player.extensionNames.join(", ")}`);
+						logger.info(`Related Tracks: ${player.relatedTracks.length}`);
+						logger.info(`Playback Mode: ${player.playbackMode}`);
+						break;
+					case "dev":
+						logger.info(`Thông tin player ${PlayerId}:`);
+						logger.info(player);
+						break;
+					default:
+						logger.error(`Lệnh player không hợp lệ: ${playerCmd}`);
+						//print help for player commands
+						logger.info(
+							[
+								"Danh sách các lệnh player:",
+								"- player list",
+								"- player info <playerId>",
+								"- player queue <playerId>",
+								"- player connection <playerId>",
+								"- player dev <playerId>",
+							].join("\n"),
+						);
+				}
+				break;
 			default:
 				logger.error(`Lệnh không hợp lệ: ${command}`);
+				helpCmd();
 		}
 	},
 };
