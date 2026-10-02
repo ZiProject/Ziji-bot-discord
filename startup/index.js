@@ -1,12 +1,54 @@
 const { LoggerFactory } = require("./logger.js");
 const { useHooks } = require("zihooks");
 const { GatewayIntentBits, Client, Collection } = require("discord.js");
-const express = require("express");
-const cors = require("cors");
-const http = require("http");
+const { Hono } = require("hono");
+const { createServer } = require("node:http");
+const { getRequestListener } = require("@hono/node-server");
 const WebSocket = require("ws");
 const zzicon = require("./../utility/icon.js");
 const { Loader } = require("@ziji/loader");
+
+const createWebApp = () => {
+	const app = new Hono();
+	const allowedOrigins = getAllowedOrigins();
+
+	app.use("*", async (context, next) => {
+		const requestOrigin = context.req.header("origin");
+		const originAllowed =
+			allowedOrigins === "*" ||
+			(Array.isArray(allowedOrigins) ? allowedOrigins.includes(requestOrigin) : allowedOrigins === requestOrigin);
+
+		if (originAllowed) context.header("Access-Control-Allow-Origin", allowedOrigins === "*" ? "*" : requestOrigin);
+		if (Array.isArray(allowedOrigins)) context.header("Vary", "Origin", { append: true });
+		context.header("Access-Control-Allow-Credentials", "true");
+
+		if (context.req.method === "OPTIONS") {
+			context.header("Access-Control-Allow-Origin", requestOrigin || "*");
+			context.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+			context.header(
+				"Access-Control-Allow-Headers",
+				context.req.header("Access-Control-Request-Headers") || "Content-Type, Authorization",
+			);
+			return context.body(null, 204);
+		}
+
+		await next();
+	});
+	app.use("*", async (context, next) => {
+		if (context.req.header("content-type")?.includes("application/json")) {
+			try {
+				const body = await context.req.json();
+				if (body === null || typeof body !== "object") return context.text("Invalid JSON", 400);
+				context.set("body", body);
+			} catch {
+				return context.text("Invalid JSON", 400);
+			}
+		}
+		await next();
+	});
+
+	return app;
+};
 
 class StartupManager {
 	constructor(client) {
@@ -33,36 +75,15 @@ class StartupManager {
 
 	initWeb() {
 		this.logger.debug?.("Starting web...");
-		const app = express();
-		const server = http.createServer(app);
+		const app = createWebApp();
+		const server = createServer(getRequestListener(app.fetch));
 		const wss = new WebSocket.Server({ server, path: "/ws" });
-		const corsOptions = {
-			origin: getAllowedOrigins(),
-			methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-			credentials: true,
-		};
-
-		app.use(cors(corsOptions));
-		app.use((req, res, next) => {
-			if (req.method === "OPTIONS") {
-				res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
-				res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-				res.header(
-					"Access-Control-Allow-Headers",
-					req.headers["access-control-request-headers"] || "Content-Type, Authorization",
-				);
-				res.header("Access-Control-Allow-Credentials", "true");
-				return res.sendStatus(204);
-			}
-			next();
-		});
-		app.use(express.json());
 
 		server.listen(process.env.SERVER_PORT || 2003, () => {
 			this.logger.info(`Server running on port ${process.env.SERVER_PORT || 2003}`);
 		});
 
-		return { server: app, wss };
+		return { server: app, httpServer: server, wss };
 	}
 
 	initPlayerNet() {
@@ -240,4 +261,4 @@ const getAllowedOrigins = () => {
 	return raw;
 };
 
-module.exports = { StartupManager };
+module.exports = { StartupManager, createWebApp };

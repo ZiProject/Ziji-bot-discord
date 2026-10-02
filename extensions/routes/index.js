@@ -1,10 +1,12 @@
 const { useHooks } = require("zihooks");
+const { Hono } = require("hono");
 const simpleGit = require("simple-git");
 const config = useHooks.get("config");
 const path = require("path");
 
 // Khởi tạo simple-git tại thư mục gốc của project
 const git = simpleGit(path.join(__dirname, "../../")); // Điều chỉnh đường dẫn nếu cần
+const router = new Hono();
 
 module.exports.data = {
 	name: "routesIndex",
@@ -14,73 +16,72 @@ module.exports.data = {
 	priority: 9,
 };
 
-module.exports.execute = async (client) => {
-	const app = useHooks.get("server");
+router.get("/", async (context) => {
+	const client = context.get("client");
 	const playerNetClient = useHooks.get("playerNetClient");
 
-	app.get("/", async (req, res) => {
-		// 1. Kiểm tra trạng thái client
-		if (!client.isReady()) {
-			return res.json({
-				status: "NG",
-				content: "API loading...!",
-			});
-		}
+	// 1. Kiểm tra trạng thái client
+	if (!client.isReady()) {
+		return context.json({
+			status: "NG",
+			content: "API loading...!",
+		});
+	}
 
-		// Dữ liệu base để dùng cho cả JSON và HTML
-		const clientData = {
-			status: "OK",
-			content: "Welcome to API!",
-			clientName: client?.user?.displayName || "HaKaZe Bot",
-			clientId: client?.user?.id || "N/A",
-			avatars: client?.user?.displayAvatarURL({ size: 1024 }) || "https://i.imgur.com/w39R973.png",
+	// Dữ liệu base để dùng cho cả JSON và HTML
+	const clientData = {
+		status: "OK",
+		content: "Welcome to API!",
+		clientName: client?.user?.displayName || "HaKaZe Bot",
+		clientId: client?.user?.id || "N/A",
+		avatars: client?.user?.displayAvatarURL({ size: 1024 }) || "https://i.imgur.com/w39R973.png",
+		inviteUrl: `https://discord.com/oauth2/authorize?client_id=${client.user.id}&permissions=8&scope=bot`,
+		playerNetClient: playerNetClient.map((client) => ({
+			clientId: client.user.id,
+			clientName: client.user.displayName,
+			avatars: client.user.displayAvatarURL({ size: 1024 }),
 			inviteUrl: `https://discord.com/oauth2/authorize?client_id=${client.user.id}&permissions=8&scope=bot`,
-			playerNetClient: playerNetClient.map((client) => ({
-				clientId: client.user.id,
-				clientName: client.user.displayName,
-				avatars: client.user.displayAvatarURL({ size: 1024 }),
-				inviteUrl: `https://discord.com/oauth2/authorize?client_id=${client.user.id}&permissions=8&scope=bot`,
-			})),
+		})),
+	};
+
+	// 2. Thu thập thông tin từ Repo bằng simple-git để hiển thị hoặc trả về
+	let repoInfo = { branch: "main", latestCommit: "N/A", repoUrl: "#" };
+	try {
+		const status = await git.status();
+		const log = await git.log({ maxCount: 1 });
+		const remotes = await git.getRemotes(true);
+
+		// Lấy URL repo từ remote "origin" (nếu có) và format lại từ git@ sang https nếu cần
+		let url = remotes.find((r) => r.name === "origin")?.refs?.fetch || "#";
+		if (url.startsWith("git@")) {
+			url = url.replace(":", "/").replace("git@", "https://").replace(".git", "");
+		}
+
+		repoInfo = {
+			branch: status.current,
+			latestCommit: log.latest ? log.latest.hash.substring(0, 7) : "N/A",
+			repoUrl: url,
 		};
+	} catch (err) {
+		console.error("Git error:", err.message);
+	}
 
-		// 2. Thu thập thông tin từ Repo bằng simple-git để hiển thị hoặc trả về
-		let repoInfo = { branch: "main", latestCommit: "N/A", repoUrl: "#" };
-		try {
-			const status = await git.status();
-			const log = await git.log({ maxCount: 1 });
-			const remotes = await git.getRemotes(true);
+	// 3. Check "User-Agent" hoặc "Accept" để phân biệt Browser và API Call (curl, postman,...)
+	const userAgent = context.req.header("user-agent") || "";
+	const acceptHeader = context.req.header("accept") || "";
 
-			// Lấy URL repo từ remote "origin" (nếu có) và format lại từ git@ sang https nếu cần
-			let url = remotes.find((r) => r.name === "origin")?.refs?.fetch || "#";
-			if (url.startsWith("git@")) {
-				url = url.replace(":", "/").replace("git@", "https://").replace(".git", "");
-			}
+	const isBrowser = userAgent.includes("Mozilla") && acceptHeader.includes("text/html");
 
-			repoInfo = {
-				branch: status.current,
-				latestCommit: log.latest ? log.latest.hash.substring(0, 7) : "N/A",
-				repoUrl: url,
-			};
-		} catch (err) {
-			console.error("Git error:", err.message);
-		}
+	if (!isBrowser) {
+		// Trả về JSON thuần túy như cũ nếu gọi qua curl
+		return context.json({
+			...clientData,
+			repo: repoInfo,
+		});
+	}
 
-		// 3. Check "User-Agent" hoặc "Accept" để phân biệt Browser và API Call (curl, postman,...)
-		const userAgent = req.headers["user-agent"] || "";
-		const acceptHeader = req.headers["accept"] || "";
-
-		const isBrowser = userAgent.includes("Mozilla") && acceptHeader.includes("text/html");
-
-		if (!isBrowser) {
-			// Trả về JSON thuần túy như cũ nếu gọi qua curl
-			return res.json({
-				...clientData,
-				repo: repoInfo,
-			});
-		}
-
-		// 4. Render Giao diện Glassmorphic Anime UI cho Trình duyệt
-		const htmlTemplate = `
+	// 4. Render Giao diện Glassmorphic Anime UI cho Trình duyệt
+	const htmlTemplate = `
 		<!DOCTYPE html>
 		<html lang="vi">
 		<head>
@@ -437,12 +438,16 @@ module.exports.execute = async (client) => {
 		</html>
 		`;
 
-		res.send(htmlTemplate);
-	});
+	return context.html(htmlTemplate);
+});
 
-	app.get("/api/health", (req, res) => {
-		res.json({ status: "ok" });
-	});
+router.get("/api/health", (context) => context.json({ status: "ok" }));
 
-	return;
+module.exports.execute = async (client) => {
+	const app = useHooks.get("server");
+	app.use("*", async (context, next) => {
+		context.set("client", client);
+		await next();
+	});
+	app.route("/", router);
 };

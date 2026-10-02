@@ -32,8 +32,8 @@ Setup: copy `.env.example` → `.env` (fill `TOKEN`, optionally `MONGO`, `GEMINI
 
 `index.js` creates the `discord.js` **Client** and a **PlayerManager** (ziplayer), then a `StartupManager` which:
 
-1. Loads config (`config.js` or `startup/defaultconfig.js`), sets up a winston logger, an Express/web server (port `SERVER_PORT`
-   or 2003) with WebSocket on `/ws`, and optional multi-player login via `MULTI_PLAYER_TOKEN`.
+1. Loads config (`config.js` or `startup/defaultconfig.js`), sets up a winston logger, a Hono web server on the Node adapter (port
+   `SERVER_PORT` or 2003) with WebSocket on `/ws`, and optional multi-player login via `MULTI_PLAYER_TOKEN`.
 2. `initHooks()` seeds the global state store (**zihooks `useHooks`**) with central `Collection`s: `commands`, `Mcommands`,
    `functions`, `extensions`, `welcome`, `cooldowns`, `responder`, `temp`, `guildCommands`, plus `client`, `config`, `logger`,
    `db`, `wss`, `server`, `icon`, `loaders`.
@@ -93,9 +93,9 @@ flags (e.g. `prisma_DEBUG`, `loaderDebug`).
 
 ### Web / dashboard
 
-The bot runs an Express server (port 2003) plus WebSocket at `/ws` used by the external web dashboard and music controller. Routes
-live in `extensions/routes/` (`botApi`, `music`, `debug`, `stream`, `suggestions`, `wssever`). The `/ping` command reaches back
-into this server to report web-control health.
+The bot runs a Hono server through `@hono/node-server` (port 2003) plus WebSocket at `/ws` on the same Node HTTP server, used by
+the external web dashboard and music controller. Routes live in `extensions/routes/` (`botApi`, `music`, `debug`, `stream`,
+`suggestions`, `wssever`). The `/ping` command reaches back into this server to report web-control health.
 
 ## Key Conventions
 

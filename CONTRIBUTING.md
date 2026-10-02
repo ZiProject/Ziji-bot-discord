@@ -148,8 +148,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 ## Adding an Extension
 
-Extensions run once when the bot starts. Use them for initializing external services, registering Express routes, seeding data,
-etc.
+Extensions run once when the bot starts. Use them for initializing external services, registering Hono routes, seeding data, etc.
 
 1. Copy `helper/extensions.js` into `extensions/`.
 2. Set `priority` (1–10) to control load order — lower runs first.

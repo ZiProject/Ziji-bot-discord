@@ -10,17 +10,11 @@ module.exports.data = {
 
 module.exports.execute = () => {
 	const server = useHooks.get("server");
-	const logg = useHooks.get("logger");
+	const logger = useHooks.get("logger");
 
-	server.use(
-		/**
-		 * @param {import("express").Request} req
-		 * @param {import("express").Response} res
-		 * @param {import("express").NextFunction} next
-		 */
-		(req, res, next) => {
-			logg.debug(`${req.originalUrl}: ${req.method} Path: ${req.path}`);
-			next();
-		},
-	);
+	server.use("*", async (context, next) => {
+		const url = new URL(context.req.url);
+		logger.debug(`${url.pathname}${url.search}: ${context.req.method} Path: ${url.pathname}`);
+		await next();
+	});
 };

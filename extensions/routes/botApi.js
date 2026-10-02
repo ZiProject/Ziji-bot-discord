@@ -1,11 +1,10 @@
-const express = require("express");
-const router = express.Router();
+const { Hono } = require("hono");
+const { serveStatic } = require("@hono/node-server/serve-static");
+const router = new Hono();
 const axios = require("axios");
 const path = require("path");
-const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const { useHooks } = require("zihooks");
-const config = useHooks.get("config");
 const REDIRECT_URI = `${process.env.API_URL}/auth/discord/callback`;
 
 module.exports.data = {
@@ -22,28 +21,33 @@ module.exports.data = {
  */
 module.exports.execute = (client) => {
 	const server = useHooks.get("server");
-	const transcriptDir = path.join(__dirname, "../../transcripts");
-	router.get(["/transcripts", "/transcripts/"], (req, res) => {
-		return res.status(403).send("<h1>❌ 403 Forbidden</h1><p>Bạn không có quyền truy cập vào thư mục này.</p>");
+	router.get("/transcripts", (c) => {
+		return c.html("<h1>❌ 403 Forbidden</h1><p>Bạn không có quyền truy cập vào thư mục này.</p>", 403);
 	});
-	router.use("/transcripts", express.static(transcriptDir));
-	router.get("/auth/discord/login", async (req, res) => {
+	router.get("/transcripts/", (c) => {
+		return c.html("<h1>❌ 403 Forbidden</h1><p>Bạn không có quyền truy cập vào thư mục này.</p>", 403);
+	});
+	router.use("/transcripts/*", serveStatic({ root: path.join(__dirname, "../../") }));
+	router.get("/auth/discord/login", async (c) => {
 		try {
 			const url = `https://discord.com/api/oauth2/authorize?client_id=${client.user?.id}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify%20guilds%20email`;
-			res.redirect(url);
+			return c.redirect(url);
 		} catch (error) {
 			console.error("[Bot API] Error fetching user guilds:", error);
-			return res.status(500).json({
-				success: false,
-				error: error.message,
-			});
+			return c.json(
+				{
+					success: false,
+					error: error.message,
+				},
+				500,
+			);
 		}
 	});
 
-	router.post("/auth/token", async (req, res) => {
+	router.post("/auth/token", async (c) => {
 		try {
-			const { code } = req.body;
-			if (!code) return res.status(400).json({ error: "Missing authorization code" });
+			const { code } = c.get("body");
+			if (!code) return c.json({ error: "Missing authorization code" }, 400);
 			const tokenRes = await axios.post(
 				"https://discord.com/api/oauth2/token",
 				new URLSearchParams({
@@ -75,17 +79,17 @@ module.exports.execute = (client) => {
 			// JWT cùng cấu trúc với web dashboard — dùng chung được toàn bộ API
 			const token = jwt.sign({ id: u.id, username: u.username, avatar: u.avatar }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-			res.json({ token, user: { id: u.id, username: u.username, avatar: u.avatar } });
+			return c.json({ token, user: { id: u.id, username: u.username, avatar: u.avatar } });
 		} catch (err) {
 			const status = err.response?.status || 500;
 			useHooks.get("logger")?.error(`[API] /auth/token ${err.stack || err}`);
-			res.status(status).json({ error: err.response?.data ?? err.message });
+			return c.json({ error: err.response?.data ?? err.message }, status);
 		}
 	});
 
-	router.get("/auth/discord/callback", async (req, res) => {
-		const { code } = req.query;
-		if (!code) return res.status(400).send("No code provided");
+	router.get("/auth/discord/callback", async (c) => {
+		const { code } = c.req.query();
+		if (!code) return c.html("No code provided", 400);
 
 		try {
 			const tokenResponse = await axios.post(
@@ -140,7 +144,7 @@ module.exports.execute = (client) => {
 				expiresIn: "7d",
 			});
 			const dashboardUrl = process.env.DASHBOARD_URL?.trim();
-			return res.send(`
+			return c.html(`
                 <!DOCTYPE html>
                 <html lang="vi">
                 <head>
@@ -273,13 +277,13 @@ module.exports.execute = (client) => {
             `);
 		} catch (error) {
 			console.error("Auth error:", error.response?.data || error.message);
-			res.status(500).send("Authentication failed");
+			return c.html("Authentication failed", 500);
 		}
 	});
 
-	router.get("/user/me", async (req, res) => {
-		const authHeader = req.headers.authorization;
-		if (!authHeader) return res.status(401).send("No token provided");
+	router.get("/user/me", async (c) => {
+		const authHeader = c.req.header("authorization");
+		if (!authHeader) return c.html("No token provided", 401);
 
 		const token = authHeader.split(" ")[1];
 		try {
@@ -287,7 +291,7 @@ module.exports.execute = (client) => {
 			const db = useHooks.get("db");
 			const user = await db.ZiUser.findOne({ userID: decoded.id });
 
-			res.json({
+			return c.json({
 				id: decoded.id,
 				username: decoded.username,
 				avatar: decoded.avatar,
@@ -298,23 +302,24 @@ module.exports.execute = (client) => {
 			});
 		} catch (error) {
 			console.error("Token error:", error.message);
-			res.status(401).send("Invalid token");
+			return c.html("Invalid token", 401);
 		}
 	});
 
 	// --- NEW ROUTES FOR USER SETTINGS & GUILDS ---
 
-	const authenticate = (req, res, next) => {
-		const authHeader = req.headers.authorization;
-		if (!authHeader) return res.status(401).send("No token provided");
+	const authenticate = async (c, next) => {
+		const authHeader = c.req.header("authorization");
+		if (!authHeader) return c.html("No token provided", 401);
 		const token = authHeader.split(" ")[1];
+		let decoded;
 		try {
-			const decoded = jwt.verify(token, process.env.JWT_SECRET);
-			req.user = decoded;
-			next();
+			decoded = jwt.verify(token, process.env.JWT_SECRET);
 		} catch (error) {
-			res.status(401).send("Invalid token");
+			return c.html("Invalid token", 401);
 		}
+		c.set("user", decoded);
+		await next();
 	};
 
 	const checkGuildAccess = async (userId, guildId) => {
@@ -327,96 +332,96 @@ module.exports.execute = (client) => {
 		return (perms & 32n) === 32n;
 	};
 
-	router.get("/user/settings", authenticate, async (req, res) => {
+	router.get("/user/settings", authenticate, async (c) => {
 		try {
 			const db = useHooks.get("db");
-			const user = await db.ZiUser.findOne({ userID: req.user.id });
-			if (!user) return res.status(404).json({ error: "User not found" });
-			res.json(user);
+			const user = await db.ZiUser.findOne({ userID: c.get("user").id });
+			if (!user) return c.json({ error: "User not found" }, 404);
+			return c.json(user);
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.post("/user/settings", authenticate, async (req, res) => {
+	router.post("/user/settings", authenticate, async (c) => {
 		try {
 			const db = useHooks.get("db");
-			const { lang, volume, color, genshinAutoClaim } = req.body;
+			const { lang, volume, color, genshinAutoClaim } = c.get("body");
 			const updateData = {};
 			if (lang !== undefined) updateData.lang = lang;
 			if (volume !== undefined) updateData.volume = volume;
 			if (color !== undefined) updateData.color = color;
 			if (genshinAutoClaim !== undefined) updateData.genshinAutoClaim = genshinAutoClaim;
-			await db.ZiUser.findOneAndUpdate({ userID: req.user.id }, { $set: updateData });
-			res.json({ success: true });
+			await db.ZiUser.findOneAndUpdate({ userID: c.get("user").id }, { $set: updateData });
+			return c.json({ success: true });
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.get("/user/guilds", authenticate, async (req, res) => {
+	router.get("/user/guilds", authenticate, async (c) => {
 		try {
 			const db = useHooks.get("db");
-			const user = await db.ZiUser.findOne({ userID: req.user.id });
-			if (!user) return res.status(404).json({ error: "User not found" });
+			const user = await db.ZiUser.findOne({ userID: c.get("user").id });
+			if (!user) return c.json({ error: "User not found" }, 404);
 			const manageableGuilds = user.guilds.filter((g) => {
 				if (g.owner) return true;
 				const perms = BigInt(g.permissions || g.permissionsNew || "0");
 				return (perms & 32n) === 32n;
 			});
-			res.json(manageableGuilds);
+			return c.json(manageableGuilds);
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.get("/guild/:guildId", authenticate, async (req, res) => {
+	router.get("/guild/:guildId", authenticate, async (c) => {
 		try {
-			if (!(await checkGuildAccess(req.user.id, req.params.guildId))) return res.status(403).json({ error: "Access denied" });
+			if (!(await checkGuildAccess(c.get("user").id, c.req.param("guildId")))) return c.json({ error: "Access denied" }, 403);
 			const db = useHooks.get("db");
-			let guildConfig = await db.ZiGuild.findOne({ guildId: req.params.guildId });
-			if (!guildConfig) guildConfig = await db.ZiGuild.create({ guildId: req.params.guildId });
-			res.json(guildConfig);
+			let guildConfig = await db.ZiGuild.findOne({ guildId: c.req.param("guildId") });
+			if (!guildConfig) guildConfig = await db.ZiGuild.create({ guildId: c.req.param("guildId") });
+			return c.json(guildConfig);
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.post("/guild/:guildId", authenticate, async (req, res) => {
+	router.post("/guild/:guildId", authenticate, async (c) => {
 		try {
-			if (!(await checkGuildAccess(req.user.id, req.params.guildId))) return res.status(403).json({ error: "Access denied" });
+			if (!(await checkGuildAccess(c.get("user").id, c.req.param("guildId")))) return c.json({ error: "Access denied" }, 403);
 			const db = useHooks.get("db");
-			await db.ZiGuild.findOneAndUpdate({ guildId: req.params.guildId }, { $set: req.body }, { upsert: true });
-			res.json({ success: true });
+			await db.ZiGuild.findOneAndUpdate({ guildId: c.req.param("guildId") }, { $set: c.get("body") }, { upsert: true });
+			return c.json({ success: true });
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.get("/guild/:guildId/autoresponder", authenticate, async (req, res) => {
+	router.get("/guild/:guildId/autoresponder", authenticate, async (c) => {
 		try {
-			if (!(await checkGuildAccess(req.user.id, req.params.guildId))) return res.status(403).json({ error: "Access denied" });
+			if (!(await checkGuildAccess(c.get("user").id, c.req.param("guildId")))) return c.json({ error: "Access denied" }, 403);
 			const db = useHooks.get("db");
-			const responders = await db.ZiAutoresponder.find({ guildId: req.params.guildId });
-			res.json(responders);
+			const responders = await db.ZiAutoresponder.find({ guildId: c.req.param("guildId") });
+			return c.json(responders);
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.post("/guild/:guildId/autoresponder", authenticate, async (req, res) => {
+	router.post("/guild/:guildId/autoresponder", authenticate, async (c) => {
 		try {
-			const { guildId } = req.params;
-			if (!(await checkGuildAccess(req.user.id, guildId))) return res.status(403).json({ error: "Access denied" });
+			const { guildId } = c.req.param();
+			if (!(await checkGuildAccess(c.get("user").id, guildId))) return c.json({ error: "Access denied" }, 403);
 			const db = useHooks.get("db");
-			const { trigger, response, options, id } = req.body;
+			const { trigger, response, options, id } = c.get("body");
 			if (id) {
 				await db.ZiAutoresponder.findByIdAndUpdate(id, { trigger, response, options });
 			} else {
 				const existing = await db.ZiAutoresponder.find({ guildId });
 				const isExisted = existing.some((ar) => ar.trigger.toLowerCase() === trigger.toLowerCase());
 				if (isExisted) {
-					return res.status(400).json({ error: `Autoresponder với trigger "${trigger}" đã tồn tại.` });
+					return c.json({ error: `Autoresponder với trigger "${trigger}" đã tồn tại.` }, 400);
 				}
 				await db.ZiAutoresponder.create({
 					guildId,
@@ -433,16 +438,16 @@ module.exports.execute = (client) => {
 					refreshed.map((r) => ({ trigger: r.trigger, response: r.response, matchMode: r.options?.matchMode || "exactly" })),
 				);
 			}
-			res.json({ success: true });
+			return c.json({ success: true });
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.delete("/guild/:guildId/autoresponder/:id", authenticate, async (req, res) => {
+	router.delete("/guild/:guildId/autoresponder/:id", authenticate, async (c) => {
 		try {
-			const { guildId, id } = req.params;
-			if (!(await checkGuildAccess(req.user.id, guildId))) return res.status(403).json({ error: "Access denied" });
+			const { guildId, id } = c.req.param();
+			if (!(await checkGuildAccess(c.get("user").id, guildId))) return c.json({ error: "Access denied" }, 403);
 			const db = useHooks.get("db");
 			await db.ZiAutoresponder.findByIdAndDelete(id);
 			const autoRes = useHooks.get("responder");
@@ -453,102 +458,104 @@ module.exports.execute = (client) => {
 					refreshed.map((r) => ({ trigger: r.trigger, response: r.response, matchMode: r.options?.matchMode || "exactly" })),
 				);
 			}
-			res.json({ success: true });
+			return c.json({ success: true });
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.get("/guild/:guildId/welcome", authenticate, async (req, res) => {
+	router.get("/guild/:guildId/welcome", authenticate, async (c) => {
 		try {
-			if (!(await checkGuildAccess(req.user.id, req.params.guildId))) return res.status(403).json({ error: "Access denied" });
+			if (!(await checkGuildAccess(c.get("user").id, c.req.param("guildId")))) return c.json({ error: "Access denied" }, 403);
 			const db = useHooks.get("db");
-			const welcome = await db.ZiWelcome.findOne({ guildId: req.params.guildId });
-			res.json(welcome || {});
+			const welcome = await db.ZiWelcome.findOne({ guildId: c.req.param("guildId") });
+			return c.json(welcome || {});
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.post("/guild/:guildId/welcome", authenticate, async (req, res) => {
+	router.post("/guild/:guildId/welcome", authenticate, async (c) => {
 		try {
-			const { guildId } = req.params;
-			if (!(await checkGuildAccess(req.user.id, guildId))) return res.status(403).json({ error: "Access denied" });
+			const { guildId } = c.req.param();
+			if (!(await checkGuildAccess(c.get("user").id, guildId))) return c.json({ error: "Access denied" }, 403);
 			const db = useHooks.get("db");
-			const { channel, content, Bchannel, Bcontent } = req.body;
+			const { channel, content, Bchannel, Bcontent } = c.get("body");
 			await db.ZiWelcome.findOneAndUpdate({ guildId }, { $set: { channel, content, Bchannel, Bcontent } }, { upsert: true });
 			const WelcomeCache = useHooks.get("welcome");
 			if (WelcomeCache) {
 				WelcomeCache.set(guildId, [{ channel, content, Bchannel, Bcontent }]);
 			}
-			res.json({ success: true });
+			return c.json({ success: true });
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.get("/guild/:guildId/confess", authenticate, async (req, res) => {
+	router.get("/guild/:guildId/confess", authenticate, async (c) => {
 		try {
-			if (!(await checkGuildAccess(req.user.id, req.params.guildId))) return res.status(403).json({ error: "Access denied" });
+			if (!(await checkGuildAccess(c.get("user").id, c.req.param("guildId")))) return c.json({ error: "Access denied" }, 403);
 			const db = useHooks.get("db");
-			let confess = await db.ZiConfess.findOne({ guildId: req.params.guildId });
-			if (!confess) confess = await db.ZiConfess.create({ guildId: req.params.guildId });
-			res.json(confess);
+			let confess = await db.ZiConfess.findOne({ guildId: c.req.param("guildId") });
+			if (!confess) confess = await db.ZiConfess.create({ guildId: c.req.param("guildId") });
+			return c.json(confess);
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.post("/guild/:guildId/confess", authenticate, async (req, res) => {
+	router.post("/guild/:guildId/confess", authenticate, async (c) => {
 		try {
-			const { guildId } = req.params;
-			if (!(await checkGuildAccess(req.user.id, guildId))) return res.status(403).json({ error: "Access denied" });
+			const { guildId } = c.req.param();
+			if (!(await checkGuildAccess(c.get("user").id, guildId))) return c.json({ error: "Access denied" }, 403);
 			const db = useHooks.get("db");
-			await db.ZiConfess.findOneAndUpdate({ guildId }, { $set: req.body }, { upsert: true });
-			res.json({ success: true });
+			await db.ZiConfess.findOneAndUpdate({ guildId }, { $set: c.get("body") }, { upsert: true });
+			return c.json({ success: true });
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
 	// --- OWNER CUSTOM WORDS MANAGEMENT API ---
 
-	const authenticateOwner = (req, res, next) => {
-		const authHeader = req.headers.authorization;
-		if (!authHeader) return res.status(401).send("No token provided");
+	const authenticateOwner = async (c, next) => {
+		const authHeader = c.req.header("authorization");
+		if (!authHeader) return c.html("No token provided", 401);
 		const token = authHeader.split(" ")[1];
+		let decoded;
 		try {
-			const decoded = jwt.verify(token, process.env.JWT_SECRET);
-			req.user = decoded;
-			const currentConfig = useHooks.get("config");
-			if (!currentConfig || !currentConfig.OwnerID || !currentConfig.OwnerID.includes(decoded.id)) {
-				return res.status(403).json({ error: "Access denied: Owner only" });
-			}
-			next();
+			decoded = jwt.verify(token, process.env.JWT_SECRET);
 		} catch (error) {
-			res.status(401).send("Invalid token");
+			return c.html("Invalid token", 401);
 		}
+
+		c.set("user", decoded);
+		const currentConfig = useHooks.get("config");
+		if (!currentConfig || !currentConfig.OwnerID || !currentConfig.OwnerID.includes(decoded.id)) {
+			return c.json({ error: "Access denied: Owner only" }, 403);
+		}
+		await next();
 	};
 
-	router.get("/admin/words", authenticateOwner, async (req, res) => {
+	router.get("/admin/words", authenticateOwner, async (c) => {
 		try {
 			const db = useHooks.get("db");
-			if (!db || !db.ZiData) return res.status(500).json({ error: "Database not available" });
+			if (!db || !db.ZiData) return c.json({ error: "Database not available" }, 500);
 			const words = await db.ZiData.find({ type: "wordgame_words" }).lean();
-			res.json(words);
+			return c.json(words);
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.post("/admin/words", authenticateOwner, async (req, res) => {
+	router.post("/admin/words", authenticateOwner, async (c) => {
 		try {
 			const db = useHooks.get("db");
-			if (!db || !db.ZiData) return res.status(500).json({ error: "Database not available" });
+			if (!db || !db.ZiData) return c.json({ error: "Database not available" }, 500);
 
-			const { words } = req.body;
+			const { words } = c.get("body");
 			if (!words || typeof words !== "string") {
-				return res.status(400).json({ error: "Missing or invalid words field" });
+				return c.json({ error: "Missing or invalid words field" }, 400);
 			}
 
 			const rawWords = words
@@ -577,7 +584,7 @@ module.exports.execute = (client) => {
 				await db.ZiData.create({
 					type: "wordgame_words",
 					key: word,
-					value: JSON.stringify({ addedBy: req.user.id, addedAt: new Date() }),
+					value: JSON.stringify({ addedBy: c.get("user").id, addedAt: new Date() }),
 				});
 
 				customWords.add(word);
@@ -585,18 +592,18 @@ module.exports.execute = (client) => {
 			}
 
 			useHooks.set("customWords", customWords);
-			res.json({ success: true, added, existing, invalid });
+			return c.json({ success: true, added, existing, invalid });
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	router.delete("/admin/words/:word", authenticateOwner, async (req, res) => {
+	router.delete("/admin/words/:word", authenticateOwner, async (c) => {
 		try {
 			const db = useHooks.get("db");
-			if (!db || !db.ZiData) return res.status(500).json({ error: "Database not available" });
+			if (!db || !db.ZiData) return c.json({ error: "Database not available" }, 500);
 
-			const word = req.params.word.trim().toLowerCase();
+			const word = c.req.param("word").trim().toLowerCase();
 			const result = await db.ZiData.deleteOne({ type: "wordgame_words", key: word });
 
 			const customWords = useHooks.get("customWords");
@@ -604,12 +611,12 @@ module.exports.execute = (client) => {
 				customWords.delete(word);
 			}
 
-			res.json({ success: result.deletedCount > 0 });
+			return c.json({ success: result.deletedCount > 0 });
 		} catch (error) {
-			res.status(500).json({ error: error.message });
+			return c.json({ error: error.message }, 500);
 		}
 	});
 
-	server.use("/", router);
+	server.route("/", router);
 	return;
 };

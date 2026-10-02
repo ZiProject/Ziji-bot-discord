@@ -1,5 +1,7 @@
+const { Hono } = require("hono");
 const { getManager } = require("ziplayer");
 const { useHooks } = require("zihooks");
+const router = new Hono();
 
 module.exports.data = {
 	name: "suggestionsRoutes",
@@ -9,24 +11,24 @@ module.exports.data = {
 	priority: 9,
 };
 
-module.exports.execute = () => {
-	const server = useHooks.get("server");
-	server.post("/api/suggestions", async (req, res) => {
-		const track = req.body?.track || {
-			id: "J1X6LEa1hYA",
-			title: "Nightcore ~ Chỉ Bằng Cái Gật Đầu [ Remix ] | PN Nightcore",
-			url: "https://www.youtube.com/watch?v=J1X6LEa1hYA",
-			source: "youtube",
-		};
+router.post("/", async (context) => {
+	const track = context.get("body")?.track || {
+		id: "J1X6LEa1hYA",
+		title: "Nightcore ~ Chỉ Bằng Cái Gật Đầu [ Remix ] | PN Nightcore",
+		url: "https://www.youtube.com/watch?v=J1X6LEa1hYA",
+		source: "youtube",
+	};
 
-		try {
-			const player = await getManager().create("default");
-			const result = await player.pluginManager.getRelatedTracks(track);
-			res.json({ results: result, total: result.length });
-		} catch (error) {
-			console.error("Search error:", error);
-			res.status(500).json({ error: "Search failed" });
-		}
-	});
-	return;
+	try {
+		const player = await getManager().create("default");
+		const result = await player.pluginManager.getRelatedTracks(track);
+		return context.json({ results: result, total: result.length });
+	} catch (error) {
+		console.error("Search error:", error);
+		return context.json({ error: "Search failed" }, 500);
+	}
+});
+
+module.exports.execute = () => {
+	useHooks.get("server").route("/api/suggestions", router);
 };
