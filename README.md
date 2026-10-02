@@ -18,10 +18,10 @@
 ---
 
 ## ✨ Features
+
 <img align="right" width="147"  style="background: transparent;" height="38" alt="Ziplayer" src="https://github.com/user-attachments/assets/8f768b49-d276-48a6-a5c5-ef7f6f03f882" />
 
 ### 🎵 Music Player
-
 
 Full-featured music playback with an interactive player UI v2, queue management, search, and more. Multi bot support on one
 player/per voice channel. Image search track support
