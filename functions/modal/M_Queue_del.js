@@ -50,7 +50,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 	validIndices
 		.sort((a, b) => b - a)
 		.forEach((index) => {
-			tracldel.push(player.queue.tracks.toArray()?.[index]?.title);
+			tracldel.push(player.queue.tracks?.[index]?.title);
 			player.queue.remove(index);
 		});
 	await interaction.editReply({

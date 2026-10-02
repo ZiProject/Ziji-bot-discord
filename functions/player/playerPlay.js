@@ -33,7 +33,7 @@ module.exports.execute = async ({ interaction, query, lang, options = {} }) => {
 
 	try {
 		let reqPlayOK = false;
-		if (!!query) reqPlayOK = await player.play(query, interaction?.user);
+		if (!!query) reqPlayOK = await player.play(query, { requestedBy: interaction?.user });
 
 		if (!!query && !reqPlayOK) throw new Error("Play request failed");
 
