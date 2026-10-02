@@ -223,27 +223,18 @@ module.exports = {
 			//player cmd
 			case "player":
 				const playerCmd = args.shift()?.toLowerCase();
-				if (!playerCmd) {
-					logger.info("❌ Vui lòng nhập lệnh player!");
-					logger.info(
-						[
-							"Danh sách các lệnh player:",
-							"- player list",
-							"- player info <playerId>",
-							"- player queue <playerId>",
-							"- player connection <playerId>",
-							"- player dev <playerId>",
-						].join("\n"),
-					);
-					return;
-				}
 				const manager = getManager(); // Assuming you have a function to get the player manager
-				if (playerCmd === "list") {
+				if (playerCmd === "list" || !playerCmd) {
 					const players = manager.getAll();
 					logger.info("Danh sách player:");
 					players.forEach((player) => {
 						logger.info(`- ${player.id}`);
 					});
+					return;
+				}
+				if (playerCmd === "mng" || playerCmd === "manager") {
+					logger.info("Thông tin player manager:");
+					logger.info(manager);
 					return;
 				}
 				const PlayerId = args.shift();
