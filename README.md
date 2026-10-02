@@ -18,19 +18,30 @@
 ---
 
 ## ✨ Features
-
-<img align="right" width="147" height="38" alt="Ziplayer" src="https://github.com/user-attachments/assets/8f768b49-d276-48a6-a5c5-ef7f6f03f882" />
+<img align="right" width="147"  style="background: transparent;" height="38" alt="Ziplayer" src="https://github.com/user-attachments/assets/8f768b49-d276-48a6-a5c5-ef7f6f03f882" />
 
 ### 🎵 Music Player
+
 
 Full-featured music playback with an interactive player UI v2, queue management, search, and more. Multi bot support on one
 player/per voice channel. Image search track support
 
-<table>
+<table><tr>
+<td width="50%">	
+Player
+</td>
+<td width="50%">	
+Search
+</td>
+</tr>
 <tr>
 <td width="50%"><img width="985" height="916" alt="image" src="https://github.com/user-attachments/assets/60611cbb-08e1-4cf9-9fab-00805384d6e3" />
 </td>
-<td width="50%"><img alt="Search" src="https://github.com/zijipia/zijipia/blob/Ziji-Discord-Bot-Image/Assets/search.png"/></td>
+<td width="50%">	
+	<img width="1130" height="697" alt="Search" src="https://github.com/user-attachments/assets/1eb6ff2c-3303-43c8-a637-f0855f25062a" />
+<img width="927" height="318" alt="image" src="https://github.com/user-attachments/assets/4dc8d4a9-d4db-4982-8fdd-a45ca4f56d8c" />
+
+</td>
 </tr>
 </table>
 
