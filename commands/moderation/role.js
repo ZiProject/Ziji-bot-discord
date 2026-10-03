@@ -172,8 +172,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 			// Kiểm tra người dùng có quyền quản lý role này không (tránh leo thang đặc quyền qua auto role)
 			if (role.position >= interaction.member.roles.highest.position && interaction.guild.ownerId !== interaction.user.id) {
 				return interaction.editReply({
-					content:
-						lang?.role?.userRoleTooLow || "Bạn không thể quản lý role này vì role của bạn thấp hơn hoặc bằng role này.",
+					content: lang?.role?.userRoleTooLow || "Bạn không thể quản lý role này vì role của bạn thấp hơn hoặc bằng role này.",
 				});
 			}
 
