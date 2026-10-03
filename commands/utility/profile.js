@@ -1,37 +1,6 @@
-const { ButtonBuilder, ActionRowBuilder, ButtonStyle, AttachmentBuilder } = require("discord.js");
+const { ButtonBuilder, ActionRowBuilder, ButtonStyle } = require("discord.js");
 const { useHooks } = require("zihooks");
-const { Worker } = require("worker_threads");
-
-async function buildImageInWorker(workerData) {
-	return new Promise((resolve, reject) => {
-		const worker = new Worker("./utility/rankcad.js", {
-			workerData,
-		});
-
-		worker.on("message", (arrayBuffer) => {
-			try {
-				const buffer = Buffer.from(arrayBuffer);
-				if (!Buffer.isBuffer(buffer)) {
-					throw new Error("Received data is not a buffer");
-				}
-				const attachment = new AttachmentBuilder(buffer, { name: "rank.png" });
-				resolve(attachment);
-			} catch (error) {
-				reject(error);
-			} finally {
-				worker.postMessage("terminate");
-			}
-		});
-
-		worker.on("error", reject);
-
-		worker.on("exit", (code) => {
-			if (code !== 0) {
-				reject(new Error(`Worker stopped with exit code ${code}`));
-			}
-		});
-	});
-}
+const { createImageStudioAttachment } = require("../../utility/imageStudio");
 
 module.exports.data = {
 	name: "profile",
@@ -54,6 +23,18 @@ module.exports.data = {
 				ja: "ユーザーを選択",
 				ko: "사용자 선택",
 			},
+		},
+		{
+			name: "theme",
+			description: "Choose the rank card theme",
+			type: 3,
+			required: false,
+			choices: [
+				{ name: "Ruby Poly", value: "ruby-poly" },
+				{ name: "Cyber Neon", value: "cyber-neon" },
+				{ name: "Glass Minimal", value: "glass-minimal" },
+				{ name: "Gold Legend", value: "gold-legend" },
+			],
 		},
 	],
 	integration_types: [0, 1],
@@ -85,8 +66,12 @@ module.exports.execute = async ({ interaction, lang }) => {
 	});
 
 	const sss = usersort.findIndex((user) => user.userID === member.id);
-
-	const strimg = useHooks.get("config").botConfig?.rankBackground || "https://i.imgur.com/sVzFJ8W.jpeg";
+	const profileUser = member.user || member;
+	const userLevel = userDB?.level ?? userDB?._doc?.level ?? 1;
+	const userXp = userDB?.xp ?? userDB?._doc?.xp ?? 0;
+	const coinValue = userDB?.coin ?? userDB?._doc?.coin ?? 0;
+	const balance = coinValue < 0 ? `bạn nợ ngân hàng ${Math.abs(coinValue)} xu` : `${coinValue} xu`;
+	const theme = interaction.isButton() ? "ruby-poly" : interaction.options.getString("theme") || "ruby-poly";
 
 	const editProf = new ActionRowBuilder().addComponents(
 		new ButtonBuilder().setLabel("Edit ✎").setCustomId("B_editProfile").setStyle(ButtonStyle.Secondary),
@@ -98,33 +83,22 @@ module.exports.execute = async ({ interaction, lang }) => {
 		new ButtonBuilder().setLabel("❌").setCustomId("B_cancel").setStyle(ButtonStyle.Secondary),
 	);
 
-	const status = member.presence?.status || "none";
-	const colorr = lang?.color || "#ffffff";
-
-	const rankCard_data = {
-		member: {
-			tag: member.user.tag,
-			nickname: member.nickname,
-			user: {
-				tag: member.user.tag,
-				displayAvatarURL: member.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
+	const attachment = await createImageStudioAttachment(
+		{
+			type: "profile",
+			data: {
+				username: member.displayName || member.nickname || profileUser.displayName || profileUser.username,
+				balance,
+				avatar: profileUser.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
+				level: userLevel,
+				currentXp: userXp,
+				requiredXp: userLevel * 50 + 1,
+				rank: `#${Math.max(sss + 1, 1)}`,
+				theme,
 			},
 		},
-		userDB: {
-			_doc: {
-				coin: userDB?.coin ?? userDB?._doc?.coin ?? 0,
-				xp: userDB?.xp ?? userDB?._doc?.xp ?? 0,
-				level: userDB?.level ?? userDB?._doc?.level ?? 1,
-			},
-		},
-		sss,
-		strimg,
-		status,
-		colorr,
-		avtaURL: member.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
-	};
-
-	const attachment = await buildImageInWorker({ rankCard_data });
+		"rank.png",
+	);
 
 	const response = { content: "", files: [attachment], components: [editProf] };
 	if (!interaction.guild) response.components = [];

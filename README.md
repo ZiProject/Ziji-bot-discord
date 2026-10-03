@@ -65,6 +65,10 @@ Ban · Kick · Timeout · Purge · Auto-Responder · Giveaways · Ticket system 
 
 <img width="930" height="280" alt="WelcomeCard" src="https://github.com/user-attachments/assets/07a639cf-bff6-48c2-9637-f6df4deda41a" />
 
+Welcome and goodbye GIFs are generated through [Image Studio](https://image-studio-green.vercel.app/animation). To use a custom
+animation, export its JSON payload from the editor and upload it with the `animation` or `byeanimation` option in
+`/welcomer setup`. Payloads can use `{userAVTurl}`, `{userName}`, and `{guildName}` placeholders.
+
 <table>
 <tr>
 <td width="50%">

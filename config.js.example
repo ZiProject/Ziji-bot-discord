@@ -95,7 +95,6 @@ module.exports = {
 		 * Background image link - Do not use discordapp cdn
 		 * L
 		 */
-		rankBackground: "https://i.imgur.com/sVzFJ8W.jpeg",
 	},
 
 	/**
@@ -170,7 +169,6 @@ module.exports = {
 		statusUrl: 'https://garretapp.betteruptime.com/',
 	},
 
-	
 	/**
 	 * Ngôn ngữ mặc định của bot (vi, en, ...)
 	 * Default bot language (vi, en, ...)
