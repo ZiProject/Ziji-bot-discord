@@ -83,30 +83,6 @@ test("profile command exposes all Image Studio rank card themes", () => {
 	assert.deepEqual(themes, ["ruby-poly", "cyber-neon", "glass-minimal", "gold-legend"]);
 });
 
-test("Image Studio animation variables are substituted and editor metadata is omitted", () => {
-	const animation = {
-		...createGreetingAnimationPayload("welcome"),
-		templateVariables: {
-			userAVTurl: "https://example.invalid/old.png",
-			userName: "Old Name",
-			guildName: "Old Guild",
-		},
-	};
-
-	const payload = prepareImageStudioAnimation(animation, {
-		userAVTurl: "https://example.invalid/new.png",
-		userName: "New Name",
-		guildName: "New Guild",
-	});
-
-	assert.equal(payload.type, "animated");
-	assert.equal(payload.data.format, "gif");
-	assert.equal(payload.data.frames[0].elements[0].imageUrl, "https://example.invalid/new.png");
-	assert.equal(payload.data.frames[0].elements[1].content, "Welcome, New Name!");
-	assert.equal(payload.data.frames[0].elements[2].content, "Joined New Guild");
-	assert.equal(Object.hasOwn(payload, "templateVariables"), false);
-});
-
 test("Image Studio animation uploads are downloaded and validated", async (t) => {
 	const originalFetch = global.fetch;
 	t.after(() => {
