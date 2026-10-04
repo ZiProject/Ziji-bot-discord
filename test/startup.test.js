@@ -237,6 +237,38 @@ test("Bot API Hono routes preserve transcript access and auth responses", async 
 	assert.strictEqual(await unauthenticated.text(), "No token provided");
 });
 
+test("Guild command editor routes mount on Hono and require the session password for APIs", async () => {
+	const app = createWebApp();
+	const functions = new Collection();
+	useHooks.set("server", app);
+	useHooks.set("functions", functions);
+	require("../extensions/routes/guildCommandWeb.js").execute({ guilds: { cache: new Collection() } });
+
+	const { token } = functions.get("guildCommandWeb").createSession({
+		name: "test_command",
+		guildId: "guild-1",
+		userId: "user-1",
+	});
+	const editor = await app.request(`/guildcommand/editor?token=${token}`);
+	assert.strictEqual(editor.status, 200);
+	const editorHtml = await editor.text();
+	assert.match(editorHtml, /test_command/);
+	assert.match(editorHtml, /guild-1/);
+
+	const unauthorized = await app.request("/guildcommand/api/meta", {
+		headers: { "x-editor-password": "wrong-password" },
+	});
+	assert.strictEqual(unauthorized.status, 401);
+	assert.deepStrictEqual(await unauthorized.json(), { error: "Link hoặc mật khẩu không hợp lệ/hết hạn." });
+
+	const unauthorizedSave = await app.request("/guildcommand/api/save", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ token, password: "wrong-password" }),
+	});
+	assert.strictEqual(unauthorizedSave.status, 401);
+});
+
 test("Music and stream routes mount on Hono and retain validation responses", async () => {
 	const app = createWebApp();
 	useHooks.set("server", app);
