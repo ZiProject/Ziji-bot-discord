@@ -13,84 +13,13 @@ const getGuildHelpers = () => {
 
 module.exports.data = {
 	name: "guildcommand",
-	description: "Quản lý lệnh chuyên sâu của server",
+	description: "Tạo hoặc sửa lệnh chuyên sâu bằng trình dựng web",
 	type: 1,
-	options: [
-		{
-			name: "create",
-			description: "Tạo lệnh chuyên sâu mới",
-			type: 1,
-			options: [
-				{ name: "name", description: "Tên lệnh (chữ thường, số, gạch ngang)", type: 3, required: true },
-				{ name: "description", description: "Mô tả lệnh", type: 3, required: true },
-				{
-					name: "type",
-					description: "Loại phản hồi",
-					type: 3,
-					required: true,
-					choices: [
-						{ name: "Văn bản", value: "text" },
-						{ name: "Embed", value: "embed" },
-						{ name: "Components V2", value: "components" },
-						{ name: "Ủy quyền lệnh có sẵn", value: "proxy" },
-					],
-				},
-				{ name: "content", description: "Nội dung (text) hoặc JSON layout (components)", type: 3, required: false },
-				{ name: "title", description: "Tiêu đề embed (type: embed)", type: 3, required: false },
-				{ name: "embed_description", description: "Mô tả embed (type: embed)", type: 3, required: false },
-				{ name: "color", description: "Màu embed (#ff0000)", type: 3, required: false },
-				{
-					name: "target",
-					description: "Lệnh gốc — dạng command hoặc command:subcommand (type: proxy)",
-					type: 3,
-					required: false,
-					autocomplete: true,
-				},
-			],
-		},
-		{
-			name: "edit",
-			description: "Sửa lệnh chuyên sâu",
-			type: 1,
-			options: [
-				{ name: "name", description: "Tên lệnh cần sửa", type: 3, required: true, autocomplete: true },
-				{ name: "description", description: "Mô tả mới", type: 3, required: false },
-				{ name: "content", description: "Nội dung mới (text) hoặc JSON layout (components)", type: 3, required: false },
-				{ name: "title", description: "Tiêu đề embed mới", type: 3, required: false },
-				{ name: "embed_description", description: "Mô tả embed mới", type: 3, required: false },
-				{ name: "color", description: "Màu embed mới", type: 3, required: false },
-			],
-		},
-		{
-			name: "builder",
-			description: "Mở trình dựng Components V2 trực quan",
-			type: 1,
-			options: [
-				{ name: "name", description: "Tên lệnh (tạo mới hoặc sửa layout)", type: 3, required: true, autocomplete: true },
-				{ name: "description", description: "Mô tả lệnh (chỉ khi tạo mới)", type: 3, required: false },
-			],
-		},
-		{
-			name: "preview",
-			description: "Xem thử phản hồi của lệnh chuyên sâu",
-			type: 1,
-			options: [{ name: "name", description: "Tên lệnh cần xem thử", type: 3, required: true, autocomplete: true }],
-		},
-		{
-			name: "delete",
-			description: "Xóa lệnh chuyên sâu",
-			type: 1,
-			options: [{ name: "name", description: "Tên lệnh cần xóa", type: 3, required: true, autocomplete: true }],
-		},
-		{
-			name: "list",
-			description: "Xem danh sách lệnh chuyên sâu của server",
-			type: 1,
-		},
-	],
+	options: [{ name: "name", description: "Tên lệnh cần tạo hoặc sửa", type: 3, required: true }],
 	integration_types: [0],
 	contexts: [0],
 	default_member_permissions: String(PermissionsBitField.Flags.Administrator),
+	ephemeral: true,
 	enable: config?.DevConfig?.GuildCommand !== false,
 };
 
@@ -104,29 +33,18 @@ const requireAdmin = (interaction, lang) => {
 
 module.exports.execute = async ({ interaction, lang }) => {
 	if (!requireAdmin(interaction, lang)) return;
-
 	const db = useHooks.get("db");
-	if (!db?.ZiGuildCommand) {
-		return interaction.reply({ content: lang?.until?.noDB || "Database không khả dụng.", ephemeral: true });
-	}
-
-	const subcommand = interaction.options.getSubcommand();
-	switch (subcommand) {
-		case "create":
-			return this.create({ interaction, lang, db });
-		case "edit":
-			return this.edit({ interaction, lang, db });
-		case "builder":
-			return this.builder({ interaction, lang, db });
-		case "preview":
-			return this.preview({ interaction, lang, db });
-		case "delete":
-			return this.delete({ interaction, lang, db });
-		case "list":
-			return this.list({ interaction, lang, db });
-		default:
-			return interaction.reply({ content: lang?.until?.notHavePremission, ephemeral: true });
-	}
+	if (!db?.ZiGuildCommand) return interaction.reply({ content: lang?.until?.noDB || "Database không khả dụng.", ephemeral: true });
+	await interaction.deferReply({ ephemeral: true });
+	const manager = getGuildHelpers().manager;
+	const checked = await manager.execute({ action: "validateCommandName", name: interaction.options.getString("name") });
+	if (!checked.ok) return interaction.editReply(checked.error);
+	const record = await db.ZiGuildCommand.findOne({ guildId: interaction.guildId, name: checked.value });
+	const session = useHooks.get("functions")?.get("guildCommandWeb");
+	if (!session) return interaction.editReply("Trình dựng web chưa sẵn sàng.");
+	const result = session.createSession({ guildId: interaction.guildId, name: checked.value, userId: interaction.user.id });
+	const base = process.env.API_URL || `http://localhost:${process.env.SERVER_PORT | 2003}`;
+	return interaction.editReply(`${record ? "Mở trình sửa" : "Mở trình tạo"} lệnh \`/${checked.value}\`:\n${base}/guildcommand/editor?token=${encodeURIComponent(result.token)}\nNhập mật khẩu sau khi mở editor (hết hạn sau 24 giờ): \`${result.password}\``);
 };
 
 module.exports.create = async ({ interaction, lang, db }) => {

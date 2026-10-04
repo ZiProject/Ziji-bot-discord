@@ -165,8 +165,8 @@ async function bindMessenger(interaction, ackOptions) {
 		interaction.replyValue = value;
 
 		const editValue = {
-			...(value || {}),
-			content: value?.content ?? "",
+			...(value && typeof value === "object" ? value : {}),
+			content: typeof value === "string" ? value : (value?.content ?? ""),
 		};
 
 		return nativeEditReply(prepareMessengerEdit(editValue, interaction.messenger));
@@ -178,8 +178,8 @@ async function bindMessenger(interaction, ackOptions) {
 		interaction.replyValue = value;
 
 		const editValue = {
-			...(value || {}),
-			content: value?.content ?? "",
+			...(value && typeof value === "object" ? value : {}),
+			content: typeof value === "string" ? value : (value?.content ?? ""),
 		};
 
 		return nativeEditReply(prepareMessengerEdit(editValue, interaction.messenger));
