@@ -1,11 +1,7 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const {
-	createImageStudioAttachment,
-	createGreetingAnimationPayload,
-	prepareImageStudioAnimation,
-	readImageStudioAnimation,
-} = require("../utility/imageStudio");
+const { createImageStudioAttachment, prepareImageStudioAnimation, readImageStudioAnimation } = require("../utility/imageStudio");
+const { createGreetingAnimationPayload } = require("../utility/greetingPayload");
 const quoteCommand = require("../commands/fun/quote");
 const profileCommand = require("../commands/utility/profile");
 
