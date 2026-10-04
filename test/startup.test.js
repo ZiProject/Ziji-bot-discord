@@ -8,7 +8,7 @@ const { EventEmitter } = require("node:events");
 const { Collection } = require("discord.js");
 const { useHooks } = require("zihooks");
 
-const { StartupManager } = require("../startup/index.js");
+const { StartupManager, createWebApp } = require("../startup/index.js");
 const { buildBuilderPreview, startBuilderSession } = require("../functions/guildCommand/guildCommandBuilder.js");
 
 const createTempModule = async (dir, name, content) => {
@@ -170,6 +170,90 @@ test("StartupManager.initHooks initializes hooks and exposes config/logger", asy
 	assert.ok(useHooks.get("functions") instanceof Collection, "Functions hook should be a Collection");
 	assert.ok(useHooks.get("logger"), "Logger hook should be available");
 	assert.deepStrictEqual(manager.getConfig(), useHooks.get("config"));
+});
+
+test("Hono web middleware handles JSON bodies, CORS, and preflight requests", async () => {
+	const previousOrigin = process.env.CORS_ORIGIN;
+	process.env.CORS_ORIGIN = "*";
+
+	try {
+		const app = createWebApp();
+		app.post("/echo", (context) => context.json(context.get("body")));
+
+		const response = await app.request("/echo", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ ok: true }),
+		});
+		assert.deepStrictEqual(await response.json(), { ok: true });
+		assert.strictEqual(response.headers.get("Access-Control-Allow-Origin"), "*");
+		assert.strictEqual(response.headers.get("Access-Control-Allow-Credentials"), "true");
+
+		const preflight = await app.request("/echo", {
+			method: "OPTIONS",
+			headers: {
+				Origin: "https://dashboard.example",
+				"Access-Control-Request-Headers": "Authorization, X-Custom",
+			},
+		});
+		assert.strictEqual(preflight.status, 204);
+		assert.strictEqual(preflight.headers.get("Access-Control-Allow-Origin"), "https://dashboard.example");
+		assert.strictEqual(preflight.headers.get("Access-Control-Allow-Methods"), "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+		assert.strictEqual(preflight.headers.get("Access-Control-Allow-Headers"), "Authorization, X-Custom");
+
+		const malformedJson = await app.request("/echo", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: "{",
+		});
+		assert.strictEqual(malformedJson.status, 400);
+
+		const scalarJson = await app.request("/echo", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify("scalar"),
+		});
+		assert.strictEqual(scalarJson.status, 400);
+	} finally {
+		if (previousOrigin === undefined) delete process.env.CORS_ORIGIN;
+		else process.env.CORS_ORIGIN = previousOrigin;
+	}
+});
+
+test("Bot API Hono routes preserve transcript access and auth responses", async () => {
+	const app = createWebApp();
+	useHooks.set("server", app);
+	require("../extensions/routes/botApi.js").execute({ user: { id: "test-client" } });
+
+	const transcripts = await app.request("/transcripts/");
+	assert.strictEqual(transcripts.status, 403);
+	assert.match(await transcripts.text(), /403 Forbidden/);
+
+	const missingTranscript = await app.request("/transcripts/not-found.html");
+	assert.strictEqual(missingTranscript.status, 404);
+
+	const unauthenticated = await app.request("/user/settings");
+	assert.strictEqual(unauthenticated.status, 401);
+	assert.strictEqual(await unauthenticated.text(), "No token provided");
+});
+
+test("Music and stream routes mount on Hono and retain validation responses", async () => {
+	const app = createWebApp();
+	useHooks.set("server", app);
+	require("../extensions/routes/music.js").execute();
+	require("../extensions/routes/stream.js").execute();
+
+	const missingTrack = await app.request("/api/stream/audio");
+	assert.strictEqual(missingTrack.status, 400);
+	assert.strictEqual(await missingTrack.text(), "Bad Request");
+
+	const invalidTrack = await app.request("/api/stream/video?trackData=%7B");
+	assert.strictEqual(invalidTrack.status, 400);
+	assert.deepStrictEqual(await invalidTrack.json(), { error: "Invalid trackData" });
+
+	const missingProxyUrl = await app.request("/proxy/stream");
+	assert.strictEqual(missingProxyUrl.status, 400);
+	assert.deepStrictEqual(await missingProxyUrl.json(), { error: "Missing url or id parameter..." });
 });
 
 test("Guild command utility modules load through the supported public discord.js API", () => {

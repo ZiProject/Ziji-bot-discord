@@ -1,137 +1,64 @@
-const express = require("express");
-const router = express.Router();
-
+const { Hono } = require("hono");
 const { getManager } = require("ziplayer");
 const { useHooks } = require("zihooks");
+const { Readable } = require("node:stream");
 
 const Logger = useHooks.get("logger");
-const { pipeline } = require("stream/promises");
+const router = new Hono();
 
-function parseTrackData(req, res) {
-	if (!req.query.trackData) {
-		res.sendStatus(400);
-		return null;
-	}
+function parseTrackData(context) {
+	const trackData = context.req.query("trackData");
+	if (!trackData) return { response: context.text("Bad Request", 400) };
 
 	try {
-		return JSON.parse(req.query.trackData);
+		return { trackData: JSON.parse(trackData) };
 	} catch {
-		res.status(400).json({
-			error: "Invalid trackData",
-		});
-		return null;
+		return { response: context.json({ error: "Invalid trackData" }, 400) };
 	}
 }
 
-router.get("/audio", async (req, res) => {
-	const trackData = parseTrackData(req, res);
+function streamRoute(method, contentType, logLabel, errorMessage) {
+	return async (context) => {
+		const parsed = parseTrackData(context);
+		if (parsed.response) return parsed.response;
 
-	if (!trackData) {
-		return;
-	}
+		const controller = new AbortController();
+		const requestSignal = context.req.raw.signal;
+		const abort = () => controller.abort();
+		const cleanup = () => requestSignal.removeEventListener("abort", abort);
+		requestSignal.addEventListener("abort", abort, { once: true });
 
-	const controller = new AbortController();
+		try {
+			const player = await getManager().create("webid");
+			const stream = await player[method](parsed.trackData, { signal: controller.signal });
+			if (controller.signal.aborted) {
+				stream.destroy();
+				cleanup();
+				return;
+			}
 
-	const abort = () => {
-		controller.abort();
-	};
-
-	req.once("close", abort);
-
-	try {
-		const player = await getManager().create("webid");
-
-		const stream = await player.save(trackData, {
-			signal: controller.signal,
-		});
-
-		if (controller.signal.aborted) {
-			stream.destroy();
-			return;
-		}
-
-		res.writeHead(200, {
-			"Content-Type": "audio/webm",
-			"Accept-Ranges": "bytes",
-			"Cache-Control": "no-cache",
-		});
-
-		await pipeline(stream, res, {
-			signal: controller.signal,
-		});
-	} catch (err) {
-		if (controller.signal.aborted) {
-			return;
-		}
-
-		Logger.error("[Stream] Audio error:", err);
-
-		if (!res.headersSent) {
-			res.status(500).json({
-				error: "Audio stream failed",
+			stream.once("end", cleanup);
+			stream.once("error", cleanup);
+			stream.once("close", () => {
+				if (!stream.readableEnded) controller.abort();
+				cleanup();
 			});
-		} else {
-			res.destroy(err);
-		}
-	} finally {
-		req.off("close", abort);
-	}
-});
-
-router.get("/video", async (req, res) => {
-	const trackData = parseTrackData(req, res);
-
-	if (!trackData) {
-		return;
-	}
-
-	const controller = new AbortController();
-
-	const abort = () => {
-		controller.abort();
-	};
-
-	req.once("close", abort);
-
-	try {
-		const player = await getManager().create("webid");
-
-		const stream = await player.saveVideo(trackData, {
-			signal: controller.signal,
-		});
-
-		if (controller.signal.aborted) {
-			stream.destroy();
-			return;
-		}
-
-		res.writeHead(200, {
-			"Content-Type": "application/vnd.yt-ump",
-			"Accept-Ranges": "bytes",
-			"Cache-Control": "no-cache",
-		});
-
-		await pipeline(stream, res, {
-			signal: controller.signal,
-		});
-	} catch (err) {
-		if (controller.signal.aborted) {
-			return;
-		}
-
-		Logger.error("[Stream] Video error:", err);
-
-		if (!res.headersSent) {
-			res.status(500).json({
-				error: "Video stream failed",
+			return context.body(Readable.toWeb(stream), 200, {
+				"Content-Type": contentType,
+				"Accept-Ranges": "bytes",
+				"Cache-Control": "no-cache",
 			});
-		} else {
-			res.destroy(err);
+		} catch (error) {
+			cleanup();
+			if (controller.signal.aborted) return;
+			Logger.error(`[Stream] ${logLabel} error:`, error);
+			return context.json({ error: errorMessage }, 500);
 		}
-	} finally {
-		req.off("close", abort);
-	}
-});
+	};
+}
+
+router.get("/audio", streamRoute("save", "audio/webm", "Audio", "Audio stream failed"));
+router.get("/video", streamRoute("saveVideo", "application/vnd.yt-ump", "Video", "Video stream failed"));
 
 module.exports.data = {
 	name: "streamRoutes",
@@ -142,7 +69,5 @@ module.exports.data = {
 };
 
 module.exports.execute = () => {
-	const server = useHooks.get("server");
-
-	server.use("/api/stream", router);
+	useHooks.get("server").route("/api/stream", router);
 };

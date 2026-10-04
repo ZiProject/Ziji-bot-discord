@@ -63,16 +63,32 @@ Powered by [Lrclib](https://lrclib.net) — supports both **synced** (real-time)
 
 Ban · Kick · Timeout · Purge · Auto-Responder · Giveaways · Ticket system · Welcomer · GuildCommand · join-to-create · youtube
 
-<img width="930" height="280" alt="WelcomeCard" src="https://github.com/user-attachments/assets/07a639cf-bff6-48c2-9637-f6df4deda41a" />
+<img width="930" height="280" alt="welcome" src="https://github.com/user-attachments/assets/2b3b4c4c-0c73-4e24-a831-7f004452686e" />
+
+Welcome and goodbye GIFs are generated through [Image Studio](https://image-studio-green.vercel.app/animation). To use a custom
+animation, export its JSON payload from the editor and upload it with the `animation` or `byeanimation` option in
+`/welcomer setup`. Payloads can use `{userAVTurl}`, `{userName}`, and `{guildName}` placeholders.
 
 <table>
 <tr>
 <td width="50%">
-<img width="569" height="720" alt="image" src="https://github.com/user-attachments/assets/f4b04b30-0aca-4a0f-9f6c-5915b731526a" />
+Image create
+</td>
+<td width="50%">
+Easy to edit
+</td>
+</tr>
+<tr>
+<td width="50%">
+<img width="950" height="260" alt="image" src="https://github.com/user-attachments/assets/93f6e112-c9a6-4388-9487-d2f7e54ab7fc" />
+<img width="950" height="260" alt="image" src="https://github.com/user-attachments/assets/0154a8a5-641a-42f3-b22f-dcc7b33284e4" />
+<img width="950" height="260" alt="image" src="https://github.com/user-attachments/assets/001e58cf-5c2a-48bf-b570-ddf82eee09da" />
+<img width="1000" height="500" alt="image" src="https://github.com/user-attachments/assets/fdf82c9a-3566-41d8-a07f-553e41563ff5" />
 
 </td>
 <td width="50%">
-<img width="678" height="874" alt="image" src="https://github.com/user-attachments/assets/706ee7b7-105b-4041-80c6-8d9f1f753ccc" />
+<img width="1039" height="813" alt="image" src="https://github.com/user-attachments/assets/82994e0c-d6d0-4e49-8ae3-d20fe2bf0fa5" />
+<img width="1000" height="500" alt="image" src="https://github.com/user-attachments/assets/bf6f5480-3178-4220-8e6b-088deacdcfee" />
 
 </td>
 </tr>

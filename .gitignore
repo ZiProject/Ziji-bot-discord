@@ -31,14 +31,13 @@
 *.out
 *.app
 node_modules
-package-lock.json
 *.env
 config.js
 .env
-package-lock.json
 giveaways.json
 bot.log
 jsons/
 *.json
+package-lock.json
 cache
 transcripts

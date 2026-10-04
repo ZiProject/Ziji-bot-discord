@@ -12,7 +12,7 @@ const { InfinityPlugin } = require("@ziplayer/infinity");
 console.timeEnd("require time");
 console.time("init time");
 const client = new Client({
-	rest: [{ timeout: 60_000 }],
+	rest: { timeout: 120_000 },
 	intents: [
 		GatewayIntentBits.Guilds,
 		GatewayIntentBits.GuildVoiceStates,

@@ -1,37 +1,5 @@
-const { AttachmentBuilder } = require("discord.js");
 const { useHooks } = require("zihooks");
-const { Worker } = require("worker_threads");
-
-async function buildImageInWorker(workerData) {
-	return new Promise((resolve, reject) => {
-		const worker = new Worker("./utility/LeaderboardCard.js", {
-			workerData,
-		});
-
-		worker.on("message", (arrayBuffer) => {
-			try {
-				const buffer = Buffer.from(arrayBuffer);
-				if (!Buffer.isBuffer(buffer)) {
-					throw new Error("Received data is not a buffer");
-				}
-				const attachment = new AttachmentBuilder(buffer, { name: "Leaderboard.png" });
-				resolve(attachment);
-			} catch (error) {
-				reject(error);
-			} finally {
-				worker.postMessage("terminate");
-			}
-		});
-
-		worker.on("error", reject);
-
-		worker.on("exit", (code) => {
-			if (code !== 0) {
-				reject(new Error(`Worker stopped with exit code ${code}`));
-			}
-		});
-	});
-}
+const { createImageStudioAttachment } = require("../../utility/imageStudio");
 
 module.exports.data = {
 	name: "leaderboard",
@@ -65,35 +33,34 @@ module.exports.execute = async ({ interaction, lang }) => {
 		.filter((user) => !!user.userID)
 		.slice(0, 15);
 
-	// Leaderboard name and entry array
 	const leaderboardEntries = [];
 	let rankNum = 1;
-	// Build leaderboard entries
 	for (const members of usersort) {
 		const member = await interaction.client.users.fetch(members.userID);
 		const avatar = member.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" });
-		const username = "xxxxx" + member.username.slice(-4);
-		const displayName = member.displayName;
-		const level = members.level;
-		const xp = members.xp;
-		const rank = rankNum;
-
-		leaderboardEntries.push({ avatar, username, displayName, level, xp, rank });
+		leaderboardEntries.push({
+			rank: rankNum,
+			username: member.displayName || member.username,
+			handle: `@${member.username}`,
+			avatar,
+			level: members.level ?? 0,
+			xp: members.xp ?? 0,
+		});
 		rankNum++;
 	}
 
-	const totalMembers = interaction.client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0);
-
-	const Leaderboard_data = {
-		Header: {
-			title: `${interaction.client.user.username} Leaderboard`,
-			image: interaction.client.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
-			subtitle: `${totalMembers} members`,
+	const attachment = await createImageStudioAttachment(
+		{
+			type: "leaderboard",
+			data: {
+				guildIcon:
+					interaction.guild?.iconURL({ size: 1024, extension: "png" }) ||
+					interaction.client.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
+				items: leaderboardEntries.slice(0, 10),
+			},
 		},
-		Players: leaderboardEntries.slice(0, 10),
-	};
-
-	const attachment = await buildImageInWorker({ Leaderboard_data });
+		"leaderboard.png",
+	);
 
 	const response = { content: "", files: [attachment], components: [] };
 	if (!interaction.guild) response.components = [];

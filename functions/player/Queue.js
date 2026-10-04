@@ -6,13 +6,10 @@ const {
 	MediaGalleryItemBuilder,
 	ActionRowBuilder,
 	ButtonBuilder,
-	AttachmentBuilder,
 	ButtonStyle,
 } = require("discord.js");
 const ZiIcons = require("./../../utility/icon");
 const { useHooks } = require("zihooks");
-const { fork } = require("child_process");
-const path = require("path");
 const { createImageStudioAttachment } = require("../../utility/imageStudio");
 
 function msToTime(milliseconds) {
@@ -47,73 +44,6 @@ function hasQueueControls(components) {
 function createV2Message(content) {
 	const container = new ContainerBuilder().addTextDisplayComponents((text) => text.setContent(content));
 	return { flags: MessageFlags.IsComponentsV2, components: [container] };
-}
-
-async function buildImageInWorker(searchPlayer, query) {
-	return new Promise((resolve, reject) => {
-		const workerPath = path.resolve(__dirname, "../../utility/musicImage.js");
-		let settled = false;
-		let timeout;
-		const child = fork(workerPath, [], {
-			stdio: ["ignore", "ignore", "ignore", "ipc"],
-		});
-
-		const cleanup = () => {
-			clearTimeout(timeout);
-			child.removeAllListeners("message");
-			child.removeAllListeners("error");
-			child.removeAllListeners("exit");
-			if (child.connected) child.disconnect();
-			if (!child.killed) child.kill();
-		};
-
-		const settle = (callback) => {
-			if (settled) return;
-			settled = true;
-			cleanup();
-			callback();
-		};
-
-		timeout = setTimeout(() => {
-			settle(() => reject(new Error("Image worker timed out after 30 seconds")));
-		}, 30_000);
-
-		child.once("message", (message) => {
-			if (!message || typeof message !== "object") {
-				return settle(() => reject(new Error("Invalid response from image worker")));
-			}
-
-			if (message.type === "error") {
-				return settle(() => reject(new Error(message.error || "Image worker failed")));
-			}
-
-			if (message.type !== "result" || typeof message.data !== "string") {
-				return settle(() => reject(new Error("Invalid image data from image worker")));
-			}
-
-			try {
-				const buffer = Buffer.from(message.data, "base64");
-				const attachment = new AttachmentBuilder(buffer, { name: "queue.png" });
-				settle(() => resolve(attachment));
-			} catch (error) {
-				settle(() => reject(error));
-			}
-		});
-
-		child.once("error", (error) => {
-			settle(() => reject(error));
-		});
-
-		child.once("exit", (code, signal) => {
-			if (!settled) {
-				settle(() => reject(new Error(`Image worker stopped with code ${code}${signal ? ` (${signal})` : ""}`)));
-			}
-		});
-
-		child.send({ searchPlayer, query }, (error) => {
-			if (error) settle(() => reject(error));
-		});
-	});
 }
 
 /**
@@ -163,15 +93,10 @@ module.exports.execute = async ({ interaction, player, Nextpage = true }) => {
 	let attachment;
 	if (useHooks.get("config")?.ImageSearch) {
 		try {
-			try {
-				attachment = await createImageStudioAttachment(
-					{ type: "song", title: `Queue of ${interaction.guild.name}`, layout: "grid", items: searchPlayer },
-					"queue.png",
-				);
-			} catch (error) {
-				console.warn("Image Studio generation failed; falling back to image worker", error);
-				attachment = await buildImageInWorker(searchPlayer, `Queue of ${interaction.guild.name}`);
-			}
+			attachment = await createImageStudioAttachment(
+				{ type: "song", title: `Queue of ${interaction.guild.name}`, layout: "grid", items: searchPlayer },
+				"queue.png",
+			);
 		} catch (error) {
 			console.error("Error building queue image:", error);
 		}

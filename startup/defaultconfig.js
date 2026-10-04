@@ -16,7 +16,6 @@ module.exports = {
 		SupportServer: "https://discord.gg/bkBejRNcR3",
 		InviteBot: "https://discord.com/oauth2/authorize?client_id=1501197759754272928",
 		Banner: "https://cdn.discordapp.com/attachments/1064851388221358153/1298974004291567616/banner.gif",
-		rankBackground: "https://i.imgur.com/sVzFJ8W.jpeg",
 	},
 	PlayerConfig: {
 		selfDeaf: true,

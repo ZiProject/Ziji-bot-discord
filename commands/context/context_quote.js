@@ -1,4 +1,4 @@
-const { useHooks } = require("zihooks");
+const { createImageStudioAttachment } = require("../../utility/imageStudio");
 
 module.exports.data = {
 	name: "Quote Image Generation",
@@ -19,35 +19,24 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 	if (!msg.content) return interaction.editReply({ content: lang.quote.error });
 
-	const context = {
-		text: msg.content,
-		backgroundImage: msg.author.displayAvatarURL({ size: 1024, dynamic: true, format: "png" }),
-		author: msg.author.displayName,
-		tag: msg.author.username,
-		bgcolor: true,
-		watermark: interaction.client.user.tag,
-	};
-	const Commands = useHooks.get("commands");
-	const Quote = Commands.get("quote");
-
-	let cardimage = await Quote.tryMIQ(context).catch(async (error) => {
-		console.error("Error in quote MIQ:", error);
-		return null;
-	});
-
-	if (!cardimage) {
-		cardimage = await Quote.tryLocal(context).catch((error) => {
-			console.error("Error in quote local:", error);
-			return null;
-		});
-	}
-
-	if (!cardimage) {
+	try {
+		const attachment = await createImageStudioAttachment(
+			{
+				type: "quote",
+				data: {
+					quote: msg.content,
+					layout: "split-portrait",
+					author: msg.author.displayName,
+					handle: `@${msg.author.username}`,
+					tag: msg.author.tag,
+					avatar: msg.author.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
+				},
+			},
+			"quote.png",
+		);
+		await interaction.editReply({ files: [attachment] });
+	} catch (error) {
+		console.error("Error generating context quote with Image Studio:", error);
 		await interaction.editReply({ content: lang.quote.error });
-		return;
 	}
-
-	await interaction.editReply({ files: [{ attachment: cardimage, name: "quote.png" }] });
-
-	return;
 };
