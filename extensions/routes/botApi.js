@@ -77,7 +77,7 @@ module.exports.execute = (client) => {
 			);
 
 			// JWT cùng cấu trúc với web dashboard — dùng chung được toàn bộ API
-			const token = jwt.sign({ id: u.id, username: u.username, avatar: u.avatar }, process.env.JWT_SECRET, { expiresIn: "7d" });
+			const token = jwt.sign({ id: u.id, username: u.username, avatar: u.avatar }, process.env.JWT_SECRET, { expiresIn: "7d", algorithm: "HS256" });
 
 			return c.json({ token, user: { id: u.id, username: u.username, avatar: u.avatar } });
 		} catch (err) {
@@ -141,6 +141,7 @@ module.exports.execute = (client) => {
 			);
 
 			const token = jwt.sign({ id: userData.id, username: userData.username, avatar: userData.avatar }, process.env.JWT_SECRET, {
+				algorithm: "HS256",
 				expiresIn: "7d",
 			});
 			const dashboardUrl = process.env.DASHBOARD_URL?.trim();
@@ -287,7 +288,7 @@ module.exports.execute = (client) => {
 
 		const token = authHeader.split(" ")[1];
 		try {
-			const decoded = jwt.verify(token, process.env.JWT_SECRET);
+			const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
 			const db = useHooks.get("db");
 			const user = await db.ZiUser.findOne({ userID: decoded.id });
 
@@ -314,7 +315,7 @@ module.exports.execute = (client) => {
 		const token = authHeader.split(" ")[1];
 		let decoded;
 		try {
-			decoded = jwt.verify(token, process.env.JWT_SECRET);
+			decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
 		} catch (error) {
 			return c.html("Invalid token", 401);
 		}
@@ -524,7 +525,7 @@ module.exports.execute = (client) => {
 		const token = authHeader.split(" ")[1];
 		let decoded;
 		try {
-			decoded = jwt.verify(token, process.env.JWT_SECRET);
+			decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
 		} catch (error) {
 			return c.html("Invalid token", 401);
 		}
