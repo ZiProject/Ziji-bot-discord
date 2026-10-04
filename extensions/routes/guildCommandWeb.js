@@ -2,7 +2,13 @@ const crypto = require("node:crypto");
 const express = require("express");
 const { useHooks } = require("zihooks");
 
-module.exports.data = { name: "guildCommandWeb", description: "Web graph editor for guild commands", version: "2.0.0", enable: true, priority: 8 };
+module.exports.data = {
+	name: "guildCommandWeb",
+	description: "Web graph editor for guild commands",
+	version: "2.0.0",
+	enable: true,
+	priority: 8,
+};
 
 module.exports.execute = (client) => {
 	const router = express.Router();
@@ -19,11 +25,19 @@ module.exports.execute = (client) => {
 	const getSession = (req, res, requirePassword = true) => {
 		const session = sessions.get(String(req.body?.token || req.query.token || ""));
 		if (!requirePassword) {
-			if (!session || session.expiresAt < Date.now()) { res.status(401).send("Link đã hết hạn."); return null; }
+			if (!session || session.expiresAt < Date.now()) {
+				res.status(401).send("Link đã hết hạn.");
+				return null;
+			}
 			return session;
 		}
 		const supplied = String(req.body?.password || req.get("x-editor-password") || "");
-		if (!session || session.expiresAt < Date.now() || supplied.length !== session.password.length || !crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(session.password))) {
+		if (
+			!session ||
+			session.expiresAt < Date.now() ||
+			supplied.length !== session.password.length ||
+			!crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(session.password))
+		) {
 			res.status(401).json({ error: "Link hoặc mật khẩu không hợp lệ/hết hạn." });
 			return null;
 		}
@@ -538,42 +552,109 @@ init();
 	});
 
 	router.get("/guildcommand/api/meta", async (req, res) => {
-		const session = getSession(req, res); if (!session) return;
+		const session = getSession(req, res);
+		if (!session) return;
 		try {
 			const record = await useHooks.get("db").ZiGuildCommand.findOne({ guildId: session.guildId, name: session.name });
-			const guild = client.guilds.cache.get(session.guildId); if (!guild) return res.status(404).json({ error: "Bot không còn trong server." });
-			await guild.channels.fetch().catch(() => {}); await guild.roles.fetch().catch(() => {}); await guild.members.fetch({ limit: 1000 }).catch(() => {});
-			res.json({ name: session.name, record, guild: { channels: guild.channels.cache.filter(c => c.isTextBased() && c.guildId).map(c => ({id:c.id,name:'#'+c.name})), roles: guild.roles.cache.map(r => ({id:r.id,name:r.name})), members: guild.members.cache.filter(m => !m.user.bot).map(m => ({id:m.id,name:m.displayName+' (@'+m.user.username+')'})) } });
-		} catch (e) { res.status(500).json({ error: e.message }); }
+			const guild = client.guilds.cache.get(session.guildId);
+			if (!guild) return res.status(404).json({ error: "Bot không còn trong server." });
+			await guild.channels.fetch().catch(() => {});
+			await guild.roles.fetch().catch(() => {});
+			await guild.members.fetch({ limit: 1000 }).catch(() => {});
+			res.json({
+				name: session.name,
+				record,
+				guild: {
+					channels: guild.channels.cache
+						.filter((c) => c.isTextBased() && c.guildId)
+						.map((c) => ({ id: c.id, name: "#" + c.name })),
+					roles: guild.roles.cache.map((r) => ({ id: r.id, name: r.name })),
+					members: guild.members.cache
+						.filter((m) => !m.user.bot)
+						.map((m) => ({ id: m.id, name: m.displayName + " (@" + m.user.username + ")" })),
+				},
+			});
+		} catch (e) {
+			res.status(500).json({ error: e.message });
+		}
 	});
 
 	router.post("/guildcommand/api/save", express.json(), async (req, res) => {
-		const session = getSession(req, res); if (!session) return;
+		const session = getSession(req, res);
+		if (!session) return;
 		try {
 			const { name, description, enabled, options, graph } = req.body;
-			if (name !== session.name) return res.status(400).json({error:"Tên lệnh không khớp với link."});
-			const nv = await manager.execute({action:"validateCommandName",name}); if (!nv.ok) return res.status(400).json({error:nv.error});
-			const dv = await manager.execute({action:"validateDescription",description}); if (!dv.ok) return res.status(400).json({error:dv.error});
-			if (!Array.isArray(options)||options.length>25||!Array.isArray(graph)||graph.length>100) return res.status(400).json({error:"Options hoặc graph không hợp lệ."});
-			const allowed=new Set(["String","User","Channel","Role","Boolean","Option"]); const seen=new Set(), seenOptionIds=new Set();
-			for(const o of options){o.id ||= crypto.randomUUID(); if(!/^[a-z0-9_-]{1,32}$/.test(o.name)||seen.has(o.name)||!allowed.has(o.type)||seenOptionIds.has(o.id))return res.status(400).json({error:"Tên, ID hoặc kiểu option không hợp lệ."});seen.add(o.name);seenOptionIds.add(o.id);if(o.type==='Option'&&(!Array.isArray(o.choices)||!o.choices.length||o.choices.length>25))return res.status(400).json({error:'Option cần từ 1 đến 25 lựa chọn.'});}
-			const ids=new Set(graph.map(n=>n.id));if(graph.some(n=>!ids.has(n.next)&&n.next||n.type==='has-role'&&(!ids.has(n.yes||n.data?.yes)&&(n.yes||n.data?.yes)||!ids.has(n.no||n.data?.no)&&(n.no||n.data?.no))))return res.status(400).json({error:'Liên kết khối không hợp lệ.'});
-			
-			const cleanGraph = graph.map(n => ({
+			if (name !== session.name) return res.status(400).json({ error: "Tên lệnh không khớp với link." });
+			const nv = await manager.execute({ action: "validateCommandName", name });
+			if (!nv.ok) return res.status(400).json({ error: nv.error });
+			const dv = await manager.execute({ action: "validateDescription", description });
+			if (!dv.ok) return res.status(400).json({ error: dv.error });
+			if (!Array.isArray(options) || options.length > 25 || !Array.isArray(graph) || graph.length > 100)
+				return res.status(400).json({ error: "Options hoặc graph không hợp lệ." });
+			const allowed = new Set(["String", "User", "Channel", "Role", "Boolean", "Option"]);
+			const seen = new Set(),
+				seenOptionIds = new Set();
+			for (const o of options) {
+				o.id ||= crypto.randomUUID();
+				if (!/^[a-z0-9_-]{1,32}$/.test(o.name) || seen.has(o.name) || !allowed.has(o.type) || seenOptionIds.has(o.id))
+					return res.status(400).json({ error: "Tên, ID hoặc kiểu option không hợp lệ." });
+				seen.add(o.name);
+				seenOptionIds.add(o.id);
+				if (o.type === "Option" && (!Array.isArray(o.choices) || !o.choices.length || o.choices.length > 25))
+					return res.status(400).json({ error: "Option cần từ 1 đến 25 lựa chọn." });
+			}
+			const ids = new Set(graph.map((n) => n.id));
+			if (
+				graph.some(
+					(n) =>
+						(!ids.has(n.next) && n.next) ||
+						(n.type === "has-role" &&
+							((!ids.has(n.yes || n.data?.yes) && (n.yes || n.data?.yes)) ||
+								(!ids.has(n.no || n.data?.no) && (n.no || n.data?.no)))),
+				)
+			)
+				return res.status(400).json({ error: "Liên kết khối không hợp lệ." });
+
+			const cleanGraph = graph.map((n) => ({
 				id: n.id,
 				type: n.type,
 				data: n.data || {},
 				next: n.next || null,
-				yes: n.type === 'has-role' ? (n.data?.yes || n.yes || null) : undefined,
-				no: n.type === 'has-role' ? (n.data?.no || n.no || null) : undefined,
-				x: n.x, y: n.y
+				yes: n.type === "has-role" ? n.data?.yes || n.yes || null : undefined,
+				no: n.type === "has-role" ? n.data?.no || n.no || null : undefined,
+				x: n.x,
+				y: n.y,
 			}));
 
-			const db=useHooks.get('db'),old=await db.ZiGuildCommand.findOne({guildId:session.guildId,name});
-			if(!old){const count=await manager.execute({action:'getGuildCommandCount',guildId:session.guildId});if(count>=25)return res.status(400).json({error:'Server đã đạt giới hạn lệnh.'});}
-			const record=old?await db.ZiGuildCommand.findOneAndUpdate({guildId:session.guildId,name},{$set:{description,type:'graph',response:{options,graph:cleanGraph},target:null,enabled:!!enabled}}):await db.ZiGuildCommand.create({guildId:session.guildId,name,description,type:'graph',response:{options,graph:cleanGraph},enabled:!!enabled,createdBy:session.userId});
-			await manager.execute({action:'syncToCache',record}); await manager.execute({action:'deployGuildCommands',client,guildId:session.guildId}); sessions.delete(req.body.token); res.json({success:true});
-		} catch(e){useHooks.get('logger')?.error?.('[GuildCommand Web] '+e.stack);res.status(500).json({error:e.message});}
+			const db = useHooks.get("db"),
+				old = await db.ZiGuildCommand.findOne({ guildId: session.guildId, name });
+			if (!old) {
+				const count = await manager.execute({ action: "getGuildCommandCount", guildId: session.guildId });
+				if (count >= 25) return res.status(400).json({ error: "Server đã đạt giới hạn lệnh." });
+			}
+			const record =
+				old ?
+					await db.ZiGuildCommand.findOneAndUpdate(
+						{ guildId: session.guildId, name },
+						{ $set: { description, type: "graph", response: { options, graph: cleanGraph }, target: null, enabled: !!enabled } },
+					)
+				:	await db.ZiGuildCommand.create({
+						guildId: session.guildId,
+						name,
+						description,
+						type: "graph",
+						response: { options, graph: cleanGraph },
+						enabled: !!enabled,
+						createdBy: session.userId,
+					});
+			await manager.execute({ action: "syncToCache", record });
+			await manager.execute({ action: "deployGuildCommands", client, guildId: session.guildId });
+			sessions.delete(req.body.token);
+			res.json({ success: true });
+		} catch (e) {
+			useHooks.get("logger")?.error?.("[GuildCommand Web] " + e.stack);
+			res.status(500).json({ error: e.message });
+		}
 	});
 
 	useHooks.get("server").use(router);

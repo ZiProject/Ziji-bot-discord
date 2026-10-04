@@ -364,7 +364,7 @@ const buildSlashData = (record) => {
 		slash.options = (record.response?.options || []).map((option) => ({
 			name: option.name,
 			description: option.description || option.name,
-			type: ({ String: 3, User: 6, Channel: 7, Role: 8, Boolean: 5, Option: 3 })[option.type] || 3,
+			type: { String: 3, User: 6, Channel: 7, Role: 8, Boolean: 5, Option: 3 }[option.type] || 3,
 			required: option.required !== false,
 			...(option.type === "Option" ? { choices: (option.choices || []).map((choice) => ({ name: choice, value: choice })) } : {}),
 		}));
@@ -483,7 +483,14 @@ const executeGuildCommand = async ({ interaction, record }) => {
 	if (record.type === "graph") {
 		const values = {};
 		for (const option of record.response?.options || []) {
-			const getter = { String: "getString", Option: "getString", User: "getUser", Channel: "getChannel", Role: "getRole", Boolean: "getBoolean" }[option.type];
+			const getter = {
+				String: "getString",
+				Option: "getString",
+				User: "getUser",
+				Channel: "getChannel",
+				Role: "getRole",
+				Boolean: "getBoolean",
+			}[option.type];
 			values[option.name] = getter ? interaction.options[getter](option.name, false) : null;
 		}
 		const getOptionValue = (ref) => {
@@ -492,10 +499,18 @@ const executeGuildCommand = async ({ interaction, record }) => {
 			const option = (record.response?.options || []).find((item) => item.id === ref);
 			return values[option?.name || ref];
 		};
-		const render = (text) => String(text || "").replace(/\{([\w-]+)\}/g, (_, key) => {
-			const value = values[key];
-			return value?.id ? `<@${value.id}>` : value?.name ? (value.id && value.guild ? `<#${value.id}>` : value.name) : value ?? "";
-		});
+		const render = (text) =>
+			String(text || "").replace(/\{([\w-]+)\}/g, (_, key) => {
+				const value = values[key];
+				return (
+					value?.id ? `<@${value.id}>`
+					: value?.name ?
+						value.id && value.guild ?
+							`<#${value.id}>`
+						:	value.name
+					:	(value ?? "")
+				);
+			});
 		const nodes = record.response?.graph || [];
 		let nextId = nodes[0]?.id;
 		for (let steps = 0; nextId && steps < 100; steps++) {
@@ -507,21 +522,27 @@ const executeGuildCommand = async ({ interaction, record }) => {
 				if (channel?.isTextBased()) await channel.send(render(data.msg));
 			} else if (node.type === "send-dm") {
 				const userValue = getOptionValue(data.user);
-				const user = userValue?.user || userValue || interaction.guild.members.cache.get(data.user)?.user || await interaction.client.users.fetch(data.user).catch(() => null);
+				const user =
+					userValue?.user ||
+					userValue ||
+					interaction.guild.members.cache.get(data.user)?.user ||
+					(await interaction.client.users.fetch(data.user).catch(() => null));
 				if (user) await user.send(render(data.msg));
 			} else if (node.type === "reply") {
 				if (!interaction.replied && !interaction.deferred) await interaction.reply({ content: render(data.msg) });
 				else await interaction.followUp({ content: render(data.msg) });
 			} else if (node.type === "role-edit") {
 				const memberId = getOptionValue(data.user)?.id || getOptionValue(data.user) || data.user;
-				const member = interaction.guild.members.cache.get(memberId) || await interaction.guild.members.fetch(memberId).catch(() => null);
+				const member =
+					interaction.guild.members.cache.get(memberId) || (await interaction.guild.members.fetch(memberId).catch(() => null));
 				const role = getOptionValue(data.role) || interaction.guild.roles.cache.get(data.role);
 				if (member && role) await member.roles[data.action === "delete" ? "remove" : "add"](role);
 			} else if (node.type === "has-role") {
 				const memberId = getOptionValue(data.user)?.id || getOptionValue(data.user) || data.user;
-				const member = interaction.guild.members.cache.get(memberId) || await interaction.guild.members.fetch(memberId).catch(() => null);
+				const member =
+					interaction.guild.members.cache.get(memberId) || (await interaction.guild.members.fetch(memberId).catch(() => null));
 				const role = getOptionValue(data.role) || interaction.guild.roles.cache.get(data.role);
-				nextId = member?.roles.cache.has(role?.id) ? (node.yes || data.yes) : (node.no || data.no);
+				nextId = member?.roles.cache.has(role?.id) ? node.yes || data.yes : node.no || data.no;
 				continue;
 			}
 			nextId = node.next || null;

@@ -34,7 +34,8 @@ const requireAdmin = (interaction, lang) => {
 module.exports.execute = async ({ interaction, lang }) => {
 	if (!requireAdmin(interaction, lang)) return;
 	const db = useHooks.get("db");
-	if (!db?.ZiGuildCommand) return interaction.reply({ content: lang?.until?.noDB || "Database không khả dụng.", ephemeral: true });
+	if (!db?.ZiGuildCommand)
+		return interaction.reply({ content: lang?.until?.noDB || "Database không khả dụng.", ephemeral: true });
 	await interaction.deferReply({ ephemeral: true });
 	const manager = getGuildHelpers().manager;
 	const checked = await manager.execute({ action: "validateCommandName", name: interaction.options.getString("name") });
@@ -44,7 +45,9 @@ module.exports.execute = async ({ interaction, lang }) => {
 	if (!session) return interaction.editReply("Trình dựng web chưa sẵn sàng.");
 	const result = session.createSession({ guildId: interaction.guildId, name: checked.value, userId: interaction.user.id });
 	const base = process.env.API_URL || `http://localhost:${process.env.SERVER_PORT | 2003}`;
-	return interaction.editReply(`${record ? "Mở trình sửa" : "Mở trình tạo"} lệnh \`/${checked.value}\`:\n${base}/guildcommand/editor?token=${encodeURIComponent(result.token)}\nNhập mật khẩu sau khi mở editor (hết hạn sau 24 giờ): \`${result.password}\``);
+	return interaction.editReply(
+		`${record ? "Mở trình sửa" : "Mở trình tạo"} lệnh \`/${checked.value}\`:\n${base}/guildcommand/editor?token=${encodeURIComponent(result.token)}\nNhập mật khẩu sau khi mở editor (hết hạn sau 24 giờ): \`${result.password}\``,
+	);
 };
 
 module.exports.create = async ({ interaction, lang, db }) => {
