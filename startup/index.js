@@ -271,6 +271,7 @@ class StartupManager {
 		useHooks.set("wss", this.web.wss);
 		useHooks.set("streamWss", this.web.streamWss);
 		useHooks.set("server", this.web.server);
+		useHooks.set("httpServer", this.web.httpServer);
 		useHooks.set("icon", zzicon);
 		useHooks.set("loaders", this.loaders);
 	}

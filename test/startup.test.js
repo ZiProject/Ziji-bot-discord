@@ -24,7 +24,7 @@ const removeTempDir = async (dir) => {
 const createTestManager = (client = { id: "test-client" }) => {
 	class TestStartupManager extends StartupManager {
 		initWeb() {
-			return { server: null, wss: null };
+			return { server: null, httpServer: null, wss: null };
 		}
 
 		initPlayerNet() {
@@ -169,6 +169,7 @@ test("StartupManager.initHooks initializes hooks and exposes config/logger", asy
 	assert.ok(useHooks.get("commands") instanceof Collection, "Commands hook should be a Collection");
 	assert.ok(useHooks.get("functions") instanceof Collection, "Functions hook should be a Collection");
 	assert.ok(useHooks.get("logger"), "Logger hook should be available");
+	assert.strictEqual(useHooks.get("httpServer"), manager.web.httpServer, "HTTP server hook should be available");
 	assert.deepStrictEqual(manager.getConfig(), useHooks.get("config"));
 });
 

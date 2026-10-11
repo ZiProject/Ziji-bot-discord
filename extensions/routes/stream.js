@@ -206,7 +206,7 @@ async function getOrCreatePlayer(userId) {
 	let player = manager.getPlayer(playerId);
 	if (player) return player;
 
-	const httpServer = useHooks.get("server");
+	const httpServer = useHooks.get("httpServer");
 	if (!httpServer) throw Object.assign(new Error("Stream server is not available"), { statusCode: 503 });
 	player = await manager.create(playerId, {
 		audioOutputBackendFactory: ({ playerId: outputPlayerId }) =>
