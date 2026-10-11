@@ -104,7 +104,8 @@ stereo PCM over `/ws/stream`; it does not replace or interrupt that user's Disco
 existing `/auth/token` or Discord callback flow as a Bearer token for playback requests:
 
 - `POST /api/stream/play` with `{"query":"..."}` starts or queues a track.
-- `GET /api/stream/state` returns the user's stream-player state.
+- `GET /api/stream/state` keeps an authenticated Server-Sent Events connection open, sends an initial `player-state` event, and
+  publishes updated player state as tracks, queue, or playback controls change.
 - `POST /api/stream/control` accepts `pause`, `resume`, `stop`, `skip`, `seek` (`positionMs`), `volume` (`volume`, 0-200), `loop`
   (`mode`: `off`, `track`, or `queue`), and `autoplay` (`enabled`).
 - Connect a WebSocket to `/ws/stream`, then send `{"type":"auth","token":"<JWT>"}` as its first message. On success, the server

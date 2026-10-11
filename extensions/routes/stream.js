@@ -1,4 +1,5 @@
 const { Hono } = require("hono");
+const { streamSSE } = require("hono/streaming");
 const { getManager, WebSocketAudioOutputBackend } = require("ziplayer");
 const { useHooks } = require("zihooks");
 const { Readable } = require("node:stream");
@@ -427,10 +428,12 @@ router.post("/play", authenticate, async (context) => {
 
 router.get("/state", authenticate, async (context) => {
 	const userId = getUserId(context.get("streamUser"));
-	const player = getManager()?.getPlayer(streamSessionId(userId));
+	const sessionId = streamSessionId(userId);
+	const player = getManager()?.getPlayer(sessionId);
 	if (!player) return context.json({ error: "No stream player exists" }, 404);
-	return context.json({
-		sessionId: streamSessionId(userId),
+
+	const getState = () => ({
+		sessionId,
 		currentTrack: serializeTrack(player.currentTrack),
 		queue: (player.upcomingTracks ?? []).map(serializeTrack),
 		timestamp: player.getTime().current,
@@ -438,6 +441,67 @@ router.get("/state", authenticate, async (context) => {
 		paused: player.isPaused,
 		loopMode: player.loop(),
 		autoPlay: player.autoPlay(),
+	});
+
+	return streamSSE(context, async (stream) => {
+		const unsubscribers = [];
+		let closed = false;
+		let writeQueue = Promise.resolve();
+		let heartbeat;
+		let resolveAbort;
+		const aborted = new Promise((resolve) => {
+			resolveAbort = resolve;
+		});
+
+		const enqueue = (write) => {
+			writeQueue = writeQueue
+				.then(async () => {
+					if (!closed && !stream.aborted && !stream.closed) await write();
+				})
+				.catch((error) => {
+					logger()?.error(`[ZiPlayer Stream] Failed to write state for ${sessionId}:`, error);
+					stream.abort();
+				});
+		};
+		const publishState = () => enqueue(() => stream.writeSSE({ event: "player-state", data: JSON.stringify(getState()) }));
+		const onAbort = () => {
+			if (closed) return;
+			closed = true;
+			clearInterval(heartbeat);
+			for (const unsubscribe of unsubscribers) unsubscribe();
+			resolveAbort();
+		};
+
+		stream.onAbort(onAbort);
+		for (const eventName of [
+			"TRACK_STARTED",
+			"TRACK_END",
+			"TRACK_ERROR",
+			"playbackStateChanged",
+			"queueChanged",
+			"queueAdd",
+			"queueRemove",
+			"queueEnd",
+			"playerPause",
+			"playerResume",
+			"playerStop",
+			"volumeRequested",
+			"seek",
+			"willPlay",
+		]) {
+			unsubscribers.push(player.subscribe(eventName, publishState));
+		}
+
+		await stream.writeSSE({ retry: 3000, event: "player-state", data: JSON.stringify(getState()) });
+		if (!closed) {
+			heartbeat = setInterval(() => {
+				if (player.currentTrack && !player.isPaused) publishState();
+				else enqueue(() => stream.write(": keep-alive\n\n"));
+			}, 1000);
+			heartbeat.unref?.();
+		}
+
+		await aborted;
 	});
 });
 

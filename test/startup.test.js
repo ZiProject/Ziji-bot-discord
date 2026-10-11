@@ -380,12 +380,14 @@ test("Music and stream routes mount on Hono and require JWTs for ZiPlayer stream
 	assert.deepStrictEqual(await missingProxyUrl.json(), { error: "Missing url or id parameter..." });
 });
 
-test("ZiPlayer stream state reads playback position from the player", async (t) => {
+test("ZiPlayer stream state publishes initial and updated state as authenticated SSE", async (t) => {
 	const app = createWebApp();
 	const originalJwtSecret = process.env.JWT_SECRET;
 	const managerKey = Symbol.for("ziplayer.PlayerManager.instance");
 	const originalManager = globalThis[managerKey];
 	process.env.JWT_SECRET = "stream-state-test-secret";
+	const listeners = new Map();
+	let unsubscribeCount = 0;
 	const player = {
 		currentTrack: { title: "Test track", duration: 60_000 },
 		upcomingTracks: [],
@@ -394,6 +396,13 @@ test("ZiPlayer stream state reads playback position from the player", async (t) 
 		loop: () => "off",
 		autoPlay: () => false,
 		getTime: () => ({ current: 12_345 }),
+		subscribe: (eventName, listener) => {
+			listeners.set(eventName, listener);
+			return () => {
+				unsubscribeCount++;
+				listeners.delete(eventName);
+			};
+		},
 	};
 	globalThis[managerKey] = { getPlayer: (id) => (id === "web-stream-1234567890" ? player : null) };
 	useHooks.set("server", app);
@@ -412,9 +421,42 @@ test("ZiPlayer stream state reads playback position from the player", async (t) 
 	});
 
 	assert.strictEqual(response.status, 200);
-	const state = await response.json();
-	assert.strictEqual(state.timestamp, 12_345);
-	assert.strictEqual(state.currentTrack.title, "Test track");
+	assert.match(response.headers.get("content-type"), /^text\/event-stream/);
+	assert.strictEqual(response.headers.get("connection"), "keep-alive");
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let buffered = "";
+	const readUntil = async (marker) => {
+		while (!buffered.includes(marker)) {
+			const { value, done } = await reader.read();
+			assert.strictEqual(done, false, "SSE stream should remain open");
+			buffered += decoder.decode(value, { stream: true });
+		}
+		const markerIndex = buffered.indexOf(marker);
+		const message = buffered.slice(0, markerIndex + marker.length);
+		buffered = buffered.slice(markerIndex + marker.length);
+		return message;
+	};
+
+	const initialEvent = await readUntil("\n\n");
+	assert.match(initialEvent, /event: player-state/);
+	const initialState = JSON.parse(initialEvent.match(/data: (.+)/)[1]);
+	assert.strictEqual(initialState.timestamp, 12_345);
+	assert.strictEqual(initialState.currentTrack.title, "Test track");
+	assert.strictEqual(listeners.size, 14);
+
+	player.currentTrack = { title: "Updated track", duration: 90_000 };
+	player.getTime = () => ({ current: 23_456 });
+	listeners.get("TRACK_STARTED")();
+	const updatedEvent = await readUntil("\n\n");
+	assert.match(updatedEvent, /event: player-state/);
+	const updatedState = JSON.parse(updatedEvent.match(/data: (.+)/)[1]);
+	assert.strictEqual(updatedState.timestamp, 23_456);
+	assert.strictEqual(updatedState.currentTrack.title, "Updated track");
+
+	await reader.cancel();
+	await new Promise((resolve) => setImmediate(resolve));
+	assert.strictEqual(unsubscribeCount, 14);
 });
 
 test("ZiPlayer WebSocket listener authenticates with the existing JWT", async (t) => {
