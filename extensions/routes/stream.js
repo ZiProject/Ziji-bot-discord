@@ -435,12 +435,32 @@ router.get("/state", authenticate, async (context) => {
 	const getState = () => ({
 		sessionId,
 		currentTrack: serializeTrack(player.currentTrack),
-		queue: (player.upcomingTracks ?? []).map(serializeTrack),
-		timestamp: player.getTime().current,
+		queue: (player.queue.tracks ?? []).map(serializeTrack),
+		timestamp: player.getTime()?.current,
 		volume: player.volume,
 		paused: player.isPaused,
 		loopMode: player.loop(),
+		repeatMode: player.loop(),
+		track:
+			player.currentTrack ?
+				{
+					title: player.currentTrack.title,
+					url: player.currentTrack.url,
+					duration: player.currentTrack.duration,
+					thumbnail: player.currentTrack.thumbnail,
+					author: player.currentTrack?.metadata?.author,
+				}
+			:	null,
+
 		autoPlay: player.autoPlay(),
+		related:
+			player.relatedTracks?.map((t) => ({
+				title: t.title,
+				url: t.url,
+				duration: t.duration,
+				thumbnail: t.thumbnail,
+				author: t?.metadata?.author,
+			})) || [],
 	});
 
 	return streamSSE(context, async (stream) => {
