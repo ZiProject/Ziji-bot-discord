@@ -1,4 +1,4 @@
-const simpleGit = require("simple-git");
+const { simpleGit } = require("simple-git");
 const cron = require("node-cron");
 const { useHooks } = require("zihooks");
 

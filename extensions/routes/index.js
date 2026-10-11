@@ -1,6 +1,6 @@
 const { useHooks } = require("zihooks");
 const { Hono } = require("hono");
-const simpleGit = require("simple-git");
+const { simpleGit } = require("simple-git");
 const config = useHooks.get("config");
 const path = require("path");
 

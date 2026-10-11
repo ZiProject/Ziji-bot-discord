@@ -275,6 +275,32 @@ test("Bot API Hono routes preserve transcript access and auth responses", async 
 	assert.strictEqual(await unauthenticated.text(), "No token provided");
 });
 
+test("Root API routes load with the installed simple-git export", async () => {
+	const app = createWebApp();
+	const client = {
+		user: {
+			id: "test-client",
+			displayName: "Test Bot",
+			displayAvatarURL: () => "https://example.com/avatar.png",
+		},
+		isReady: () => true,
+	};
+	useHooks.set("server", app);
+	useHooks.set("config", { botConfig: {} });
+	useHooks.set("playerNetClient", [client]);
+	require("../extensions/routes/index.js").execute(client);
+
+	const root = await app.request("/", { headers: { Accept: "application/json" } });
+	assert.strictEqual(root.status, 200);
+	const rootData = await root.json();
+	assert.strictEqual(rootData.status, "OK");
+	assert.strictEqual(rootData.clientId, "test-client");
+
+	const health = await app.request("/api/health");
+	assert.strictEqual(health.status, 200);
+	assert.deepStrictEqual(await health.json(), { status: "ok" });
+});
+
 test("Guild command editor routes mount on Hono and require the session password for APIs", async () => {
 	const app = createWebApp();
 	const functions = new Collection();
@@ -411,6 +437,8 @@ test("ZiPlayer WebSocket listener authenticates with the existing JWT", async (t
 	const jwt = require("jsonwebtoken");
 	const sessionId = "web-stream-1234567890";
 	const listener = await connect();
+	let listenerMessageCount = 0;
+	listener.on("message", () => listenerMessageCount++);
 	const token = jwt.sign({ id: "1234567890" }, process.env.JWT_SECRET, { algorithm: "HS256" });
 	listener.send(JSON.stringify({ type: "auth", token }));
 
@@ -436,6 +464,11 @@ test("ZiPlayer WebSocket listener authenticates with the existing JWT", async (t
 	const listenerConfig = receiveMessage(listener);
 	publisher.send(JSON.stringify(audioConfig));
 	assert.deepStrictEqual(JSON.parse((await listenerConfig).message.toString()), audioConfig);
+	assert.strictEqual(
+		listenerMessageCount,
+		1,
+		"Listener should only receive the PCM configuration, not an unsupported ready message",
+	);
 
 	const frame = Buffer.alloc(24);
 	frame.writeUInt16LE(48_000, 8);

@@ -333,10 +333,13 @@ function setupStreamWebSocketServer(webSocketServer) {
 			const session = sessions.get(sessionId);
 			if (!session) return;
 			if (role === "publisher" && session.publisher === socket) {
+				const publishedAudio = session.config !== null;
 				session.publisher = null;
 				session.config = null;
-				for (const listener of session.listeners) {
-					sendJson(listener, { v: 1, type: "playback:stop", sessionId });
+				if (publishedAudio) {
+					for (const listener of session.listeners) {
+						sendJson(listener, { v: 1, type: "playback:stop", sessionId });
+					}
 				}
 			} else if (role === "listener") {
 				session.listeners.delete(socket);
