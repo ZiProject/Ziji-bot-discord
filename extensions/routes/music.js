@@ -8,8 +8,51 @@ const router = new Hono();
 
 const Kuroshiro = require("kuroshiro").default;
 const KuromojiAnalyzer = require("kuroshiro-analyzer-kuromoji");
-const kuroshiro = new Kuroshiro();
-let kuroshiroInited = false;
+const KUROSHIRO_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+let kuroshiro = null;
+let kuroshiroInitPromise = null;
+let kuroshiroIdleTimer = null;
+let activeKuroshiroRequests = 0;
+
+const withKuroshiro = async (callback) => {
+	clearTimeout(kuroshiroIdleTimer);
+	kuroshiroIdleTimer = null;
+	activeKuroshiroRequests++;
+
+	let initialized = false;
+	let instance = kuroshiro;
+	try {
+		if (!instance) {
+			instance = new Kuroshiro();
+			kuroshiro = instance;
+		}
+
+		if (!kuroshiroInitPromise) {
+			const initPromise = instance.init(new KuromojiAnalyzer()).catch((error) => {
+				if (kuroshiro === instance) kuroshiro = null;
+				throw error;
+			});
+			kuroshiroInitPromise = initPromise;
+			const clearInitPromise = () => {
+				if (kuroshiroInitPromise === initPromise) kuroshiroInitPromise = null;
+			};
+			initPromise.then(clearInitPromise, clearInitPromise);
+		}
+
+		await kuroshiroInitPromise;
+		initialized = true;
+		return await callback(instance);
+	} finally {
+		activeKuroshiroRequests--;
+		if (initialized && activeKuroshiroRequests === 0 && kuroshiro === instance) {
+			kuroshiroIdleTimer = setTimeout(() => {
+				if (activeKuroshiroRequests === 0 && kuroshiro === instance) kuroshiro = null;
+				kuroshiroIdleTimer = null;
+			}, KUROSHIRO_IDLE_TIMEOUT_MS);
+			kuroshiroIdleTimer.unref();
+		}
+	}
+};
 
 module.exports.data = {
 	name: "musicRoutes",
@@ -51,16 +94,13 @@ router.get("/music/lyrics", authenticate, async (context) => {
 		if (!title) return context.json({ error: "Missing query" }, 400);
 
 		const lyrics = await new lyricsExt().fetch({ title });
-		if (!kuroshiroInited) {
-			await kuroshiro.init(new KuromojiAnalyzer());
-			kuroshiroInited = true;
-		}
 
 		let romanizedLyrics = null;
 		if (lyrics.synced) {
-			const lines = lyrics.synced.split("\n");
-			const processedLines = await Promise.all(
-				lines.map(async (line) => {
+			romanizedLyrics = await withKuroshiro(async (kuroshiro) => {
+				const lines = lyrics.synced.split("\n");
+				const processedLines = [];
+				for (const line of lines) {
 					const match = line.match(/^(\[\d{2}:\d{2}\.\d{2}\])(.*)$/);
 					if (match) {
 						const [, timestamp, text] = match;
@@ -69,16 +109,19 @@ router.get("/music/lyrics", authenticate, async (context) => {
 							mode: "spaced",
 							romajiSystem: "hepburn",
 						});
-						return `${timestamp}${romanizedText}`;
+						processedLines.push(`${timestamp}${romanizedText}`);
+					} else {
+						processedLines.push(
+							await kuroshiro.convert(line, {
+								to: "romaji",
+								mode: "spaced",
+								romajiSystem: "hepburn",
+							}),
+						);
 					}
-					return kuroshiro.convert(line, {
-						to: "romaji",
-						mode: "spaced",
-						romajiSystem: "hepburn",
-					});
-				}),
-			);
-			romanizedLyrics = processedLines.join("\n");
+				}
+				return processedLines.join("\n");
+			});
 		}
 
 		return context.json({ ...lyrics, lyrics_romanization: romanizedLyrics });
