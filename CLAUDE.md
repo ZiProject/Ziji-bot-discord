@@ -97,6 +97,23 @@ The bot runs a Hono server through `@hono/node-server` (port 2003) plus WebSocke
 the external web dashboard and music controller. Routes live in `extensions/routes/` (`botApi`, `music`, `debug`, `stream`,
 `suggestions`, `wssever`). The `/ping` command reaches back into this server to report web-control health.
 
+### ZiPlayer PCM stream API
+
+The bot can run an authenticated, independent ZiPlayer web-audio session for each logged-in user. It streams processed 48 kHz,
+stereo PCM over `/ws/stream`; it does not replace or interrupt that user's Discord voice player. Use the JWT returned by the
+existing `/auth/token` or Discord callback flow as a Bearer token for playback requests:
+
+- `POST /api/stream/play` with `{"query":"..."}` starts or queues a track.
+- `GET /api/stream/state` returns the user's stream-player state.
+- `POST /api/stream/control` accepts `pause`, `resume`, `stop`, `skip`, `seek` (`positionMs`), `volume` (`volume`, 0-200), `loop`
+  (`mode`: `off`, `track`, or `queue`), and `autoplay` (`enabled`).
+- Connect a WebSocket to `/ws/stream`, then send `{"type":"auth","token":"<JWT>"}` as its first message. On success, the server
+  sends `stream:ready`, followed by `audio:config` and binary ZiPlayer audio frames while playback is active. Use the
+  `@ziplayer/client` audio receiver to decode and play the frames.
+
+The stream session is scoped to the JWT's Discord user ID. WebSocket listeners must authenticate before receiving audio, and an
+idle stream player is destroyed after 100 seconds without listeners.
+
 ## Key Conventions
 
 - **Module exports always carry `data`** (`data.name`, `data.type`, etc.) — this is how the loader validates and registers them.

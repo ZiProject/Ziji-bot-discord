@@ -172,6 +172,43 @@ test("StartupManager.initHooks initializes hooks and exposes config/logger", asy
 	assert.deepStrictEqual(manager.getConfig(), useHooks.get("config"));
 });
 
+test("StartupManager routes legacy and PCM WebSocket paths separately", async (t) => {
+	const originalPort = process.env.SERVER_PORT;
+	process.env.SERVER_PORT = "0";
+	const web = StartupManager.prototype.initWeb.call({
+		logger: { debug() {}, info() {} },
+	});
+	t.after(async () => {
+		for (const webSocketServer of [web.wss, web.streamWss]) {
+			for (const socket of webSocketServer.clients) socket.terminate();
+			await new Promise((resolve) => webSocketServer.close(resolve));
+		}
+		if (web.httpServer.listening) {
+			await new Promise((resolve) => web.httpServer.close(resolve));
+		}
+		if (originalPort === undefined) delete process.env.SERVER_PORT;
+		else process.env.SERVER_PORT = originalPort;
+	});
+
+	if (!web.httpServer.listening) {
+		await new Promise((resolve) => web.httpServer.once("listening", resolve));
+	}
+	const { port } = web.httpServer.address();
+	const WebSocket = require("ws");
+	const connect = (pathname) =>
+		new Promise((resolve, reject) => {
+			const socket = new WebSocket(`ws://127.0.0.1:${port}${pathname}`);
+			socket.once("open", () => resolve(socket));
+			socket.once("error", reject);
+		});
+	const [voiceSocket, streamSocket] = await Promise.all([connect("/ws"), connect("/ws/stream")]);
+
+	assert.strictEqual(web.wss.clients.size, 1);
+	assert.strictEqual(web.streamWss.clients.size, 1);
+	voiceSocket.close();
+	streamSocket.close();
+});
+
 test("Hono web middleware handles JSON bodies, CORS, and preflight requests", async () => {
 	const previousOrigin = process.env.CORS_ORIGIN;
 	process.env.CORS_ORIGIN = "*";
@@ -269,11 +306,39 @@ test("Guild command editor routes mount on Hono and require the session password
 	assert.strictEqual(unauthorizedSave.status, 401);
 });
 
-test("Music and stream routes mount on Hono and retain validation responses", async () => {
+test("Music and stream routes mount on Hono and require JWTs for ZiPlayer streaming", async (t) => {
 	const app = createWebApp();
+	const originalJwtSecret = process.env.JWT_SECRET;
+	process.env.JWT_SECRET = "startup-test-secret";
+	t.after(() => {
+		if (originalJwtSecret === undefined) delete process.env.JWT_SECRET;
+		else process.env.JWT_SECRET = originalJwtSecret;
+	});
 	useHooks.set("server", app);
+	useHooks.set("streamWss", new EventEmitter());
+	useHooks.set("httpServer", { address: () => null });
 	require("../extensions/routes/music.js").execute();
 	require("../extensions/routes/stream.js").execute();
+
+	const unauthenticatedPlay = await app.request("/api/stream/play", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ query: "lofi" }),
+	});
+	assert.strictEqual(unauthenticatedPlay.status, 401);
+
+	const invalidTokenState = await app.request("/api/stream/state", {
+		headers: { Authorization: "Bearer invalid" },
+	});
+	assert.strictEqual(invalidTokenState.status, 401);
+
+	const token = require("jsonwebtoken").sign({ id: "1234567890" }, process.env.JWT_SECRET, { algorithm: "HS256" });
+	const invalidQuery = await app.request("/api/stream/play", {
+		method: "POST",
+		headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+		body: JSON.stringify({ query: " " }),
+	});
+	assert.strictEqual(invalidQuery.status, 400);
 
 	const missingTrack = await app.request("/api/stream/audio");
 	assert.strictEqual(missingTrack.status, 400);
@@ -286,6 +351,104 @@ test("Music and stream routes mount on Hono and retain validation responses", as
 	const missingProxyUrl = await app.request("/proxy/stream");
 	assert.strictEqual(missingProxyUrl.status, 400);
 	assert.deepStrictEqual(await missingProxyUrl.json(), { error: "Missing url or id parameter..." });
+});
+
+test("ZiPlayer WebSocket listener authenticates with the existing JWT", async (t) => {
+	const originalPort = process.env.SERVER_PORT;
+	const originalJwtSecret = process.env.JWT_SECRET;
+	process.env.SERVER_PORT = "0";
+	process.env.JWT_SECRET = "stream-ws-test-secret";
+	const web = StartupManager.prototype.initWeb.call({
+		logger: { debug() {}, info() {} },
+	});
+	const app = createWebApp();
+	useHooks.set("logger", { warn() {}, error() {} });
+	useHooks.set("server", app);
+	useHooks.set("streamWss", web.streamWss);
+	useHooks.set("httpServer", web.httpServer);
+	require("../extensions/routes/stream.js").execute();
+	t.after(async () => {
+		for (const webSocketServer of [web.wss, web.streamWss]) {
+			for (const socket of webSocketServer.clients) socket.terminate();
+			await new Promise((resolve) => webSocketServer.close(resolve));
+		}
+		if (web.httpServer.listening) {
+			await new Promise((resolve) => web.httpServer.close(resolve));
+		}
+		if (originalPort === undefined) delete process.env.SERVER_PORT;
+		else process.env.SERVER_PORT = originalPort;
+		if (originalJwtSecret === undefined) delete process.env.JWT_SECRET;
+		else process.env.JWT_SECRET = originalJwtSecret;
+	});
+
+	if (!web.httpServer.listening) {
+		await new Promise((resolve) => web.httpServer.once("listening", resolve));
+	}
+	const WebSocket = require("ws");
+	const streamUrl = `ws://127.0.0.1:${web.httpServer.address().port}/ws/stream`;
+	const connect = async () => {
+		const socket = new WebSocket(streamUrl);
+		await new Promise((resolve, reject) => {
+			socket.once("open", resolve);
+			socket.once("error", reject);
+		});
+		return socket;
+	};
+	const receiveMessage = (socket) =>
+		new Promise((resolve, reject) => {
+			const onMessage = (message, isBinary) => {
+				socket.off("error", onError);
+				resolve({ message, isBinary });
+			};
+			const onError = (error) => {
+				socket.off("message", onMessage);
+				reject(error);
+			};
+			socket.once("message", onMessage);
+			socket.once("error", onError);
+		});
+	const jwt = require("jsonwebtoken");
+	const sessionId = "web-stream-1234567890";
+	const listener = await connect();
+	const listenerReady = receiveMessage(listener);
+	const token = jwt.sign({ id: "1234567890" }, process.env.JWT_SECRET, { algorithm: "HS256" });
+	listener.send(JSON.stringify({ type: "auth", token }));
+	assert.deepStrictEqual(JSON.parse((await listenerReady).message.toString()), { type: "stream:ready", sessionId });
+
+	const publisher = await connect();
+	const publisherReady = receiveMessage(publisher);
+	const publisherToken = jwt.sign({ id: "1234567890", role: "publisher", sessionId }, process.env.JWT_SECRET, {
+		algorithm: "HS256",
+	});
+	publisher.send(JSON.stringify({ type: "auth", token: publisherToken }));
+	assert.deepStrictEqual(JSON.parse((await publisherReady).message.toString()), { type: "stream:publisher:ready", sessionId });
+
+	const audioConfig = {
+		v: 1,
+		type: "audio:config",
+		sessionId,
+		protocolVersion: 1,
+		sampleRateHz: 48_000,
+		channels: 2,
+		sampleFormat: "s16",
+		endianness: "little",
+		channelLayout: "interleaved",
+	};
+	const listenerConfig = receiveMessage(listener);
+	publisher.send(JSON.stringify(audioConfig));
+	assert.deepStrictEqual(JSON.parse((await listenerConfig).message.toString()), audioConfig);
+
+	const frame = Buffer.alloc(24);
+	frame.writeUInt16LE(48_000, 8);
+	frame.writeUInt16LE(2, 10);
+	frame.writeUInt16LE(2, 12);
+	const listenerFrame = receiveMessage(listener);
+	publisher.send(frame);
+	const receivedFrame = await listenerFrame;
+	assert.strictEqual(receivedFrame.isBinary, true);
+	assert.deepStrictEqual(receivedFrame.message, frame);
+	listener.close();
+	publisher.close();
 });
 
 test("Guild command utility modules load through the supported public discord.js API", () => {

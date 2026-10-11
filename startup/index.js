@@ -77,13 +77,34 @@ class StartupManager {
 		this.logger.debug?.("Starting web...");
 		const app = createWebApp();
 		const server = createServer(getRequestListener(app.fetch));
-		const wss = new WebSocket.Server({ server, path: "/ws" });
+		const wss = new WebSocket.Server({ noServer: true });
+		const streamWss = new WebSocket.Server({ noServer: true, maxPayload: 1024 * 1024 + 16 });
+
+		server.on("upgrade", (request, socket, head) => {
+			let pathname;
+			try {
+				pathname = new URL(request.url, "http://localhost").pathname;
+			} catch {
+				socket.destroy();
+				return;
+			}
+
+			const target =
+				pathname === "/ws" ? wss
+				: pathname === "/ws/stream" ? streamWss
+				: null;
+			if (!target) {
+				socket.end("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
+				return;
+			}
+			target.handleUpgrade(request, socket, head, (webSocket) => target.emit("connection", webSocket, request));
+		});
 
 		server.listen(process.env.SERVER_PORT || 2003, () => {
 			this.logger.info(`Server running on port ${process.env.SERVER_PORT || 2003}`);
 		});
 
-		return { server: app, httpServer: server, wss };
+		return { server: app, httpServer: server, wss, streamWss };
 	}
 
 	initPlayerNet() {
@@ -248,6 +269,7 @@ class StartupManager {
 		useHooks.set("guildCommands", new Collection());
 		useHooks.set("logger", this.logger);
 		useHooks.set("wss", this.web.wss);
+		useHooks.set("streamWss", this.web.streamWss);
 		useHooks.set("server", this.web.server);
 		useHooks.set("icon", zzicon);
 		useHooks.set("loaders", this.loaders);
