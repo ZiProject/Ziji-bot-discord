@@ -410,10 +410,8 @@ test("ZiPlayer WebSocket listener authenticates with the existing JWT", async (t
 	const jwt = require("jsonwebtoken");
 	const sessionId = "web-stream-1234567890";
 	const listener = await connect();
-	const listenerReady = receiveMessage(listener);
 	const token = jwt.sign({ id: "1234567890" }, process.env.JWT_SECRET, { algorithm: "HS256" });
 	listener.send(JSON.stringify({ type: "auth", token }));
-	assert.deepStrictEqual(JSON.parse((await listenerReady).message.toString()), { type: "stream:ready", sessionId });
 
 	const publisher = await connect();
 	const publisherReady = receiveMessage(publisher);

@@ -26,6 +26,9 @@
 Full-featured music playback with an interactive player UI v2, queue management, search, and more. Multi bot support on one
 player/per voice channel. Image search track support
 
+The web music player can switch between the existing Discord voice playback and direct browser playback using ZiPlayer's
+authenticated PCM stream.
+
 <table><tr>
 <td width="50%">	
 Player

@@ -283,7 +283,6 @@ function setupStreamWebSocketServer(webSocketServer) {
 						const session = getSession(sessionId);
 						clearIdleTimer(sessionId);
 						session.listeners.add(socket);
-						sendJson(socket, { type: "stream:ready", sessionId });
 						if (session.config) sendJson(socket, session.config);
 					}
 					clearTimeout(authTimeout);
@@ -336,7 +335,9 @@ function setupStreamWebSocketServer(webSocketServer) {
 			if (role === "publisher" && session.publisher === socket) {
 				session.publisher = null;
 				session.config = null;
-				for (const listener of session.listeners) sendJson(listener, { type: "stream:ended", sessionId });
+				for (const listener of session.listeners) {
+					sendJson(listener, { v: 1, type: "playback:stop", sessionId });
+				}
 			} else if (role === "listener") {
 				session.listeners.delete(socket);
 				scheduleIdleCleanup(sessionId);
@@ -429,6 +430,7 @@ router.get("/state", authenticate, async (context) => {
 		sessionId: streamSessionId(userId),
 		currentTrack: serializeTrack(player.currentTrack),
 		queue: (player.upcomingTracks ?? []).map(serializeTrack),
+		timestamp: getManager().position(streamSessionId(userId)) ?? 0,
 		volume: player.volume,
 		paused: player.isPaused,
 		loopMode: player.loop(),

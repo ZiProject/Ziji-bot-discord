@@ -108,8 +108,8 @@ existing `/auth/token` or Discord callback flow as a Bearer token for playback r
 - `POST /api/stream/control` accepts `pause`, `resume`, `stop`, `skip`, `seek` (`positionMs`), `volume` (`volume`, 0-200), `loop`
   (`mode`: `off`, `track`, or `queue`), and `autoplay` (`enabled`).
 - Connect a WebSocket to `/ws/stream`, then send `{"type":"auth","token":"<JWT>"}` as its first message. On success, the server
-  sends `stream:ready`, followed by `audio:config` and binary ZiPlayer audio frames while playback is active. Use the
-  `@ziplayer/client` audio receiver to decode and play the frames.
+  sends `audio:config` and binary ZiPlayer audio frames while playback is active. Do not send a separate listener-ready control
+  message: `@ziplayer/client` expects the versioned PCM configuration or playback controls from the publisher.
 
 The stream session is scoped to the JWT's Discord user ID. WebSocket listeners must authenticate before receiving audio, and an
 idle stream player is destroyed after 100 seconds without listeners.
