@@ -77,7 +77,10 @@ module.exports.execute = (client) => {
 			);
 
 			// JWT cùng cấu trúc với web dashboard — dùng chung được toàn bộ API
-			const token = jwt.sign({ id: u.id, username: u.username, avatar: u.avatar }, process.env.JWT_SECRET, { expiresIn: "7d", algorithm: "HS256" });
+			const token = jwt.sign({ id: u.id, username: u.username, avatar: u.avatar }, process.env.JWT_SECRET, {
+				expiresIn: "7d",
+				algorithm: "HS256",
+			});
 
 			return c.json({ token, user: { id: u.id, username: u.username, avatar: u.avatar } });
 		} catch (err) {
