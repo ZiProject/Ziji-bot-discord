@@ -433,7 +433,7 @@ router.get("/state", authenticate, async (context) => {
 		sessionId: streamSessionId(userId),
 		currentTrack: serializeTrack(player.currentTrack),
 		queue: (player.upcomingTracks ?? []).map(serializeTrack),
-		timestamp: getManager().position(streamSessionId(userId)) ?? 0,
+		timestamp: player.getTime().current,
 		volume: player.volume,
 		paused: player.isPaused,
 		loopMode: player.loop(),

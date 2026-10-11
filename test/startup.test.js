@@ -380,6 +380,43 @@ test("Music and stream routes mount on Hono and require JWTs for ZiPlayer stream
 	assert.deepStrictEqual(await missingProxyUrl.json(), { error: "Missing url or id parameter..." });
 });
 
+test("ZiPlayer stream state reads playback position from the player", async (t) => {
+	const app = createWebApp();
+	const originalJwtSecret = process.env.JWT_SECRET;
+	const managerKey = Symbol.for("ziplayer.PlayerManager.instance");
+	const originalManager = globalThis[managerKey];
+	process.env.JWT_SECRET = "stream-state-test-secret";
+	const player = {
+		currentTrack: { title: "Test track", duration: 60_000 },
+		upcomingTracks: [],
+		volume: 75,
+		isPaused: false,
+		loop: () => "off",
+		autoPlay: () => false,
+		getTime: () => ({ current: 12_345 }),
+	};
+	globalThis[managerKey] = { getPlayer: (id) => (id === "web-stream-1234567890" ? player : null) };
+	useHooks.set("server", app);
+	useHooks.set("streamWss", new EventEmitter());
+	require("../extensions/routes/stream.js").execute();
+	t.after(() => {
+		if (originalJwtSecret === undefined) delete process.env.JWT_SECRET;
+		else process.env.JWT_SECRET = originalJwtSecret;
+		if (originalManager === undefined) delete globalThis[managerKey];
+		else globalThis[managerKey] = originalManager;
+	});
+
+	const token = require("jsonwebtoken").sign({ id: "1234567890" }, process.env.JWT_SECRET, { algorithm: "HS256" });
+	const response = await app.request("/api/stream/state", {
+		headers: { Authorization: `Bearer ${token}` },
+	});
+
+	assert.strictEqual(response.status, 200);
+	const state = await response.json();
+	assert.strictEqual(state.timestamp, 12_345);
+	assert.strictEqual(state.currentTrack.title, "Test track");
+});
+
 test("ZiPlayer WebSocket listener authenticates with the existing JWT", async (t) => {
 	const originalPort = process.env.SERVER_PORT;
 	const originalJwtSecret = process.env.JWT_SECRET;
