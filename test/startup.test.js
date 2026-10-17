@@ -173,7 +173,7 @@ test("StartupManager.initHooks initializes hooks and exposes config/logger", asy
 	assert.deepStrictEqual(manager.getConfig(), useHooks.get("config"));
 });
 
-test("StartupManager routes legacy and PCM WebSocket paths separately", async (t) => {
+test("StartupManager routes legacy and stream WebSocket paths separately", async (t) => {
 	const originalPort = process.env.SERVER_PORT;
 	process.env.SERVER_PORT = "0";
 	const web = StartupManager.prototype.initWeb.call({
@@ -459,6 +459,81 @@ test("ZiPlayer stream state publishes initial and updated state as authenticated
 	assert.strictEqual(unsubscribeCount, 14);
 });
 
+test("ZiPlayer stream output switches between browser and the user's Discord voice channel", async (t) => {
+	const app = createWebApp();
+	const originalJwtSecret = process.env.JWT_SECRET;
+	const managerKey = Symbol.for("ziplayer.PlayerManager.instance");
+	const originalManager = globalThis[managerKey];
+	process.env.JWT_SECRET = "stream-output-test-secret";
+	const playerId = "web-stream-1234567890";
+	const channel = {
+		id: "voice-channel",
+		name: "Voice",
+		isVoiceBased: () => true,
+		permissionsFor: () => ({ has: (permission) => ["Connect", "Speak"].includes(permission) }),
+	};
+	const bot = {
+		user: { id: "bot-id" },
+		channels: { fetch: async () => channel },
+	};
+	let connection = null;
+	let connectedWith = null;
+	let disconnectCount = 0;
+	const player = {
+		userdata: { webAudioStream: { userId: "1234567890" } },
+		get connection() {
+			return connection;
+		},
+		connect: async (target, options) => {
+			connectedWith = { target, options };
+			connection = {};
+			return connection;
+		},
+		disconnect: async () => {
+			disconnectCount++;
+			connection = null;
+		},
+	};
+	globalThis[managerKey] = { getPlayer: (id) => (id === playerId ? player : null) };
+	const functions = new Collection([["playerCreate", { getBot: async () => bot }]]);
+	useHooks.set("server", app);
+	useHooks.set("functions", functions);
+	useHooks.set("voiceStates", new Map([["1234567890", { guildId: "guild-id", channelId: channel.id, channel }]]));
+	useHooks.set("streamWss", new EventEmitter());
+	require("../extensions/routes/stream.js").execute();
+	t.after(() => {
+		if (originalJwtSecret === undefined) delete process.env.JWT_SECRET;
+		else process.env.JWT_SECRET = originalJwtSecret;
+		if (originalManager === undefined) delete globalThis[managerKey];
+		else globalThis[managerKey] = originalManager;
+	});
+
+	const token = require("jsonwebtoken").sign({ id: "1234567890" }, process.env.JWT_SECRET, { algorithm: "HS256" });
+	const request = (mode) =>
+		app.request("/api/stream/output", {
+			method: "POST",
+			headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+			body: JSON.stringify({ mode }),
+		});
+
+	const voiceResponse = await request("voice");
+	assert.strictEqual(voiceResponse.status, 200);
+	assert.deepStrictEqual(await voiceResponse.json(), {
+		sessionId: playerId,
+		mode: "voice",
+		channel: { id: channel.id, name: channel.name },
+	});
+	assert.deepStrictEqual(connectedWith, { target: channel, options: { group: bot.user.id } });
+	assert.strictEqual(player.userdata.voiceChannel, channel);
+	assert.strictEqual(player.userdata.channel, channel);
+
+	const webResponse = await request("web");
+	assert.strictEqual(webResponse.status, 200);
+	assert.deepStrictEqual(await webResponse.json(), { sessionId: playerId, mode: "web" });
+	assert.strictEqual(disconnectCount, 1);
+	assert.strictEqual(player.userdata.voiceChannel, undefined);
+});
+
 test("ZiPlayer WebSocket listener authenticates with the existing JWT", async (t) => {
 	const originalPort = process.env.SERVER_PORT;
 	const originalJwtSecret = process.env.JWT_SECRET;
@@ -534,11 +609,9 @@ test("ZiPlayer WebSocket listener authenticates with the existing JWT", async (t
 		type: "audio:config",
 		sessionId,
 		protocolVersion: 1,
+		codec: "opus",
 		sampleRateHz: 48_000,
 		channels: 2,
-		sampleFormat: "s16",
-		endianness: "little",
-		channelLayout: "interleaved",
 	};
 	const listenerConfig = receiveMessage(listener);
 	publisher.send(JSON.stringify(audioConfig));
@@ -546,13 +619,10 @@ test("ZiPlayer WebSocket listener authenticates with the existing JWT", async (t
 	assert.strictEqual(
 		listenerMessageCount,
 		1,
-		"Listener should only receive the PCM configuration, not an unsupported ready message",
+		"Listener should only receive the Opus configuration, not an unsupported ready message",
 	);
 
-	const frame = Buffer.alloc(24);
-	frame.writeUInt16LE(48_000, 8);
-	frame.writeUInt16LE(2, 10);
-	frame.writeUInt16LE(2, 12);
+	const frame = Buffer.from([0x5a, 0x49, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x00]);
 	const listenerFrame = receiveMessage(listener);
 	publisher.send(frame);
 	const receivedFrame = await listenerFrame;

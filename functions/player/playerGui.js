@@ -70,13 +70,16 @@ module.exports = {
 		const track = tracks ?? player?.currentTrack ?? player?.previousTrack;
 		let requestedBy =
 			(track?.requestedBy === "auto" ? player?.userdata?.requestedBy : track?.requestedBy) ?? player?.userdata?.requestedBy;
-
+		console.log("playerGui requestedBy:", requestedBy);
 		const lang = await useHooks.get("functions").get("ZiRank").execute({
 			user: requestedBy,
 			XpADD: 0,
 		});
-
 		const queryTypeIcon = getQueryTypeIcon(track?.source);
+		const outputModes = [player?.connection ? "Voice" : null, player?.getWebAudioSubscribers?.().length ? "Web" : null].filter(
+			Boolean,
+		);
+		const outputLabel = outputModes.join(" + ") || "No output";
 
 		const code = {
 			flags: MessageFlags.IsComponentsV2,
@@ -112,7 +115,7 @@ module.exports = {
 				)
 				.addTextDisplayComponents((text) =>
 					text.setContent(
-						`**${player.userdata?.voiceChannel}** | Text Channel: **${player.userdata?.channel}** | Bot: **${player?.userdata?.client?.user}**`,
+						`Output: **${outputLabel}** | **${player.userdata?.voiceChannel ?? "Browser session"}** | Text Channel: **${player.userdata?.channel ?? "Web"}** | Bot: **${player?.userdata?.client?.user ?? "ZiPlayer"}**`,
 					),
 				),
 		);

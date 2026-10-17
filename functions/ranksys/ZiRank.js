@@ -24,7 +24,6 @@ module.exports.execute = async ({ user, XpADD = 1, CoinADD = 0 }) => {
 		const DataBase = useHooks.get("db");
 		if (DataBase && user) {
 			const userData = (await DataBase.ZiUser.findOne({ userID: user.id })) || {};
-
 			const xp = userData.xp ?? 1;
 			const level = userData.level ?? 1;
 			const coin = userData.coin ?? 0;

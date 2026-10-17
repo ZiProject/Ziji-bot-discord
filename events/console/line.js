@@ -38,10 +38,11 @@ const helpCmd = () => {
 	logger.info(
 		[
 			"Danh sách các lệnh:",
-			"- help",
+			"- help/h",
 			"- ping",
-			"- stop",
-			"- status",
+			"- stop/exit/quit",
+			"- gc",
+			"- status/stat",
 			"- sh ls [args]",
 			"- sh pwd",
 			"- sh whoami",
@@ -49,8 +50,8 @@ const helpCmd = () => {
 			"- sh df [args]",
 			"- sh free [args]",
 			"- sh uptime",
-			"- update",
-			"clear/cls",
+			"- update/up",
+			"- clear/cls",
 		].join("\n"),
 		[
 			"Danh sách các lệnh player:",
@@ -169,7 +170,7 @@ module.exports = {
 			return;
 		}
 
-		logger.debug(`CONSOLE issued bot command: ${trimmedInput}`);
+		logger.debug(`CONSOLE bot command: ${trimmedInput}`);
 
 		const args = trimmedInput.split(/\s+/);
 		const command = args.shift()?.toLowerCase();
@@ -195,7 +196,14 @@ module.exports = {
 			case "quit":
 				await shutdown("MANUAL");
 				break;
-
+			case "gc":
+				if (global.gc) {
+					global.gc();
+					logger.info("✅ Garbage collection completed.");
+				} else {
+					logger.warn("⚠️ Garbage collection is not exposed. Start Node.js with --expose-gc.");
+				}
+				break;
 			case "ping":
 				logger.info(`Pong! Độ trễ của bot là ${client.ws.ping}ms`);
 				break;

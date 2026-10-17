@@ -45,6 +45,9 @@ function trackStart(wss, logger) {
 }
 
 async function getPlayerVoiceChannel(user, client) {
+	const webStreamPlayer = getManager()?.getPlayer(`web-stream-${user.id}`);
+	if (webStreamPlayer?.connection && webStreamPlayer.userdata?.voiceChannel) return webStreamPlayer;
+
 	let voiceChannel = null;
 	const voiceStates = useHooks.get("voiceStates");
 

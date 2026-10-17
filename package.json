@@ -4,8 +4,8 @@
 	"description": "Ziji bot discord",
 	"main": "index.js",
 	"scripts": {
-		"start": "cross-env NODE_ENV=production node index.js",
-		"dev": "cross-env NODE_ENV=development nodemon index.js",
+		"start": "cross-env NODE_ENV=production node --expose-gc index.js",
+		"dev": "cross-env NODE_ENV=development node --expose-gc index.js",
 		"deploy": "node ./deploy.js",
 		"postinstall": "test -n \"$PRISMA_SKIP_POSTINSTALL_GENERATE\" || npm run prisma:generate",
 		"prisma:generate": "cross-env MONGO=mongodb://localhost:27017/ziji SQLITE_DATABASE_URL=file:./jsons/ziDB.sqlite prisma generate --schema prisma/mongo/schema.prisma && cross-env SQLITE_DATABASE_URL=file:./jsons/ziDB.sqlite prisma generate --schema prisma/sqlite/schema.prisma",
@@ -39,7 +39,7 @@
 		"@zibot/db": "^0.0.3",
 		"@zibot/ziencryptor": "^0.0.1",
 		"@ziji/loader": "^0.0.2",
-		"@ziplayer/extension": "^1.0.1",
+		"@ziplayer/extension": "^1.0.1-dev.1",
 		"@ziplayer/infinity": "^0.0.3",
 		"@ziplayer/plugin": "^1.0.2",
 		"axios": "^1.13.5",
@@ -70,10 +70,9 @@
 		"winston": "^3.17.0",
 		"ws": "^8.18.0",
 		"zihooks": "^2.0.0",
-		"ziplayer": "^1.0.5-dev.3"
+		"ziplayer": "^1.0.5-dev.4"
 	},
 	"devDependencies": {
-		"nodemon": "^3.1.14",
 		"prettier": "^3.3.2"
 	},
 	"overrides": {

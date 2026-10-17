@@ -27,7 +27,7 @@ Full-featured music playback with an interactive player UI v2, queue management,
 player/per voice channel. Image search track support
 
 The web music player can switch between the existing Discord voice playback and direct browser playback using ZiPlayer's
-authenticated PCM stream.
+authenticated Opus web-audio stream.
 
 <table><tr>
 <td width="50%">	
