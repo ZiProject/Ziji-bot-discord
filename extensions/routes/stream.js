@@ -342,6 +342,104 @@ function clearVoiceMetadata(player) {
 	delete player.userdata.client;
 }
 
+function isWebStreamPlayerId(id) {
+	return typeof id === "string" && id.startsWith(STREAM_PLAYER_PREFIX);
+}
+
+function safeCurrentTrack(player) {
+	try {
+		return player?.currentTrack ?? null;
+	} catch {
+		return null;
+	}
+}
+
+function describeVoiceChannel(player, voiceState) {
+	const voiceChannel = player?.userdata?.voiceChannel ?? voiceState?.channel ?? null;
+	return {
+		id: player?.connection?.joinConfig?.channelId ?? voiceChannel?.id ?? voiceState?.channelId ?? null,
+		name: voiceChannel?.name ?? null,
+		guildId: voiceChannel?.guild?.id ?? voiceState?.guildId ?? null,
+		guildName: voiceChannel?.guild?.name ?? null,
+	};
+}
+
+/**
+ * Finds the Discord player (`<guildId>::<channelId>`) that the user is listening to.
+ * The web must register on this player instead of creating its own `web-stream-*` session,
+ * otherwise two players end up competing for the same Discord voice connection.
+ */
+function findUserDiscordPlayer(userId, voiceState) {
+	const manager = getManager();
+	if (!manager) return null;
+
+	if (voiceState?.guildId && voiceState?.channelId) {
+		const canonicalId = `${voiceState.guildId}::${voiceState.channelId}`;
+		const canonical = manager.getPlayer(canonicalId);
+		if (canonical) return { player: canonical, playerId: canonicalId };
+
+		const inChannel = (manager.getPlayersInChannel?.(voiceState.channelId) ?? []).find(
+			(candidate) => candidate && !isWebStreamPlayerId(candidate.id),
+		);
+		if (inChannel) return { player: inChannel, playerId: inChannel.id };
+		return null;
+	}
+
+	// The voice state could not be resolved (cache miss / fetch failure): fall back to the
+	// players' own voice channel member lists so we still never open a duplicate session.
+	for (const candidate of manager.getAll?.() ?? []) {
+		if (!candidate || isWebStreamPlayerId(candidate.id) || !candidate.connection) continue;
+		if (candidate.userdata?.voiceChannel?.members?.has?.(userId)) {
+			return { player: candidate, playerId: candidate.id };
+		}
+	}
+	return null;
+}
+
+/**
+ * Removes the browser-only `web-stream-*` player once the user's web session has moved to a
+ * Discord player. A browser-only player must never keep (or take) a Discord voice connection.
+ */
+async function releaseBrowserPlayer(userId, keepPlayer) {
+	const manager = getManager();
+	const webPlayerId = streamSessionId(userId);
+	const webPlayer = manager?.getPlayer(webPlayerId);
+	if (!webPlayer || webPlayer === keepPlayer) return;
+	try {
+		if (webPlayer.connection) await webPlayer.disconnect();
+		clearVoiceMetadata(webPlayer);
+		await manager.destroy(webPlayerId);
+	} catch (error) {
+		logger()?.error(`[ZiPlayer Stream] Failed to release browser player ${webPlayerId}:`, error);
+	}
+}
+
+/** Registers the user's web audio output on the given Discord player and drops any duplicate session. */
+async function adoptDiscordPlayer(userId, player, playerId) {
+	clearIdleTimer(streamSessionId(userId));
+	clearIdleTimer(playerId);
+	selectedPlayers.set(userId, playerId);
+	const publisher = await ensureWebAudioPublisher(player, userId);
+	await releaseBrowserPlayer(userId, player);
+	return publisher;
+}
+
+function captureBrowserPlayback(userId, exceptPlayer) {
+	const webPlayer = getManager()?.getPlayer(streamSessionId(userId));
+	if (!webPlayer || webPlayer === exceptPlayer || webPlayer.connection) return null;
+	const track = safeCurrentTrack(webPlayer);
+	if (!track?.url) return null;
+	return { track, positionMs: webPlayer.getTime?.()?.current ?? 0 };
+}
+
+async function carryPlaybackOver(userId, player, carried) {
+	if (!carried || safeCurrentTrack(player)) return false;
+	const result = await player.play(carried.track.url, { requestedBy: userId });
+	if (!result) return false;
+	if (carried.positionMs > 0) await player.seek(carried.positionMs).catch(() => false);
+	return true;
+}
+
 async function getOrCreatePlayer(userId, target = "auto") {
 	const manager = getManager();
 	if (!manager) throw Object.assign(new Error("ZiPlayer is not available"), { statusCode: 503 });
@@ -349,26 +447,16 @@ async function getOrCreatePlayer(userId, target = "auto") {
 	const webPlayerId = streamSessionId(userId);
 	clearIdleTimer(webPlayerId);
 	const webPlayer = manager.getPlayer(webPlayerId);
-	const voiceState = target !== "browser" ? await getUserVoiceState(userId) : null;
 
 	if (target !== "browser") {
-		if (voiceState?.guildId && voiceState?.channelId) {
-			const voicePlayerId = `${voiceState.guildId}::${voiceState.channelId}`;
-			const voicePlayer = manager.getPlayer(voicePlayerId);
-			if (voicePlayer) {
-				if (webPlayer && webPlayer !== voicePlayer && webPlayer.connection) {
-					await webPlayer.disconnect();
-					clearVoiceMetadata(webPlayer);
-				}
-				selectedPlayers.set(userId, voicePlayerId);
-				clearIdleTimer(voicePlayerId);
-				return { player: voicePlayer, target: "discord", playerId: voicePlayerId };
-			}
+		const voiceState = await getUserVoiceState(userId);
+		const found = findUserDiscordPlayer(userId, voiceState);
+		if (found) {
+			clearIdleTimer(found.playerId);
+			return { player: found.player, target: "discord", playerId: found.playerId };
 		}
-		if (webPlayer?.connection) {
-			selectedPlayers.set(userId, webPlayerId);
-			return { player: webPlayer, target: "discord", playerId: webPlayerId };
-		}
+		// Legacy: a browser player that still owns a voice connection.
+		if (webPlayer?.connection) return { player: webPlayer, target: "discord", playerId: webPlayerId };
 		if (target === "discord") {
 			throw Object.assign(new Error("No active Discord player was found in your current voice channel"), {
 				statusCode: 409,
@@ -587,7 +675,8 @@ router.post("/play", authenticate, async (context) => {
 		const user = context.get("streamUser");
 		const userId = getUserId(user);
 		const { player, target, playerId } = await getOrCreatePlayer(userId, body.target ?? "auto");
-		await ensureWebAudioPublisher(player, userId);
+		if (target === "discord") await adoptDiscordPlayer(userId, player, playerId);
+		else await ensureWebAudioPublisher(player, userId);
 		const result = await player.play(body.query.trim(), { requestedBy: userId });
 		if (!result) return context.json({ error: "No playable track found for this query" }, 422);
 		if (body.positionMs > 0 && !(await player.seek(body.positionMs))) {
@@ -633,34 +722,39 @@ router.post("/output", authenticate, async (context) => {
 		}
 
 		const voiceState = await getUserVoiceState(userId);
+		const found = findUserDiscordPlayer(userId, voiceState);
+
+		// Already on the Discord player of the user's channel: nothing to connect.
+		if (found && found.player === player) {
+			selectedPlayers.set(userId, found.playerId);
+			return context.json({
+				sessionId,
+				mode: "voice",
+				playerId: found.playerId,
+				channel: describeVoiceChannel(player, voiceState),
+			});
+		}
 		if (!voiceState?.channelId || !voiceState?.guildId) {
 			return context.json({ error: "Join a voice channel before switching playback to voice" }, 409);
 		}
 
-		const voicePlayerId = `${voiceState.guildId}::${voiceState.channelId}`;
-		const voicePlayer = manager?.getPlayer(voicePlayerId);
-		if (voicePlayer?.connection && voicePlayer !== player) {
-			return context.json(
-				{
-					error:
-						"That voice channel already has a different player. Select the existing Discord player before starting browser playback.",
-				},
-				409,
-			);
-		}
-		const channelPlayers = manager?.getPlayersInChannel?.(voiceState.channelId) ?? [];
-		if (channelPlayers.some((channelPlayer) => channelPlayer !== player && channelPlayer.connection)) {
-			return context.json(
-				{
-					error:
-						"That voice channel already has another connected player. Select the existing Discord player to avoid competing connections.",
-				},
-				409,
-			);
+		// The browser-only player never joins Discord voice. Its playback is moved onto the one
+		// canonical `<guildId>::<channelId>` player so two players can't fight for the connection.
+		const carried = captureBrowserPlayback(userId, found?.player);
+		if (found) {
+			await adoptDiscordPlayer(userId, found.player, found.playerId);
+			const carriedOver = await carryPlaybackOver(userId, found.player, carried);
+			return context.json({
+				sessionId,
+				mode: "voice",
+				playerId: found.playerId,
+				carried: carriedOver,
+				channel: describeVoiceChannel(found.player, voiceState),
+			});
 		}
 
 		const playerCreate = useHooks.get("functions")?.get("playerCreate");
-		if (typeof playerCreate?.getBot !== "function") {
+		if (typeof playerCreate?.getBot !== "function" || typeof playerCreate?.createPlayer !== "function") {
 			return context.json({ error: "Voice connection service is unavailable" }, 503);
 		}
 		const bot = await playerCreate.getBot({ guildId: voiceState.guildId, voiceChannelId: voiceState.channelId });
@@ -674,26 +768,133 @@ router.post("/output", authenticate, async (context) => {
 			return context.json({ error: "The bot needs Connect and Speak permissions in your voice channel" }, 403);
 		}
 
-		if (player.connection && player.connection.joinConfig?.channelId !== voiceChannel.id) {
-			return context.json({ error: "This player is already connected to a different voice channel" }, 409);
+		const user = await useHooks
+			.get("client")
+			?.users?.fetch(userId)
+			.catch(() => null);
+		if (!user) return context.json({ error: "Could not resolve your Discord account" }, 502);
+		const lang = await useHooks.get("functions")?.get("ZiRank")?.execute({ user, XpADD: 0 });
+		const discordPlayer = await playerCreate.createPlayer({
+			guildId: voiceState.guildId,
+			voiceChannelId: voiceState.channelId,
+			textChannel: voiceChannel,
+			requestedBy: user,
+			reply: null,
+			message: null,
+			customId: null,
+			lang,
+			options: { assistant: false },
+		});
+		if (!discordPlayer?.connection) {
+			return context.json({ error: "The bot could not join your voice channel" }, 502);
 		}
-		if (!player.connection) await player.connect(voiceChannel, { group: bot.user.id });
-		selectedPlayers.set(userId, player.id ?? (player === voicePlayer ? voicePlayerId : sessionId));
-		player.userdata = {
-			...player.userdata,
-			webAudioStream: { userId },
-			channel: player.userdata?.channel ?? voiceChannel,
-			voiceChannel,
-			client: bot,
-		};
+
+		const discordPlayerId = discordPlayer.id ?? `${voiceState.guildId}::${voiceState.channelId}`;
+		await adoptDiscordPlayer(userId, discordPlayer, discordPlayerId);
+		const carriedOver = await carryPlaybackOver(userId, discordPlayer, carried);
 		return context.json({
 			sessionId,
 			mode: "voice",
+			playerId: discordPlayerId,
+			carried: carriedOver,
 			channel: { id: voiceChannel.id, name: voiceChannel.name },
 		});
 	} catch (error) {
 		logger()?.error(`[ZiPlayer Stream] Failed to switch output to ${body.mode}:`, error);
 		return context.json({ error: error.message || "Could not switch playback output" }, error.statusCode ?? 500);
+	}
+});
+
+router.get("/players", authenticate, async (context) => {
+	const userId = getUserId(context.get("streamUser"));
+	const sessionId = streamSessionId(userId);
+	try {
+		const manager = getManager();
+		const voiceState = await getUserVoiceState(userId);
+		const found = findUserDiscordPlayer(userId, voiceState);
+		const webPlayer = manager?.getPlayer(sessionId);
+		const publisher = publisherConnections.get(sessionId);
+		const attachedPlayer = publisher?.socket.readyState === WebSocket.OPEN ? publisher.player : null;
+		const selectedId = selectedPlayers.get(userId) ?? null;
+
+		const discordTrack = found ? safeCurrentTrack(found.player) : null;
+		const browserTrack = webPlayer ? safeCurrentTrack(webPlayer) : null;
+		const browserOnly = webPlayer && !webPlayer.connection ? webPlayer : null;
+		return context.json({
+			sessionId,
+			voice:
+				voiceState?.channelId ?
+					{ guildId: voiceState.guildId, channelId: voiceState.channelId, name: voiceState.channel?.name ?? null }
+				:	null,
+			discord:
+				found ?
+					{
+						playerId: found.playerId,
+						channel: describeVoiceChannel(found.player, voiceState),
+						playing: Boolean(discordTrack),
+						track: serializeTrack(discordTrack),
+						attached: attachedPlayer === found.player,
+					}
+				:	null,
+			browser:
+				browserOnly ?
+					{
+						playerId: sessionId,
+						playing: Boolean(browserTrack),
+						track: serializeTrack(browserTrack),
+						attached: attachedPlayer === browserOnly,
+					}
+				:	null,
+			selected: selectedId,
+			selectedTarget:
+				!selectedId ? null
+				: found && selectedId === found.playerId ? "discord"
+				: selectedId === sessionId ? "browser"
+				: null,
+		});
+	} catch (error) {
+		logger()?.error("[ZiPlayer Stream] Failed to list players:", error);
+		return context.json({ error: error.message || "Could not list players" }, error.statusCode ?? 500);
+	}
+});
+
+router.post("/attach", authenticate, async (context) => {
+	const body = context.get("body") ?? {};
+	const userId = getUserId(context.get("streamUser"));
+	const sessionId = streamSessionId(userId);
+	try {
+		const voiceState = await getUserVoiceState(userId);
+		const found = findUserDiscordPlayer(userId, voiceState);
+		if (!found) {
+			return context.json(
+				{ error: "No active Discord player was found in your current voice channel", code: "NO_DISCORD_PLAYER" },
+				404,
+			);
+		}
+
+		const carried = captureBrowserPlayback(userId, found.player);
+		if (carried && body.migrate !== true) {
+			return context.json(
+				{
+					error: "Your browser-only player is still playing. Confirm to move it to the Discord player.",
+					code: "BROWSER_PLAYER_ACTIVE",
+				},
+				409,
+			);
+		}
+
+		await adoptDiscordPlayer(userId, found.player, found.playerId);
+		const carriedOver = await carryPlaybackOver(userId, found.player, carried);
+		return context.json({
+			sessionId,
+			playerId: found.playerId,
+			target: "discord",
+			carried: carriedOver,
+			channel: describeVoiceChannel(found.player, voiceState),
+		});
+	} catch (error) {
+		logger()?.error("[ZiPlayer Stream] Failed to attach to the Discord player:", error);
+		return context.json({ error: error.message || "Could not attach to the Discord player" }, error.statusCode ?? 500);
 	}
 });
 
@@ -705,6 +906,8 @@ router.get("/state", authenticate, async (context) => {
 
 	const getState = () => ({
 		sessionId,
+		playerId: player.id,
+		target: isWebStreamPlayerId(player.id) && !player.connection ? "browser" : "discord",
 		currentTrack: serializeTrack(player.currentTrack),
 		queue: (player.queue?.tracks ?? []).map(serializeTrack),
 		timestamp: player.getTime?.()?.current,
@@ -852,6 +1055,23 @@ router.post("/control", authenticate, async (context) => {
 		return context.json({ error: error.message || "Playback control failed" }, error.statusCode ?? 500);
 	}
 });
+
+module.exports.releaseWebVoiceConflicts = async function releaseWebVoiceConflicts(voiceChannelId, canonicalPlayerId) {
+	const manager = getManager();
+	if (!manager || !voiceChannelId) return 0;
+	let released = 0;
+	for (const candidate of manager.getPlayersInChannel?.(voiceChannelId) ?? []) {
+		if (!isWebStreamPlayerId(candidate?.id) || candidate.id === canonicalPlayerId) continue;
+		try {
+			await candidate.disconnect();
+			clearVoiceMetadata(candidate);
+			released++;
+		} catch (error) {
+			logger()?.error(`[ZiPlayer Stream] Failed to release ${candidate.id} from voice:`, error);
+		}
+	}
+	return released;
+};
 
 module.exports.data = {
 	name: "streamRoutes",
