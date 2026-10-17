@@ -99,14 +99,22 @@ the external web dashboard and music controller. Routes live in `extensions/rout
 
 ### ZiPlayer web-audio stream API
 
-The bot can run an authenticated, independent ZiPlayer web-audio session for each logged-in user. The browser path is server-authoritative and uses the normal `Readable -> AudioResource.volume -> AudioPlayer -> Opus` flow; it does not replace or interrupt that user's Discord voice player. Use the JWT returned by the existing `/auth/token` or Discord callback flow as a Bearer token for playback requests:
+The bot can run an authenticated, independent ZiPlayer web-audio session for each logged-in user. The browser path is
+server-authoritative and uses the normal `Readable -> AudioResource.volume -> AudioPlayer -> Opus` flow; it does not replace or
+interrupt that user's Discord voice player. Use the JWT returned by the existing `/auth/token` or Discord callback flow as a
+Bearer token for playback requests:
 
 - `POST /api/stream/play` with `{"query":"..."}` starts or queues a track.
-- `GET /api/stream/state` keeps an authenticated Server-Sent Events connection open, sends an initial `player-state` event, and publishes updated player state as tracks, queue, or playback controls change.
-- `POST /api/stream/control` accepts `pause`, `resume`, `stop`, `skip`, `seek` (`positionMs`), `volume` (`volume`, 0-200), `loop` (`mode`: `off`, `track`, or `queue`), and `autoplay` (`enabled`).
-- Connect a WebSocket to `/ws/stream`, then send `{"type":"auth","token":"<JWT>"}` as its first message. On success, the server relays the active Opus stream and ZI v1 control/config frames while playback is active; do not add a browser-side `GainNode` or duplicate local volume layer.
+- `GET /api/stream/state` keeps an authenticated Server-Sent Events connection open, sends an initial `player-state` event, and
+  publishes updated player state as tracks, queue, or playback controls change.
+- `POST /api/stream/control` accepts `pause`, `resume`, `stop`, `skip`, `seek` (`positionMs`), `volume` (`volume`, 0-200), `loop`
+  (`mode`: `off`, `track`, or `queue`), and `autoplay` (`enabled`).
+- Connect a WebSocket to `/ws/stream`, then send `{"type":"auth","token":"<JWT>"}` as its first message. On success, the server
+  relays the active Opus stream and ZI v1 control/config frames while playback is active; do not add a browser-side `GainNode` or
+  duplicate local volume layer.
 
-The stream session is scoped to the JWT's Discord user ID. WebSocket listeners must authenticate before receiving audio, and an idle stream player is destroyed after 100 seconds without listeners.
+The stream session is scoped to the JWT's Discord user ID. WebSocket listeners must authenticate before receiving audio, and an
+idle stream player is destroyed after 100 seconds without listeners.
 
 ## Key Conventions
 
