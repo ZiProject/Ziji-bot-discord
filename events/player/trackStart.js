@@ -10,6 +10,9 @@ module.exports = {
 	 * @param {import('ziplayer').Track} track
 	 */
 	execute: async (player, track) => {
+		// Browser-only (web-stream-*) players have no Discord text channel / GUI message.
+		if (!player.userdata?.mess && !player.userdata?.channel) return;
+
 		const playerGui = useHooks.get("functions").get("playerGui");
 		if (!playerGui) return;
 

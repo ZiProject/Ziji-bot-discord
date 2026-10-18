@@ -89,42 +89,143 @@ router.get("/music/search", authenticate, async (context) => {
 
 router.get("/music/lyrics", authenticate, async (context) => {
 	try {
-		const { query, q } = context.req.query();
-		const title = query || q;
+		const queryParams = context.req.query();
+		const q = queryParams.query || queryParams.q || queryParams.title;
+		let title = typeof q === "string" ? q.trim() : "";
+		let artist =
+			typeof queryParams.artist === "string" ? queryParams.artist.trim()
+			: typeof queryParams.author === "string" ? queryParams.author.trim()
+			: "";
+		let duration = queryParams.duration ? Number(queryParams.duration) : null;
+
+		const userId = context.get("user")?.id;
+		let cachedLyrics = null;
+
+		// If title is missing, try to resolve the currently active track from the player
+		if (userId) {
+			const manager = getManager();
+			let activePlayer = null;
+
+			// Check browser player first
+			const browserPlayer = manager?.getPlayer(`web-stream-${userId}`);
+			if (browserPlayer?.currentTrack) {
+				activePlayer = browserPlayer;
+			} else {
+				// Check voice channel players
+				const voiceStates = useHooks.get("voiceStates");
+				const voiceState = voiceStates?.get(userId);
+				if (voiceState?.guildId && voiceState?.channelId) {
+					const discordPlayer = manager?.getPlayer(`${voiceState.guildId}::${voiceState.channelId}`);
+					if (discordPlayer?.currentTrack) {
+						activePlayer = discordPlayer;
+					}
+				}
+			}
+
+			if (activePlayer?.currentTrack) {
+				const track = activePlayer.currentTrack;
+				if (!title) {
+					title = track.title || "";
+					if (!artist) artist = track.author || track.metadata?.author || "";
+					if (!duration) duration = track.duration || null;
+				}
+
+				if (track.metadata?.lyrics && (!title || title === track.title)) {
+					cachedLyrics = track.metadata.lyrics;
+				}
+			}
+		}
+
 		if (!title) return context.json({ error: "Missing query" }, 400);
 
-		const lyrics = await new lyricsExt().fetch({ title });
+		let lyrics = cachedLyrics;
+		if (!lyrics) {
+			const fetchTarget = {
+				title,
+				metadata: artist ? { author: artist } : {},
+				...(duration && Number.isFinite(duration) ? { duration } : {}),
+			};
+			lyrics = await new lyricsExt().fetch(fetchTarget);
+		}
+
+		if (!lyrics || (!lyrics.text && !lyrics.synced)) {
+			return context.json(
+				{
+					error: "Lyrics not found",
+					text: null,
+					synced: null,
+					lyrics: null,
+				},
+				404,
+			);
+		}
 
 		let romanizedLyrics = null;
+		let romanizedSynced = null;
+
 		if (lyrics.synced) {
-			romanizedLyrics = await withKuroshiro(async (kuroshiro) => {
-				const lines = lyrics.synced.split("\n");
-				const processedLines = [];
-				for (const line of lines) {
-					const match = line.match(/^(\[\d{2}:\d{2}\.\d{2}\])(.*)$/);
-					if (match) {
-						const [, timestamp, text] = match;
-						const romanizedText = await kuroshiro.convert(text, {
+			try {
+				romanizedSynced = await withKuroshiro(async (kuroshiro) => {
+					const lines = lyrics.synced.split("\n");
+					const processedLines = [];
+					for (const line of lines) {
+						const match = line.match(/^(\[\d{2}:\d{2}(?:\.\d{2,3})?\])(.*)$/);
+						if (match) {
+							const [, timestamp, text] = match;
+							const romanizedText = await kuroshiro.convert(text, {
+								to: "romaji",
+								mode: "spaced",
+								romajiSystem: "hepburn",
+							});
+							processedLines.push(`${timestamp}${romanizedText}`);
+						} else {
+							processedLines.push(
+								await kuroshiro.convert(line, {
+									to: "romaji",
+									mode: "spaced",
+									romajiSystem: "hepburn",
+								}),
+							);
+						}
+					}
+					return processedLines.join("\n");
+				});
+			} catch (kuroError) {
+				useHooks.get("logger")?.warn?.(`[music/lyrics] Kuroshiro synced error: ${kuroError.message}`);
+			}
+		}
+
+		if (lyrics.text || romanizedSynced) {
+			if (romanizedSynced) {
+				romanizedLyrics = romanizedSynced.replace(/\[\d{2}:\d{2}(?:\.\d{2,3})?\]\s?/g, "");
+			} else if (lyrics.text) {
+				try {
+					romanizedLyrics = await withKuroshiro(async (kuroshiro) => {
+						return await kuroshiro.convert(lyrics.text, {
 							to: "romaji",
 							mode: "spaced",
 							romajiSystem: "hepburn",
 						});
-						processedLines.push(`${timestamp}${romanizedText}`);
-					} else {
-						processedLines.push(
-							await kuroshiro.convert(line, {
-								to: "romaji",
-								mode: "spaced",
-								romajiSystem: "hepburn",
-							}),
-						);
-					}
+					});
+				} catch (kuroError) {
+					useHooks.get("logger")?.warn?.(`[music/lyrics] Kuroshiro text error: ${kuroError.message}`);
 				}
-				return processedLines.join("\n");
-			});
+			}
 		}
 
-		return context.json({ ...lyrics, lyrics_romanization: romanizedLyrics });
+		const cleanText = lyrics.text || (lyrics.synced ? lyrics.synced.replace(/\[\d{2}:\d{2}(?:\.\d{2,3})?\]\s?/g, "") : null);
+
+		return context.json({
+			...lyrics,
+			text: cleanText,
+			lyrics_romanization: romanizedLyrics,
+			synced_romanization: romanizedSynced,
+			lyrics: {
+				text: cleanText,
+				synced: lyrics.synced || null,
+				romanized: romanizedLyrics,
+			},
+		});
 	} catch (error) {
 		return context.json({ error: error.message }, 500);
 	}

@@ -25,7 +25,7 @@ async function execute({ interaction, lang, options = {} }) {
 	const player = getPlayer(`${guild.id}::${voiceChannel.id}`);
 	let tempmess = null;
 
-	if (!player?.userdata)
+	if (!player?.userdata?.channel)
 		tempmess = await interaction?.editReply({ content: "<a:loading:1151184304676819085> Loading..." }).catch((e) => {
 			logger.debug(`Fall for edit loading reply`);
 		});
@@ -171,6 +171,29 @@ async function createPlayer({ guildId, voiceChannelId, textChannel, requestedBy,
 			},
 		});
 
+		// A browser-only player created under this id has minimal userdata (no text channel / GUI):
+		// give it the full Discord userdata now that it is becoming the channel's Discord player.
+		if (!PlayerInstance.userdata?.channel) {
+			PlayerInstance.userdata = {
+				channel: textChannel,
+				requestedBy,
+				LockStatus: false,
+				voiceAssistance: options.assistant && config?.DevConfig?.VoiceExtractor,
+				useAI: options?.useAI || false,
+				lang: lang || langdef,
+				listeners: [requestedBy],
+				lyrcsActive: false,
+				focus: options?.focus,
+				mess: message,
+				...(PlayerInstance.userdata ?? {}),
+				voiceChannel,
+				client: PlayerClient,
+			};
+			PlayerInstance.userdata.channel ??= textChannel;
+			PlayerInstance.userdata.mess ??= message;
+			if (!PlayerInstance.userdata.listeners?.length) PlayerInstance.userdata.listeners = [requestedBy];
+		}
+
 		if (!PlayerInstance.connection) {
 			await PlayerInstance.connect(voiceChannel, {
 				group: PlayerClient.user.id,
@@ -200,6 +223,8 @@ const DefaultPlayerConfig = {
 async function getPlayerConfig(options, userID) {
 	logger.debug("Starting getPlayerConfig");
 	const playerConfig = { ...DefaultPlayerConfig, ...config?.PlayerConfig };
+	// Never mutate the shared default list when extensions get added below.
+	playerConfig.extensions = [...(playerConfig.extensions ?? [])];
 
 	if (options.assistant) {
 		logger.debug("selfDeaf due to assistant option");
@@ -284,6 +309,7 @@ module.exports = {
 	execute,
 	createPlayer,
 	getBot,
+	getPlayerConfig,
 };
 //====================================================================//
 //====================================================================//

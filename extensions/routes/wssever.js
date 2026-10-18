@@ -77,6 +77,7 @@ async function getPlayerVoiceChannel(user, client) {
 		}
 	}
 
+	if (!voiceChannel?.guild?.id || !voiceChannel?.id) return null;
 	return getPlayer(`${voiceChannel.guild.id}::${voiceChannel.id}`);
 }
 
@@ -300,12 +301,12 @@ module.exports.execute = (client) => {
 						safeSend({
 							event: "ReplyVoice",
 							channel: {
-								id: ws.player.userdata.channel.id,
-								name: ws.player.userdata.channel.name,
+								id: ws.player.userdata?.channel?.id,
+								name: ws.player.userdata?.channel?.name,
 							},
 							guild: {
-								id: ws.player.userdata.channel.guild.id,
-								name: ws.player.userdata.channel.guild.name,
+								id: ws.player.userdata?.channel?.guild?.id,
+								name: ws.player.userdata?.channel?.guild?.name,
 							},
 						});
 

@@ -35,7 +35,8 @@ const createWebApp = () => {
 		await next();
 	});
 	app.use("*", async (context, next) => {
-		if (context.req.header("content-type")?.includes("application/json")) {
+		const hasBody = !["GET", "HEAD", "OPTIONS"].includes(context.req.method);
+		if (hasBody && context.req.header("content-type")?.includes("application/json")) {
 			try {
 				const body = await context.req.json();
 				if (body === null || typeof body !== "object") return context.text("Invalid JSON", 400);

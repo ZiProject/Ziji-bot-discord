@@ -375,6 +375,10 @@ test("Music and stream routes mount on Hono and require JWTs for ZiPlayer stream
 	assert.strictEqual(invalidTrack.status, 400);
 	assert.deepStrictEqual(await invalidTrack.json(), { error: "Invalid trackData" });
 
+	const videoOptions = await app.request("/api/stream/video", { method: "OPTIONS" });
+	assert.strictEqual(videoOptions.status, 204);
+	assert.strictEqual(videoOptions.headers.get("access-control-allow-origin"), "*");
+
 	const missingProxyUrl = await app.request("/proxy/stream");
 	assert.strictEqual(missingProxyUrl.status, 400);
 	assert.deepStrictEqual(await missingProxyUrl.json(), { error: "Missing url or id parameter..." });

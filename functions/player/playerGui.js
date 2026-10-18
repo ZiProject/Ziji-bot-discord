@@ -70,7 +70,7 @@ module.exports = {
 		const track = tracks ?? player?.currentTrack ?? player?.previousTrack;
 		let requestedBy =
 			(track?.requestedBy === "auto" ? player?.userdata?.requestedBy : track?.requestedBy) ?? player?.userdata?.requestedBy;
-		console.log("playerGui requestedBy:", requestedBy);
+
 		const lang = await useHooks.get("functions").get("ZiRank").execute({
 			user: requestedBy,
 			XpADD: 0,

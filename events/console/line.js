@@ -260,7 +260,7 @@ module.exports = {
 						break;
 					case "connection":
 						logger.info(`Kết nối player: ${PlayerId}`);
-						logger.info(player.connection);
+						logger.info(player.connections);
 						break;
 					case "info":
 						logger.info(`Thông tin player: ${PlayerId}`);

@@ -2,7 +2,7 @@ const { Hono } = require("hono");
 const { streamSSE } = require("hono/streaming");
 const { getManager, WebAudioConnection } = require("ziplayer");
 const { useHooks } = require("zihooks");
-const { Readable } = require("node:stream");
+const { Readable, Transform } = require("node:stream");
 const WebSocket = require("ws");
 const jwt = require("jsonwebtoken");
 
@@ -37,6 +37,7 @@ function serializeTrack(track) {
 		author: track.author ?? track.metadata?.author ?? null,
 		source: track.source ?? null,
 		isLive: Boolean(track.isLive),
+		lyrics: track.metadata?.lyrics ?? null,
 	};
 }
 
@@ -125,7 +126,8 @@ function scheduleIdleCleanup(sessionId) {
 	clearIdleTimer(sessionId);
 	const session = sessions.get(sessionId);
 	const manager = getManager();
-	const player = manager?.getPlayer(sessionId);
+	const userId = sessionId.slice(STREAM_PLAYER_PREFIX.length);
+	const player = getBrowserPlayer(userId);
 	const publisher = publisherConnections.get(sessionId);
 	if (session?.listeners.size || (!publisher && (!player || player.connection))) return;
 
@@ -143,9 +145,9 @@ function scheduleIdleCleanup(sessionId) {
 				}
 				if (publisherConnections.get(sessionId) === currentPublisher) publisherConnections.delete(sessionId);
 			}
-			const idlePlayer = currentManager?.getPlayer(sessionId);
+			const idlePlayer = getBrowserPlayer(userId);
 			if (!idlePlayer || idlePlayer.connection) return;
-			await currentManager.destroy(sessionId);
+			await currentManager.destroy(idlePlayer.id);
 		})().catch((error) => {
 			logger()?.error(`[ZiPlayer Stream] Failed to clean up idle session ${sessionId}:`, error);
 		});
@@ -332,7 +334,16 @@ function getSelectedPlayer(userId) {
 	const selected = selectedId ? manager?.getPlayer(selectedId) : null;
 	if (selected) return selected;
 	selectedPlayers.delete(userId);
-	return manager?.getPlayer(streamSessionId(userId));
+	return getBrowserPlayer(userId) ?? undefined;
+}
+
+/**
+ * The user's browser-only player: always `web-stream-<userId>`. While the user is on Discord voice the
+ * same player object lives under the canonical `<guildId>::<channelId>` id (see `changePlayerId`) and
+ * is looked up through the manager by that id instead.
+ */
+function getBrowserPlayer(userId) {
+	return getManager()?.getPlayer(streamSessionId(userId)) ?? null;
 }
 
 function clearVoiceMetadata(player) {
@@ -340,6 +351,7 @@ function clearVoiceMetadata(player) {
 	delete player.userdata.channel;
 	delete player.userdata.voiceChannel;
 	delete player.userdata.client;
+	delete player.userdata.mess;
 }
 
 function isWebStreamPlayerId(id) {
@@ -376,7 +388,8 @@ function findUserDiscordPlayer(userId, voiceState) {
 	if (voiceState?.guildId && voiceState?.channelId) {
 		const canonicalId = `${voiceState.guildId}::${voiceState.channelId}`;
 		const canonical = manager.getPlayer(canonicalId);
-		if (canonical) return { player: canonical, playerId: canonicalId };
+		// An unconnected canonical player is the user's browser-only player, not a Discord player.
+		if (canonical?.connection) return { player: canonical, playerId: canonicalId };
 
 		const inChannel = (manager.getPlayersInChannel?.(voiceState.channelId) ?? []).find(
 			(candidate) => candidate && !isWebStreamPlayerId(candidate.id),
@@ -402,9 +415,9 @@ function findUserDiscordPlayer(userId, voiceState) {
  */
 async function releaseBrowserPlayer(userId, keepPlayer) {
 	const manager = getManager();
-	const webPlayerId = streamSessionId(userId);
-	const webPlayer = manager?.getPlayer(webPlayerId);
+	const webPlayer = getBrowserPlayer(userId);
 	if (!webPlayer || webPlayer === keepPlayer) return;
+	const webPlayerId = webPlayer.id;
 	try {
 		if (webPlayer.connection) await webPlayer.disconnect();
 		clearVoiceMetadata(webPlayer);
@@ -414,18 +427,44 @@ async function releaseBrowserPlayer(userId, keepPlayer) {
 	}
 }
 
-/** Registers the user's web audio output on the given Discord player and drops any duplicate session. */
-async function adoptDiscordPlayer(userId, player, playerId) {
+/**
+ * Removes the user's browser audio output from whichever player it is registered on, so a
+ * player never keeps a second (web) output running next to its Discord voice connection
+ * once the user has switched to Discord voice.
+ */
+async function detachWebAudio(userId) {
+	const sessionId = streamSessionId(userId);
+	clearIdleTimer(sessionId);
+	const publisher = publisherConnections.get(sessionId);
+	if (!publisher) return false;
+	publisherConnections.delete(sessionId);
+	try {
+		await publisher.registration.disconnect();
+	} catch (error) {
+		logger()?.error(`[ZiPlayer Stream] Failed to detach web audio (${sessionId}):`, error);
+	}
+	publisher.connection.destroy();
+	if (publisher.socket.readyState === WebSocket.OPEN) publisher.socket.close(1000, "Output switched to Discord voice");
+	return true;
+}
+
+/**
+ * Moves the user's web session onto the given Discord player and drops any duplicate session.
+ * With `{ web: false }` the browser output is removed instead of registered (voice-only output).
+ */
+async function adoptDiscordPlayer(userId, player, playerId, { web = true } = {}) {
 	clearIdleTimer(streamSessionId(userId));
 	clearIdleTimer(playerId);
 	selectedPlayers.set(userId, playerId);
-	const publisher = await ensureWebAudioPublisher(player, userId);
+	let publisher = null;
+	if (web) publisher = await ensureWebAudioPublisher(player, userId);
+	else await detachWebAudio(userId);
 	await releaseBrowserPlayer(userId, player);
 	return publisher;
 }
 
 function captureBrowserPlayback(userId, exceptPlayer) {
-	const webPlayer = getManager()?.getPlayer(streamSessionId(userId));
+	const webPlayer = getBrowserPlayer(userId);
 	if (!webPlayer || webPlayer === exceptPlayer || webPlayer.connection) return null;
 	const track = safeCurrentTrack(webPlayer);
 	if (!track?.url) return null;
@@ -438,6 +477,32 @@ async function carryPlaybackOver(userId, player, carried) {
 	if (!result) return false;
 	if (carried.positionMs > 0) await player.seek(carried.positionMs).catch(() => false);
 	return true;
+}
+
+/** The connected Discord player that is the user's own renamed browser player, if any. */
+function findOwnedDiscordPlayer(userId) {
+	const manager = getManager();
+	for (const candidate of manager?.getAll?.() ?? []) {
+		if (candidate?.connection && candidate.userdata?.webAudioStream?.userId === userId) return candidate;
+	}
+	return null;
+}
+
+/**
+ * Renames a player keeping its queue, current track and position (engine `changePlayerId`).
+ * Returns false when the engine doesn't support it or the target id is taken.
+ */
+function renamePlayer(player, newId) {
+	const manager = getManager();
+	if (!player || player.id === newId) return Boolean(player);
+	if (typeof manager?.changePlayerId !== "function" || manager.getPlayer(newId)) return false;
+	try {
+		manager.changePlayerId(player.id, newId);
+		return true;
+	} catch (error) {
+		logger()?.error(`[ZiPlayer Stream] Failed to change player id ${player.id} -> ${newId}:`, error);
+		return false;
+	}
 }
 
 async function getOrCreatePlayer(userId, target = "auto") {
@@ -466,11 +531,25 @@ async function getOrCreatePlayer(userId, target = "auto") {
 
 	let player = webPlayer;
 	if (!player) {
-		player = await manager.create(webPlayerId, {
-			preload: { enabled: false },
-			crossfade: { enabled: false },
-			userdata: { webAudioStream: { userId } },
-		});
+		try {
+			player = await manager.create(webPlayerId, {
+				preload: { enabled: false },
+				crossfade: { enabled: false },
+				userdata: { webAudioStream: { userId } },
+			});
+		} catch (error) {
+			// The engine keeps the original routing id of a renamed player reserved.
+			const renamed = findOwnedDiscordPlayer(userId);
+			if (renamed) {
+				throw Object.assign(
+					new Error(
+						"Your browser player is currently the Discord player. Switch back to Browser audio before using a browser-only player.",
+					),
+					{ statusCode: 409 },
+				);
+			}
+			throw error;
+		}
 		player.on("streamError", (error, track) => {
 			logger()?.error(
 				`[ZiPlayer Stream] Playback output error (${webPlayerId}${track?.title ? `, ${track.title}` : ""}):`,
@@ -606,18 +685,142 @@ function setupStreamWebSocketServer(webSocketServer) {
 	});
 }
 
-function parseTrackData(context) {
-	const trackData = context.req.query("trackData");
-	if (!trackData) return { response: context.text("Bad Request", 400) };
+const proxyCorsHeaders = {
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+	"Access-Control-Allow-Headers": "*",
+	"Access-Control-Expose-Headers": "Content-Length, Content-Range, Accept-Ranges, Content-Type",
+};
 
-	try {
-		return { trackData: JSON.parse(trackData) };
-	} catch {
-		return { response: context.json({ error: "Invalid trackData" }, 400) };
+function parseTrackData(context) {
+	const rawTrackData = context.req.query("trackData");
+	if (rawTrackData !== undefined) {
+		try {
+			return { trackData: JSON.parse(rawTrackData) };
+		} catch {
+			return { response: context.json({ error: "Invalid trackData" }, 400, proxyCorsHeaders) };
+		}
 	}
+
+	const url = context.req.query("url") || context.req.query("id");
+	const title = context.req.query("title") || url;
+	if (url || title) {
+		return {
+			trackData: {
+				url:
+					url && (url.startsWith("http://") || url.startsWith("https://")) ? url
+					: url ? `https://www.youtube.com/watch?v=${url}`
+					: null,
+				id: context.req.query("id") || undefined,
+				title: title || url,
+				author: context.req.query("author") || null,
+			},
+		};
+	}
+
+	const authHeader = context.req.header("authorization");
+	const token = authHeader?.match(/^Bearer\s+(\S+)$/i)?.[1] || context.req.query("token");
+	let userId = context.req.query("userId");
+	if (!userId && token) {
+		try {
+			const decoded = verifyJwt(token);
+			userId = getUserId(decoded);
+		} catch {}
+	}
+	if (userId) {
+		const player = getSelectedPlayer(userId);
+		if (player?.currentTrack) {
+			return { trackData: player.currentTrack };
+		}
+	}
+
+	return { response: context.text("Bad Request", 400, proxyCorsHeaders) };
 }
 
-function streamRoute(method, contentType, logLabel, errorMessage) {
+function parseRange(rangeHeader, totalLength) {
+	if (!rangeHeader || typeof rangeHeader !== "string") return null;
+	const match = rangeHeader.trim().match(/^bytes=(\d*)-(\d*)$/);
+	if (!match) return null;
+
+	const rawStart = match[1];
+	const rawEnd = match[2];
+
+	if (!rawStart && !rawEnd) return null;
+
+	let start;
+	let end;
+
+	if (!rawStart) {
+		if (!totalLength) return null;
+		const suffix = parseInt(rawEnd, 10);
+		if (isNaN(suffix) || suffix <= 0) return null;
+		start = Math.max(0, totalLength - suffix);
+		end = totalLength - 1;
+	} else {
+		start = parseInt(rawStart, 10);
+		if (isNaN(start) || start < 0) return null;
+		if (rawEnd) {
+			end = parseInt(rawEnd, 10);
+			if (isNaN(end) || end < start) return null;
+			if (totalLength && end >= totalLength) {
+				end = totalLength - 1;
+			}
+		} else {
+			end = totalLength ? totalLength - 1 : undefined;
+		}
+	}
+
+	if (totalLength && start >= totalLength) {
+		return { unsatisfiable: true, total: totalLength };
+	}
+
+	return { start, end, total: totalLength };
+}
+
+function createRangeStream(sourceStream, start, end) {
+	let bytesSkipped = 0;
+	let bytesSent = 0;
+	const maxBytes = end !== undefined ? end - start + 1 : Infinity;
+
+	const rangeFilter = new Transform({
+		transform(chunk, encoding, callback) {
+			if (bytesSent >= maxBytes) {
+				sourceStream.destroy();
+				this.push(null);
+				return callback();
+			}
+
+			if (bytesSkipped < start) {
+				const needToSkip = start - bytesSkipped;
+				if (chunk.length <= needToSkip) {
+					bytesSkipped += chunk.length;
+					return callback();
+				}
+				chunk = chunk.subarray(needToSkip);
+				bytesSkipped = start;
+			}
+
+			const remainingAllowed = maxBytes - bytesSent;
+			if (chunk.length > remainingAllowed) {
+				chunk = chunk.subarray(0, remainingAllowed);
+			}
+
+			bytesSent += chunk.length;
+			this.push(chunk);
+
+			if (bytesSent >= maxBytes) {
+				sourceStream.destroy();
+				this.push(null);
+			}
+			callback();
+		},
+	});
+
+	sourceStream.on("error", (err) => rangeFilter.destroy(err));
+	return sourceStream.pipe(rangeFilter);
+}
+
+function streamRoute(method, defaultContentType, logLabel, errorMessage) {
 	return async (context) => {
 		const parsed = parseTrackData(context);
 		if (parsed.response) return parsed.response;
@@ -629,7 +832,14 @@ function streamRoute(method, contentType, logLabel, errorMessage) {
 		requestSignal.addEventListener("abort", abort, { once: true });
 
 		try {
-			const player = await getManager().create("webid");
+			const manager = getManager();
+			let player = manager.getPlayer("webid");
+			if (!player) {
+				player = await manager.create("webid", {
+					preload: { enabled: false },
+					crossfade: { enabled: false },
+				});
+			}
 			const stream = await player[method](parsed.trackData, { signal: controller.signal });
 			if (controller.signal.aborted) {
 				stream.destroy();
@@ -643,22 +853,70 @@ function streamRoute(method, contentType, logLabel, errorMessage) {
 				if (!stream.readableEnded) controller.abort();
 				cleanup();
 			});
-			return context.body(Readable.toWeb(stream), 200, {
+
+			const contentType = stream.metadata?.mime || defaultContentType;
+			const totalLength = stream.metadata?.contentLength ? Number(stream.metadata.contentLength) : undefined;
+			const rangeHeader = context.req.header("range");
+			const range = parseRange(rangeHeader, totalLength);
+
+			if (range?.unsatisfiable) {
+				stream.destroy();
+				cleanup();
+				return context.text("Requested range not satisfiable", 416, {
+					...proxyCorsHeaders,
+					"Content-Range": `bytes */${range.total}`,
+				});
+			}
+
+			const headers = {
+				...proxyCorsHeaders,
 				"Content-Type": contentType,
 				"Accept-Ranges": "bytes",
-				"Cache-Control": "no-cache",
-			});
+				"Cache-Control": "public, max-age=3600",
+			};
+
+			if (range && (range.start > 0 || range.end !== undefined || totalLength)) {
+				const start = range.start;
+				const end =
+					range.end !== undefined ? range.end
+					: totalLength ? totalLength - 1
+					: undefined;
+				const chunkLength = end !== undefined ? end - start + 1 : undefined;
+
+				if (end !== undefined) {
+					headers["Content-Range"] = `bytes ${start}-${end}/${totalLength || "*"}`;
+					if (chunkLength !== undefined) headers["Content-Length"] = String(chunkLength);
+				} else if (totalLength) {
+					headers["Content-Range"] = `bytes ${start}-${totalLength - 1}/${totalLength}`;
+					headers["Content-Length"] = String(totalLength - start);
+				}
+
+				let responseStream = stream;
+				if (start > 0 || (end !== undefined && totalLength && end < totalLength - 1)) {
+					responseStream = createRangeStream(stream, start, end);
+				}
+
+				return context.body(Readable.toWeb(responseStream), 206, headers);
+			}
+
+			if (totalLength) {
+				headers["Content-Length"] = String(totalLength);
+			}
+
+			return context.body(Readable.toWeb(stream), 200, headers);
 		} catch (error) {
 			cleanup();
-			if (controller.signal.aborted) return;
+			if (controller.signal.aborted || requestSignal?.aborted) return;
 			logger()?.error(`[Stream] ${logLabel} error:`, error);
-			return context.json({ error: errorMessage }, 500);
+			return context.json({ error: errorMessage }, 500, proxyCorsHeaders);
 		}
 	};
 }
 
+router.options("/audio", (context) => context.body(null, 204, proxyCorsHeaders));
+router.options("/video", (context) => context.body(null, 204, proxyCorsHeaders));
 router.get("/audio", streamRoute("save", "audio/webm", "Audio", "Audio stream failed"));
-router.get("/video", streamRoute("saveVideo", "application/vnd.yt-ump", "Video", "Video stream failed"));
+router.get("/video", streamRoute("saveVideo", "video/mp4", "Video", "Video stream failed"));
 
 router.post("/play", authenticate, async (context) => {
 	const body = context.get("body");
@@ -675,8 +933,9 @@ router.post("/play", authenticate, async (context) => {
 		const user = context.get("streamUser");
 		const userId = getUserId(user);
 		const { player, target, playerId } = await getOrCreatePlayer(userId, body.target ?? "auto");
-		if (target === "discord") await adoptDiscordPlayer(userId, player, playerId);
-		else await ensureWebAudioPublisher(player, userId);
+		const attachWeb = body.mode !== "voice";
+		if (target === "discord") await adoptDiscordPlayer(userId, player, playerId, { web: attachWeb });
+		else if (attachWeb) await ensureWebAudioPublisher(player, userId);
 		const result = await player.play(body.query.trim(), { requestedBy: userId });
 		if (!result) return context.json({ error: "No playable track found for this query" }, 422);
 		if (body.positionMs > 0 && !(await player.seek(body.positionMs))) {
@@ -686,7 +945,13 @@ router.post("/play", authenticate, async (context) => {
 			sessionId: streamSessionId(userId),
 			playerId,
 			target,
-			track: { title: result.track?.title ?? body.query.trim(), url: result.track?.url ?? null },
+			track: {
+				title: result.track?.title ?? body.query.trim(),
+				url: result.track?.url ?? null,
+				...(result.track?.thumbnail ? { thumbnail: result.track.thumbnail } : {}),
+				...(result.track?.author || result.track?.metadata?.author ? { author: result.track.author ?? result.track.metadata?.author } : {}),
+				...(result.track?.duration !== undefined ? { duration: result.track.duration } : {}),
+			},
 		});
 	} catch (error) {
 		logger()?.error("[ZiPlayer Stream] Playback request failed:", error);
@@ -702,12 +967,27 @@ router.post("/output", authenticate, async (context) => {
 	const userId = getUserId(context.get("streamUser"));
 	const sessionId = streamSessionId(userId);
 	const manager = getManager();
-	const player = getSelectedPlayer(userId);
+	let player = getSelectedPlayer(userId);
+	if (!player) {
+		const voiceState = await getUserVoiceState(userId);
+		const found = findUserDiscordPlayer(userId, voiceState);
+		if (found?.player) {
+			player = found.player;
+			selectedPlayers.set(userId, found.playerId);
+		}
+	}
 	if (!player) return context.json({ error: "No browser playback session exists" }, 404);
 
 	try {
 		if (body.mode === "web") {
-			if (player.connection && selectedPlayers.get(userId) !== sessionId) {
+			const channelMembers = [...(player.userdata?.voiceChannel?.members?.values?.() ?? [])].filter(
+				(member) => !member.user?.bot && member.id !== userId,
+			);
+			const isAloneInVoice = channelMembers.length === 0;
+			const isRequester = player.userdata?.requestedBy?.id === userId || player.userdata?.webAudioStream?.userId === userId;
+			const canSwitch = isAloneInVoice || isRequester;
+
+			if (player.connection && !canSwitch && channelMembers.length > 0) {
 				return context.json(
 					{
 						error:
@@ -717,8 +997,16 @@ router.post("/output", authenticate, async (context) => {
 				);
 			}
 			if (player.connection) await player.disconnect();
-			if (selectedPlayers.get(userId) === sessionId) clearVoiceMetadata(player);
-			return context.json({ sessionId, mode: "web" });
+			clearVoiceMetadata(player);
+			const existingWebPlayer = manager.getPlayer(sessionId);
+			if (existingWebPlayer && existingWebPlayer !== player) {
+				await manager.destroy(sessionId).catch(() => {});
+			}
+			renamePlayer(player, sessionId);
+			selectedPlayers.set(userId, player.id);
+			// Switching to web: register browser output so the audio reaches the browser
+			await ensureWebAudioPublisher(player, userId);
+			return context.json({ sessionId, mode: "web", playerId: player.id });
 		}
 
 		const voiceState = await getUserVoiceState(userId);
@@ -727,6 +1015,7 @@ router.post("/output", authenticate, async (context) => {
 		// Already on the Discord player of the user's channel: nothing to connect.
 		if (found && found.player === player) {
 			selectedPlayers.set(userId, found.playerId);
+			await detachWebAudio(userId);
 			return context.json({
 				sessionId,
 				mode: "voice",
@@ -738,11 +1027,10 @@ router.post("/output", authenticate, async (context) => {
 			return context.json({ error: "Join a voice channel before switching playback to voice" }, 409);
 		}
 
-		// The browser-only player never joins Discord voice. Its playback is moved onto the one
-		// canonical `<guildId>::<channelId>` player so two players can't fight for the connection.
-		const carried = captureBrowserPlayback(userId, found?.player);
+		// A Discord player already exists in this channel: join it (the browser player is released).
 		if (found) {
-			await adoptDiscordPlayer(userId, found.player, found.playerId);
+			const carried = captureBrowserPlayback(userId, found.player);
+			await adoptDiscordPlayer(userId, found.player, found.playerId, { web: false });
 			const carriedOver = await carryPlaybackOver(userId, found.player, carried);
 			return context.json({
 				sessionId,
@@ -774,29 +1062,47 @@ router.post("/output", authenticate, async (context) => {
 			.catch(() => null);
 		if (!user) return context.json({ error: "Could not resolve your Discord account" }, 502);
 		const lang = await useHooks.get("functions")?.get("ZiRank")?.execute({ user, XpADD: 0 });
-		const discordPlayer = await playerCreate.createPlayer({
-			guildId: voiceState.guildId,
-			voiceChannelId: voiceState.channelId,
-			textChannel: voiceChannel,
-			requestedBy: user,
-			reply: null,
-			message: null,
-			customId: null,
-			lang,
-			options: { assistant: false },
-		});
+
+		// Give the browser player the canonical id (queue, track and position stay untouched) so
+		// `createPlayer` below reuses this very player and just connects it to the voice channel.
+		const canonicalId = `${voiceState.guildId}::${voiceState.channelId}`;
+		const renamed = !player.connection && player.id !== canonicalId && renamePlayer(player, canonicalId);
+		if (renamed) selectedPlayers.set(userId, canonicalId);
+
+		let discordPlayer;
+		try {
+			discordPlayer = await playerCreate.createPlayer({
+				guildId: voiceState.guildId,
+				voiceChannelId: voiceState.channelId,
+				textChannel: voiceChannel,
+				requestedBy: user,
+				reply: null,
+				message: null,
+				customId: null,
+				lang,
+				options: { assistant: false },
+			});
+		} catch (error) {
+			if (renamed) renamePlayer(player, sessionId); // undo: stay a browser-only player
+			selectedPlayers.set(userId, player.id);
+			throw error;
+		}
 		if (!discordPlayer?.connection) {
+			if (renamed) renamePlayer(player, sessionId); // undo: stay a browser-only player
+			selectedPlayers.set(userId, player.id);
 			return context.json({ error: "The bot could not join your voice channel" }, 502);
 		}
 
 		const discordPlayerId = discordPlayer.id ?? `${voiceState.guildId}::${voiceState.channelId}`;
-		await adoptDiscordPlayer(userId, discordPlayer, discordPlayerId);
+		const carried = captureBrowserPlayback(userId, discordPlayer);
+		await adoptDiscordPlayer(userId, discordPlayer, discordPlayerId, { web: false });
 		const carriedOver = await carryPlaybackOver(userId, discordPlayer, carried);
 		return context.json({
 			sessionId,
 			mode: "voice",
 			playerId: discordPlayerId,
 			carried: carriedOver,
+			renamed,
 			channel: { id: voiceChannel.id, name: voiceChannel.name },
 		});
 	} catch (error) {
@@ -805,57 +1111,182 @@ router.post("/output", authenticate, async (context) => {
 	}
 });
 
+async function getPlayersPayload(userId) {
+	const sessionId = streamSessionId(userId);
+	const voiceState = await getUserVoiceState(userId);
+	const found = findUserDiscordPlayer(userId, voiceState);
+	const webPlayer = getBrowserPlayer(userId);
+	const publisher = publisherConnections.get(sessionId);
+	const attachedPlayer = publisher?.socket.readyState === WebSocket.OPEN ? publisher.player : null;
+	const selectedId = selectedPlayers.get(userId) ?? null;
+
+	const discordTrack = found ? safeCurrentTrack(found.player) : null;
+	const browserTrack = webPlayer ? safeCurrentTrack(webPlayer) : null;
+	const browserOnly = webPlayer && !webPlayer.connection ? webPlayer : null;
+
+	return {
+		sessionId,
+		voice:
+			voiceState?.channelId ?
+				{ guildId: voiceState.guildId, channelId: voiceState.channelId, name: voiceState.channel?.name ?? null }
+			:	null,
+		discord:
+			found ?
+				{
+					playerId: found.playerId,
+					channel: describeVoiceChannel(found.player, voiceState),
+					playing: Boolean(discordTrack),
+					track: serializeTrack(discordTrack),
+					attached: attachedPlayer === found.player,
+				}
+			:	null,
+		browser:
+			browserOnly ?
+				{
+					playerId: browserOnly.id,
+					playing: Boolean(browserTrack),
+					track: serializeTrack(browserTrack),
+					attached: attachedPlayer === browserOnly,
+				}
+			:	null,
+		selected: selectedId,
+		selectedTarget:
+			!selectedId ? null
+			: found && selectedId === found.playerId ? "discord"
+			: webPlayer && selectedId === webPlayer.id ? "browser"
+			: null,
+	};
+}
+
 router.get("/players", authenticate, async (context) => {
 	const userId = getUserId(context.get("streamUser"));
 	const sessionId = streamSessionId(userId);
-	try {
-		const manager = getManager();
-		const voiceState = await getUserVoiceState(userId);
-		const found = findUserDiscordPlayer(userId, voiceState);
-		const webPlayer = manager?.getPlayer(sessionId);
-		const publisher = publisherConnections.get(sessionId);
-		const attachedPlayer = publisher?.socket.readyState === WebSocket.OPEN ? publisher.player : null;
-		const selectedId = selectedPlayers.get(userId) ?? null;
 
-		const discordTrack = found ? safeCurrentTrack(found.player) : null;
-		const browserTrack = webPlayer ? safeCurrentTrack(webPlayer) : null;
-		const browserOnly = webPlayer && !webPlayer.connection ? webPlayer : null;
-		return context.json({
-			sessionId,
-			voice:
-				voiceState?.channelId ?
-					{ guildId: voiceState.guildId, channelId: voiceState.channelId, name: voiceState.channel?.name ?? null }
-				:	null,
-			discord:
-				found ?
-					{
-						playerId: found.playerId,
-						channel: describeVoiceChannel(found.player, voiceState),
-						playing: Boolean(discordTrack),
-						track: serializeTrack(discordTrack),
-						attached: attachedPlayer === found.player,
-					}
-				:	null,
-			browser:
-				browserOnly ?
-					{
-						playerId: sessionId,
-						playing: Boolean(browserTrack),
-						track: serializeTrack(browserTrack),
-						attached: attachedPlayer === browserOnly,
-					}
-				:	null,
-			selected: selectedId,
-			selectedTarget:
-				!selectedId ? null
-				: found && selectedId === found.playerId ? "discord"
-				: selectedId === sessionId ? "browser"
-				: null,
-		});
-	} catch (error) {
-		logger()?.error("[ZiPlayer Stream] Failed to list players:", error);
-		return context.json({ error: error.message || "Could not list players" }, error.statusCode ?? 500);
+	const acceptHeader = context.req.header("accept") || "";
+	const wantsJson =
+		context.req.query("sse") === "false" ||
+		(acceptHeader.includes("application/json") && !acceptHeader.includes("text/event-stream"));
+
+	if (wantsJson) {
+		try {
+			const payload = await getPlayersPayload(userId);
+			return context.json(payload);
+		} catch (error) {
+			logger()?.error("[ZiPlayer Stream] Failed to list players:", error);
+			return context.json({ error: error.message || "Could not list players" }, error.statusCode ?? 500);
+		}
 	}
+
+	return streamSSE(context, async (stream) => {
+		const unsubscribers = [];
+		let closed = false;
+		let writeQueue = Promise.resolve();
+		let heartbeat;
+		let resolveAbort;
+		const aborted = new Promise((resolve) => {
+			resolveAbort = resolve;
+		});
+
+		let lastPayloadString = "";
+
+		const enqueue = (write) => {
+			writeQueue = writeQueue
+				.then(async () => {
+					if (!closed && !stream.aborted && !stream.closed) await write();
+				})
+				.catch((error) => {
+					logger()?.error(`[ZiPlayer Stream] Failed to write players SSE for ${sessionId}:`, error);
+					stream.abort();
+				});
+		};
+
+		const publishPlayers = async (force = false) => {
+			try {
+				const payload = await getPlayersPayload(userId);
+				const payloadString = JSON.stringify(payload);
+				if (!force && payloadString === lastPayloadString) return;
+				lastPayloadString = payloadString;
+
+				enqueue(() =>
+					stream.writeSSE({
+						retry: 3000,
+						event: "stream-players",
+						data: payloadString,
+					}),
+				);
+			} catch (err) {
+				logger()?.error(`[ZiPlayer Stream] Error publishing players for ${sessionId}:`, err);
+			}
+		};
+
+		const onAbort = () => {
+			if (closed) return;
+			closed = true;
+			clearInterval(heartbeat);
+			for (const unsubscribe of unsubscribers) {
+				try {
+					unsubscribe();
+				} catch {}
+			}
+			resolveAbort();
+		};
+
+		stream.onAbort(onAbort);
+
+		// Send initial players info immediately
+		await publishPlayers(true);
+
+		const subscribePlayer = (p) => {
+			if (!p || typeof p.subscribe !== "function") return;
+			for (const eventName of [
+				"TRACK_STARTED",
+				"TRACK_END",
+				"playbackStateChanged",
+				"playerPause",
+				"playerResume",
+				"playerStop",
+				"destroyed",
+			]) {
+				unsubscribers.push(p.subscribe(eventName, () => void publishPlayers()));
+			}
+		};
+
+		const manager = getManager();
+		if (manager && typeof manager.on === "function") {
+			const onLifecycle = (p) => {
+				void publishPlayers();
+				subscribePlayer(p);
+			};
+			manager.on("playerCreate", onLifecycle);
+			manager.on("playerDestroy", onLifecycle);
+			unsubscribers.push(() => {
+				manager.off("playerCreate", onLifecycle);
+				manager.off("playerDestroy", onLifecycle);
+			});
+		}
+
+		// Subscribe to current players
+		try {
+			const voiceState = await getUserVoiceState(userId);
+			const found = findUserDiscordPlayer(userId, voiceState);
+			const webPlayer = getBrowserPlayer(userId);
+			if (found?.player) subscribePlayer(found.player);
+			if (webPlayer) subscribePlayer(webPlayer);
+		} catch (err) {
+			logger()?.warn?.(`[ZiPlayer Stream] Could not attach player listeners for ${sessionId}:`, err);
+		}
+
+		if (!closed) {
+			heartbeat = setInterval(async () => {
+				if (closed || stream.aborted || stream.closed) return;
+				await publishPlayers(false);
+				enqueue(() => stream.write(": keep-alive\n\n"));
+			}, 3000);
+			heartbeat.unref?.();
+		}
+
+		await aborted;
+	});
 });
 
 router.post("/attach", authenticate, async (context) => {
@@ -907,7 +1338,7 @@ router.get("/state", authenticate, async (context) => {
 	const getState = () => ({
 		sessionId,
 		playerId: player.id,
-		target: isWebStreamPlayerId(player.id) && !player.connection ? "browser" : "discord",
+		target: player.connection ? "discord" : "browser",
 		currentTrack: serializeTrack(player.currentTrack),
 		queue: (player.queue?.tracks ?? []).map(serializeTrack),
 		timestamp: player.getTime?.()?.current,
