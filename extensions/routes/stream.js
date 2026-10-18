@@ -949,7 +949,9 @@ router.post("/play", authenticate, async (context) => {
 				title: result.track?.title ?? body.query.trim(),
 				url: result.track?.url ?? null,
 				...(result.track?.thumbnail ? { thumbnail: result.track.thumbnail } : {}),
-				...(result.track?.author || result.track?.metadata?.author ? { author: result.track.author ?? result.track.metadata?.author } : {}),
+				...(result.track?.author || result.track?.metadata?.author ?
+					{ author: result.track.author ?? result.track.metadata?.author }
+				:	{}),
 				...(result.track?.duration !== undefined ? { duration: result.track.duration } : {}),
 			},
 		});
