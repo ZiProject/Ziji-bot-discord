@@ -29,6 +29,15 @@ player/per voice channel. Image search track support
 The web music player can switch between the existing Discord voice playback and direct browser playback using ZiPlayer's
 authenticated Opus web-audio stream.
 
+📺 YouTube Review: Check out Zibot V10 in action — explore the music player, web interface, and Discord integration.
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=858Eq25HpXg">
+    <img src="https://img.youtube.com/vi/858Eq25HpXg/maxresdefault.jpg" alt="Zibot V10 — Music Player Showcase on YouTube" width="800"/>
+  </a>
+  <br/>
+  <strong>▶️ Watch the Zibot V10 Music Player Showcase</strong>
+</p>
+
 <table><tr>
 <td width="50%">	
 Player
