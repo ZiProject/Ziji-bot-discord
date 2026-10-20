@@ -56,11 +56,12 @@ register modules manually.
 
 ### Authoring commands
 
-Commands export a `data` object and an `execute` handler. The `type` in command metadata is the Discord application command
-type: `1` for chat input, `2` for user context menu, `3` for message context menu, or `4` for a primary entry point. `options`
-follow the [Discord application command option structure](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-structure).
-`integration_types` uses `0` for guild install and `1` for user install; `contexts` uses `0` for guild, `1` for bot DM, and
-`2` for private channel.
+Commands export a `data` object and an `execute` handler. The `type` in command metadata is the Discord application command type:
+`1` for chat input, `2` for user context menu, `3` for message context menu, or `4` for a primary entry point. `options` follow
+the
+[Discord application command option structure](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-structure).
+`integration_types` uses `0` for guild install and `1` for user install; `contexts` uses `0` for guild, `1` for bot DM, and `2`
+for private channel.
 
 ```js
 module.exports.data = {
@@ -83,17 +84,17 @@ module.exports.execute = async ({ interaction, lang, player }) => {
 };
 ```
 
-`default_member_permissions: "0"` makes a command admin-only. `category: "musix"` enables the music checks and injects
-`player`; `lock` restricts control to the current music host, and `ckeckVoice` checks that the user is in the bot's voice
-channel. `enable: false` disables loading. `alias` applies to the message-command variant. A command may export
+`default_member_permissions: "0"` makes a command admin-only. `category: "musix"` enables the music checks and injects `player`;
+`lock` restricts control to the current music host, and `ckeckVoice` checks that the user is in the bot's voice channel.
+`enable: false` disables loading. `alias` applies to the message-command variant. A command may export
 `run({ message, args, lang })` for the legacy `z!` message-command path. Chat and context interactions are pre-deferred, so use
 `interaction.editReply(...)` in command handlers.
 
 ### Authoring events
 
-An event exports `name`, `type: "events"`, and `execute`; `once` and `enable` are optional. The event folder selects its
-emitter: `events/client` for Discord client events, `events/process` for Node process events, `events/console` for readline
-input, and `events/player` for Ziplayer Manager events.
+An event exports `name`, `type: "events"`, and `execute`; `once` and `enable` are optional. The event folder selects its emitter:
+`events/client` for Discord client events, `events/process` for Node process events, `events/console` for readline input, and
+`events/player` for Ziplayer Manager events.
 
 ```js
 const { useHooks } = require("zihooks");
@@ -136,8 +137,8 @@ Functions are indexed by name and can also be called from another module with
 
 ### Authoring extensions
 
-Extensions run during startup in priority order; lower numbers load earlier (`1` first, `10` last). They are used for startup
-work such as database initialization, command deployment, external connections, AI initialization, and periodic jobs.
+Extensions run during startup in priority order; lower numbers load earlier (`1` first, `10` last). They are used for startup work
+such as database initialization, command deployment, external connections, AI initialization, and periodic jobs.
 
 ```js
 module.exports.data = {
@@ -164,8 +165,8 @@ The central dispatcher. Given an interaction, it resolves a module: chat/message
 ### Music player reference
 
 For music-related interactions, `category: "musix"` runs `checkMusicstat()` before the handler and injects `player` when checks
-pass. The player exposes `connection` (`null` when not connected) and `userdata` fields including `LockStatus` and
-`requestedBy` (the current music controller). If checks fail, the interaction receives an error and the handler does not run.
+pass. The player exposes `connection` (`null` when not connected) and `userdata` fields including `LockStatus` and `requestedBy`
+(the current music controller). If checks fail, the interaction receives an error and the handler does not run.
 
 ### Persistence (`startup/prismaDB.js`)
 
