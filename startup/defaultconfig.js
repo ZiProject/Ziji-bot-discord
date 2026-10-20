@@ -1,56 +1,227 @@
-//Discord iOS
 module.exports = {
+	/**
+	 * Prefix mặc định của bot
+	 * Default bot prefix
+	 */
 	prefix: "z!",
+
+	/**
+	 * Ký tự tiền tố cho các tùy chọn lệnh
+	 * Command option prefix character
+	 */
+	Moptions: "--",
+
+	/**
+	 * Cho phép deploy command bot
+	 * Allow bot command deployment
+	 */
 	deploy: true,
+
+	/**
+	 * Thời gian chờ mặc định giữa các lệnh (tính bằng mili giây)
+	 * Default cooldown duration between commands (in milliseconds)
+	 */
 	defaultCooldownDuration: 5_000,
+
+	/**
+	 * Màu mặt định (hex , Random)
+	 * color (hex , Random)
+	 */
 	defaultColor: "Random",
+
+	/**
+	 * Bật tính năng tìm kiếm hình ảnh 'true', 'false' nên tắt khi chạy trên server vì khá tốn tài nguyên
+	 * Enable image search feature 'true', 'false'. Should be turned off when running on server as it's resource-intensive
+	 */
 	ImageSearch: true,
+
+	/**
+	 * Cấu hình mặc định của bot
+	 * Default bot configuration
+	 */
 	botConfig: {
-		prefix: "z!",
-		Moptions: "--",
-		ActivityName: "Hello, i'm Ziji",
-		ActivityType: "Custom",
-		Status: "online",
-		ErrorLog: "1015118615177076767",
-		FeedBack: "1345864371896713288",
+		/**
+		 * Tên hoạt động của bot
+		 * Bot's activity name
+		 */
+		ActivityName: "/help",
+
+		/**
+		 * Loại hoạt động của bot
+		 * Bot's activity type (PLAYING, WATCHING, LISTENING, STREAMING, Custom)
+		 */
+		ActivityType: "PLAYING",
+
+		/**
+		 * Trạng thái mặc định của bot 'online', 'idle', 'dnd', 'invisible'
+		 * Default bot status: 'online', 'idle', 'dnd', 'invisible'
+		 */
+		Status: "idle",
+
+		/**
+		 * ID của channel bot gửi lỗi
+		 * Bot's error log channel ID
+		 */
+		ErrorLog: "",
+
+		/**
+		 * ID của channel feedback
+		 * Bot's feedback channel ID
+		 */
+		FeedBack: "",
+
+		/**
+		 * ID của server hỗ trợ
+		 * Support server ID
+		 */
 		SupportServer: "https://discord.gg/bkBejRNcR3",
+
+		/**
+		 * Link mời bot
+		 * Bot's invite link
+		 */
 		InviteBot: "https://discord.com/oauth2/authorize?client_id=1501197759754272928",
-		Banner: "https://cdn.discordapp.com/attachments/1064851388221358153/1298974004291567616/banner.gif",
+
+		/**
+		 * Link ảnh banner
+		 * Banner image link
+		 */
+		Banner: "https://media.discordapp.net/attachments/1064851388221358153/1209448467077005332/image.png",
+		webBackground: "https://media.discordapp.net/attachments/1064851388221358153/1209448467077005332/image.png",
+
+		/**
+		 * Link ảnh Background - Không sử dụng discordapp cdn
+		 * Background image link - Do not use discordapp cdn
+		 * L
+		 */
 	},
+
+	/**
+	 * Cấu hình mặc định của player
+	 * Default player configuration
+	 */
 	PlayerConfig: {
+		/**
+		 * Mặc định tắt nghe của bot
+		 * Default: bot doesn't listen (deaf mode)
+		 */
 		selfDeaf: true,
+
+		/**
+		 * Mặc định volume của bot (0-100) (auto)
+		 * Default bot volume (0-100) (auto)
+		 */
 		volume: "auto",
+
+		/**
+		 * Mặc định bot sẽ rời khi không còn ai nghe
+		 * Default: bot leaves when no one is listening
+		 */
 		leaveOnEmpty: true,
+
+		/**
+		 * Thời gian chờ bot sẽ rời khi không có người trong voice (ms)
+		 * Cooldown before bot leaves when no one is listening (ms)
+		 */
 		leaveOnEmptyCooldown: 5_000,
+
+		/**
+		 * Mặc định bot sẽ rời khi hết bài hát
+		 * Default: bot leaves when the song ends
+		 */
 		leaveOnEnd: true,
-		leaveOnEndCooldown: 50_0000,
+
+		/**
+		 * Thời gian chờ bot sẽ rời khi hết bài hát (ms)
+		 * Cooldown before bot leaves after song ends (ms)
+		 */
+		leaveOnEndCooldown: 50_000,
+
+		/**
+		 * Đổi trạng thái của kênh thoại thành tên bài hát (true | false)
+		 * Change voice channel status to song title (true | false)
+		 */
 		changeStatus: true,
 	},
+
+	/**
+	 * Cấu hình mặc định của web app
+	 * Default web app configuration
+	 */
 	webAppConfig: {
-		enabled: false,
-		musicControllerUrl: "https://www.bot.ziji.best/",
-		statusUrl: "https://ziji.betteruptime.com/",
-		dashboardUrl: "https://zibot-dashboard.vercel.app/",
+		/**
+		 * Link cài đặt người dùng cho bot
+		 * User-setting for bot link
+		 */
+		dashboardUrl: "https://bot.ziji.best",
+		/**
+		 * Link điều khiển nhạc
+		 * Music controller link
+		 */
+		musicControllerUrl: "https://garret-bot-web.vercel.app",
+		/**
+		 * Link trạng thái bot
+		 * Bot status page
+		 */
+		statusUrl: "https://garretapp.betteruptime.com/",
 	},
-	// ticket: {
-	// 	logChannelId: "1468618088558760086",
-	// },
+
+	/**
+	 * Ngôn ngữ mặc định của bot (vi, en, ...)
+	 * Default bot language (vi, en, ...)
+	 */
 	DefaultLang: "vi",
-	OwnerID: ["661968947327008768"],
+
+	/**
+	 * Danh sách ID của chủ sở hữu bot (người dùng có thể thực hiện lệnh owner) ["ID admin", "ID admin", ...]
+	 * List of bot owner IDs (users who can execute owner commands) ["admin ID", "admin ID", ...]
+	 */
+	OwnerID: [],
+
+	/**
+	 * Danh sách ID của các server dành cho nhà phát triển ["ID server", "ID server", ...] or []
+	 *  List of server IDs for developers ["server ID", "server ID", ...] or []
+	 */
 	DevGuild: [],
+
+	/**
+	 * Danh sách các lệnh cần tắt ["Play / Add music", "giveaways", ...]
+	 * List of commands to disable ["command name", "command name", ...]
+	 */
 	disabledCommands: [],
+
 	DevConfig: {
-		ticket: false,
+		/** ============ DEBUG ============ */
+		//discordjs debug
 		DJS_DEBUG: false,
+		//player debug
 		Player_DEBUG: false,
+		//"off" | "error" | "warn" | "info" | "debug" | "verbose" | "time"
+		debugLevel: "info",
+		//voiceExtension events debug
 		voiceExt_DEBUG: false,
+
+		//db debug
 		prisma_DEBUG: false,
+
+		loaderDebug: false,
+		/** ============ Else ============ */
+		//enable Giveaway
 		Giveaway: true,
+		//enable AutoResponder
 		AutoResponder: true,
-		GuildCommand: true,
+		//enable ticket
+		ticket: false,
+		//enable welcomer
 		welcomer: true,
+		//enable AI
 		ai: true,
-		aiAutoPlay: true,
+		//enable AI AutoPlay suggestion
+		aiAutoPlay: false,
+		//enable GuildCommand
+		GuildCommand: true,
+		/** ============ Else ============ */
+		//enable logger (info | debug | warn | error | leave blank to enable all type)
 		logger: "info",
 	},
 };

@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## Project Overview
 
@@ -46,20 +46,111 @@ Setup: copy `.env.example` → `.env` (fill `TOKEN`, optionally `MONGO`, `GEMINI
 The bot is file-driven. New functionality is added by dropping a file into the right directory; the loader picks it up. Do not
 register modules manually.
 
-- **Slash / context / message commands**: `commands/<category>/<name>.js`. Each exports `data` (name, description, type, options,
-  `integration_types`, `contexts`, optional `category: "musix"`, `lock`, `ckeckVoice`, `alias`, `enable`, `ephemeral`) and an
-  `execute({ interaction, lang, player })`. A command may also export `run({ message, args, lang })` to support the legacy
-  **message-command** path (prefix `z!`; see `helper/commands.js` for the canonical template).
-- **Events**: `events/<domain>/<name>.js`. Export `{ name, type: "events", once?, execute(...args) }`. Loaded onto `client`,
-  `process`, a readline interface, or the player manager depending on the folder. Errors are caught and logged centrally.
-- **Functions (UI interactions)**: `functions/<kind>/<customId>.js` where kind ∈ `button`, `modal`, `SelectMenu`, and also
-  `utils`, `player`, `other`, `ranksys`, `ai`. Export `data.name = "<customId>"` (must match the interaction `customId`) and
-  `execute({ interaction, lang, player })`. These handle button clicks, modals, and select menus.
-- **Extensions (startup modules)**: `extensions/<name>.js`. Export `data = { name, type: "extension", enable, priority (1-10) }`
-  and `execute(client)`. Run in priority order after login. Used for DB init, command deployment, ngrok/cloudflared tunnels, AI
-  init, periodic jobs.
+- **Slash / context / message commands** live in `commands/<category>/<name>.js`.
+- **Events** live in `events/<domain>/<name>.js`.
+- **Functions (UI interactions)** live in `functions/<kind>/<customId>.js`; kinds include `button`, `modal`, `SelectMenu`,
+  `utils`, `player`, `other`, `ranksys`, and `ai`.
+- **Extensions (startup modules)** live in `extensions/<name>.js`.
 - **Guild commands**: custom per-guild slash commands managed through a builder UI (`functions/guildCommand/` +
   `utils/guildCommand*.js`), stored in the DB and registered at runtime into `guildCommands` keyed `guildId:name` (lowercased).
+
+### Authoring commands
+
+Commands export a `data` object and an `execute` handler. The `type` in command metadata is the Discord application command
+type: `1` for chat input, `2` for user context menu, `3` for message context menu, or `4` for a primary entry point. `options`
+follow the [Discord application command option structure](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-structure).
+`integration_types` uses `0` for guild install and `1` for user install; `contexts` uses `0` for guild, `1` for bot DM, and
+`2` for private channel.
+
+```js
+module.exports.data = {
+	name: "command-name",
+	description: "Command description",
+	type: 1,
+	options: [],
+	integration_types: [0, 1],
+	contexts: [0, 1, 2],
+	default_member_permissions: "0",
+	category: "musix",
+	lock: true,
+	ckeckVoice: true,
+	enable: true,
+	alias: ["command-alias"],
+};
+
+module.exports.execute = async ({ interaction, lang, player }) => {
+	return interaction.editReply({ content: "Done." });
+};
+```
+
+`default_member_permissions: "0"` makes a command admin-only. `category: "musix"` enables the music checks and injects
+`player`; `lock` restricts control to the current music host, and `ckeckVoice` checks that the user is in the bot's voice
+channel. `enable: false` disables loading. `alias` applies to the message-command variant. A command may export
+`run({ message, args, lang })` for the legacy `z!` message-command path. Chat and context interactions are pre-deferred, so use
+`interaction.editReply(...)` in command handlers.
+
+### Authoring events
+
+An event exports `name`, `type: "events"`, and `execute`; `once` and `enable` are optional. The event folder selects its
+emitter: `events/client` for Discord client events, `events/process` for Node process events, `events/console` for readline
+input, and `events/player` for Ziplayer Manager events.
+
+```js
+const { useHooks } = require("zihooks");
+
+module.exports = {
+	name: "eventName",
+	type: "events",
+	once: false,
+	enable: true,
+	execute: async (...args) => {
+		useHooks.get("logger").info("Event fired:", ...args);
+	},
+};
+```
+
+Set `once: true` to remove the listener after its first invocation. Event errors are caught and logged centrally.
+
+### Authoring functions
+
+Functions handle buttons, select menus, modals, and other custom-ID interactions. The module name must exactly match the
+interaction's `customId`; `category: "musix"` can be used when the handler needs the checked music `player`.
+
+```js
+module.exports.data = {
+	name: "component-custom-id",
+	type: "any",
+	category: "musix",
+	lock: true,
+	ckeckVoice: true,
+	enable: true,
+};
+
+module.exports.execute = async ({ interaction, lang, player }) => {
+	// Handle the interaction.
+};
+```
+
+Functions are indexed by name and can also be called from another module with
+`useHooks.get("functions").get("component-custom-id").execute(args)`.
+
+### Authoring extensions
+
+Extensions run during startup in priority order; lower numbers load earlier (`1` first, `10` last). They are used for startup
+work such as database initialization, command deployment, external connections, AI initialization, and periodic jobs.
+
+```js
+module.exports.data = {
+	name: "extension-name",
+	type: "extension",
+	enable: true,
+	priority: 1,
+};
+
+module.exports.execute = async (client) => {
+	// Initialize the extension.
+};
+```
 
 ### Interaction→handler routing (`events/client/interactionCreate.js`)
 
@@ -69,6 +160,12 @@ The central dispatcher. Given an interaction, it resolves a module: chat/message
 `editReply`/`reply` freely and the wrapper keeps flags correct. This is followed by permission/ban/cooldown checks
 (`checkStatus`), optional music-player checks (`checkMusicstat` for `category == "musix"`), XP/lang resolution, then
 `command.execute(...)`. `messageCommands.js` mirrors this for the prefix-based message path.
+
+### Music player reference
+
+For music-related interactions, `category: "musix"` runs `checkMusicstat()` before the handler and injects `player` when checks
+pass. The player exposes `connection` (`null` when not connected) and `userdata` fields including `LockStatus` and
+`requestedBy` (the current music controller). If checks fail, the interaction receives an error and the handler does not run.
 
 ### Persistence (`startup/prismaDB.js`)
 
@@ -128,5 +225,7 @@ idle stream player is destroyed after 100 seconds without listeners.
   framework/library.
 - **Music**: any interaction needing a player (voice control) marks its command `data.category = "musix"` so the dispatcher
   injects `player` into `execute`.
+- **Permissions and cooldowns**: `OwnerID` bypasses permission, ban, and cooldown checks; the default cooldown duration is
+  `config.defaultCooldownDuration` (3000 ms by default).
 - Tests use the built-in `node:test` runner and stub out `StartupManager` web/player-net side effects (`createTestManager`); temp
   dirs are used for loader assertions.

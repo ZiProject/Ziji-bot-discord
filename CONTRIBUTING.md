@@ -1,231 +1,95 @@
 # Contributing to Ziji Bot
 
-Thank you for your interest in contributing! Please read this guide before submitting issues or pull requests.
-
----
-
-## Table of Contents
-
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Project Structure](#project-structure)
-- [Adding a Command](#adding-a-command)
-- [Adding an Event](#adding-an-event)
-- [Adding a Function](#adding-a-function)
-- [Adding an Extension](#adding-an-extension)
-- [Commit & PR Guidelines](#commit--pr-guidelines)
-- [Reporting Bugs](#reporting-bugs)
-- [Requesting Features](#requesting-features)
-
----
+Thank you for your interest in contributing to Ziji Bot. This guide covers the project setup, contribution workflow, and checks to
+run before opening a pull request.
 
 ## Code of Conduct
 
-This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold a respectful and inclusive
-environment.
-
----
+Participation in this project is covered by our [Code of Conduct](CODE_OF_CONDUCT.md). Please report concerns privately to a
+maintainer through the [Discord support server](https://discord.gg/wbhBExpMNj).
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js `v18+`
-- MongoDB instance
-- A Discord application & bot token ([Discord Developer Portal](https://discord.com/developers/applications))
+- Node.js 24.x (the version used by the test workflow)
+- npm
+- A Discord application and bot token for running the bot locally
+- MongoDB is optional; the bot can fall back to SQLite or its in-memory database
 
 ### Setup
 
 ```bash
-# 1. Clone the repo
 git clone https://github.com/ZiProject/Ziji-bot-discord.git
-cd ziji-bot
-
-# 2. Install dependencies
+cd Ziji-bot-discord
 npm install
-
-# 3. Configure environment
-cp .env.example .env
-cp config.js.example config.js
-# Fill in your token, MongoDB URI, OwnerID, etc.
-
-# 4. Start the bot
-node index.js
 ```
 
----
+Copy `.env.example` to `.env` and `config.js.example` to `config.js`. Add the required Discord `TOKEN` to `.env`. Configure
+`MONGO` if you want to use MongoDB; include a database name in the connection URI. Keep `.env` and `config.js` local and never
+include tokens, credentials, or other secrets in issues, logs, or pull requests.
+
+Start the bot in development mode with:
+
+```bash
+npm run dev
+```
+
+See [AGENTS.md](AGENTS.md) for the architecture, module conventions, and additional project commands.
 
 ## Project Structure
 
-```
-commands/       Slash & context menu commands (grouped by category)
-events/         Discord, process, console, and player event listeners
-extensions/     Services that run once at startup
-functions/      Interaction handlers for buttons, modals, and select menus
-helper/         Template files — copy these when creating new modules
-lang/           Language files (en.js, vi.js, ja.js)
-startup/        Boot sequence — do not modify unless necessary
-utility/        Canvas card generators
-utils/          Standalone helper utilities
-```
+| Directory     | Purpose                                                          |
+| ------------- | ---------------------------------------------------------------- |
+| `commands/`   | Slash, context-menu, and message commands, organized by category |
+| `events/`     | Discord client, process, console, and player event handlers      |
+| `extensions/` | Modules that run during startup                                  |
+| `functions/`  | Button, modal, select-menu, and other interaction handlers       |
+| `lang/`       | Language modules                                                 |
+| `startup/`    | Startup sequence, module loading, and persistence                |
+| `test/`       | Node.js test suite                                               |
+| `utility/`    | Utility modules, including canvas generators                     |
+| `utils/`      | Shared helper functions                                          |
 
-> See the full annotated structure in the [AI Reference Guide](./helper/AI_Reference_Guide.md).
+Modules are discovered by the loader. Add a module in the appropriate directory, follow the examples and metadata requirements in
+[AGENTS.md](AGENTS.md), and do not add manual registration unless the existing module pattern requires it.
 
----
+## Development Checks
 
-## Adding a Command
-
-1. Copy `helper/commands.js` into the correct `commands/<category>/` folder.
-2. Fill in `module.exports.data`:
-
-```js
-module.exports.data = {
-	name: "mycommand", // must be lowercase, no spaces
-	description: "Does something cool",
-	type: 1, // 1 = CHAT_INPUT slash command
-	options: [], // Discord API option objects
-	integration_types: [0, 1], // 0=Guild, 1=User
-	contexts: [0, 1, 2],
-	enable: true,
-};
-```
-
-3. Implement `module.exports.execute` for slash usage and (optionally) `module.exports.run` for message command usage.
-4. Re-run `node startup/deploy.js` to register the new command with Discord.
-
-**Music commands** — add `category: "musix"` to `data` to receive the `player` object and enable voice/lock checks automatically.
-
----
-
-## Adding an Event
-
-1. Copy `helper/events.js` into the correct `events/<source>/` folder.
-2. Set `name` to the exact event name (e.g. `"guildMemberAdd"`).
-3. Use `once: true` for one-time events like `ready`.
-
-```js
-module.exports = {
-	name: "guildMemberAdd",
-	type: "events",
-	enable: true,
-	execute: async (member) => {
-		// your logic
-	},
-};
-```
-
-Events are loaded automatically by `startup/loader.js` — no manual registration needed.
-
----
-
-## Adding a Function
-
-Functions handle button clicks, modal submissions, and select menus. The `name` field **must exactly match** the `customId` of the
-Discord component.
-
-1. Copy `helper/functions.js` into the correct `functions/<type>/` folder.
-2. Set the correct naming prefix:
-
-| Prefix | Type        |
-| ------ | ----------- |
-| `B_`   | Button      |
-| `M_`   | Modal       |
-| `S_`   | Select Menu |
-
-```js
-module.exports.data = {
-	name: "B_myButton", // matches customId: "B_myButton"
-	type: "any",
-	enable: true,
-};
-
-module.exports.execute = async ({ interaction, lang }) => {
-	await interaction.reply({ content: "Button clicked!", ephemeral: true });
-};
-```
-
----
-
-## Adding an Extension
-
-Extensions run once when the bot starts. Use them for initializing external services, registering Hono routes, seeding data, etc.
-
-1. Copy `helper/extensions.js` into `extensions/`.
-2. Set `priority` (1–10) to control load order — lower runs first.
-
-```js
-module.exports.data = {
-	name: "myExtension",
-	type: "extension",
-	enable: true,
-	priority: 5,
-};
-
-module.exports.execute = async (client) => {
-	// runs once at startup
-};
-```
-
----
-
-## Commit & PR Guidelines
-
-### Commit Messages
-
-Use the format: `type: short description`
-
-| Type       | When to use                          |
-| ---------- | ------------------------------------ |
-| `feat`     | New command, feature, or event       |
-| `fix`      | Bug fix                              |
-| `refactor` | Code cleanup without behavior change |
-| `docs`     | Documentation only                   |
-| `chore`    | Dependency updates, config changes   |
-
-**Examples:**
-
-```
-feat: add /weather command
-fix: cooldown not resetting after modal submit
-docs: update CONTRIBUTING.md
-```
-
-### Pull Requests
-
-- Target the `main` branch (or `dev` if it exists).
-- Fill in the [PR template](.github/PULL_REQUEST_TEMPLATE.md) completely.
-- One feature or fix per PR — keep changes focused.
-- Run the formatter before submitting:
+Run the tests and formatting check before submitting changes:
 
 ```bash
-npx prettier --write .
+npm test
+npm run check
 ```
 
-- Do **not** commit `.env`, `config.js`, or any tokens/secrets.
+If `npm run check` reports formatting issues, run `npm run format` and review the resulting diff. If a change needs Discord or
+database services to verify manually, describe what you tested and what could not be run in the pull request.
 
----
+## Commit and Pull Request Guidelines
+
+Keep each pull request focused on one change. Before opening it:
+
+- Run `npm test` and `npm run check`.
+- Update relevant documentation when behavior or setup instructions change.
+- Remove secrets, local configuration, and generated files from the proposed diff.
+- Fill out the repository's [pull request template](.github/PULL_REQUEST_TEMPLATE.md).
+
+Use a concise commit message describing the change. Conventional prefixes such as `feat:`, `fix:`, `refactor:`, `docs:`, and
+`chore:` are welcome.
 
 ## Reporting Bugs
 
-Use the [Bug Report template](.github/ISSUE_TEMPLATE/bug_report.md). Include:
+Open a [bug report](.github/ISSUE_TEMPLATE/bug_report.md) and include:
 
-- Steps to reproduce
-- Expected vs actual behavior
-- Bot version / Node.js version
-- Any relevant error logs
-
----
+- Steps to reproduce the issue
+- Expected and actual behavior
+- Node.js version and relevant environment details
+- Relevant error messages or logs, with credentials and personal information removed
 
 ## Requesting Features
 
-Use the [Feature Request template](.github/ISSUE_TEMPLATE/feature_request.md). Include:
+Open a [feature request](.github/ISSUE_TEMPLATE/feature_request.md). Explain the problem the feature would solve and include
+examples or context that could help evaluate the request.
 
-- A clear description of the feature
-- Why it would be useful
-- Any relevant examples or references
-
----
-
-## Questions?
-
-Open a [Discussion](../../discussions) or reach out via the support server linked in the README.
+For questions, use the [Discord support server](https://discord.gg/wbhBExpMNj).

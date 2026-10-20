@@ -1,14 +1,10 @@
-<div align="center">
-<a href="https://discord.com/oauth2/authorize?client_id=1501197759754272928"><img src="https://img.shields.io/badge/ADD_Bot-Ziji_Bot?style=for-the-badge&label=Ziji%20Bot&color=%237289DA" alt="Add Ziji bot"></a> <a href="https://discord.gg/yHsbXkEuwN"><img src="https://img.shields.io/discord/1007597270704869387?style=for-the-badge&color=%237289DA" alt="Ziji Discord support server"></a>
-</div>
-
-# [<img src="https://raw.githubusercontent.com/zijipia/zijipia/main/Assets/ZijiAvt.gif" width="15"/>](./) Code of Conduct
+# Code of Conduct
 
 ## Our Pledge
 
-We as contributors and maintainers of **Zibot** pledge to make participation in our project and community a harassment-free
-experience for everyone — regardless of age, body size, disability, ethnicity, gender identity and expression, level of
-experience, nationality, personal appearance, race, religion, or sexual identity and orientation.
+We, as contributors and maintainers of **Ziji Bot**, pledge to make participation in our project and community a harassment-free
+experience for everyone, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience,
+nationality, personal appearance, race, religion, or sexual identity and orientation.
 
 We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.
 
@@ -16,7 +12,7 @@ We pledge to act and interact in ways that contribute to an open, welcoming, div
 
 ## Our Standards
 
-**Examples of behavior that contributes to a positive environment:**
+Examples of behavior that contributes to a positive environment include:
 
 - Using welcoming and inclusive language
 - Being respectful of differing viewpoints and experiences
@@ -24,58 +20,54 @@ We pledge to act and interact in ways that contribute to an open, welcoming, div
 - Focusing on what is best for the community
 - Showing empathy towards other community members
 
-**Examples of unacceptable behavior:**
+Examples of unacceptable behavior include:
 
 - The use of sexualized language or imagery, and unwelcome sexual attention or advances
 - Trolling, insulting or derogatory comments, and personal or political attacks
 - Public or private harassment
-- Publishing others' private information (e.g. address, token, credentials) without explicit permission
-- Spam, self-promotion, or off-topic content in issues and pull requests
+- Publishing others' private information, such as addresses, tokens, or credentials, without explicit permission
+- Spam, or unrelated self-promotion in project spaces
 - Other conduct which could reasonably be considered inappropriate in a professional setting
 
 ---
 
 ## Our Responsibilities
 
-Project maintainers are responsible for clarifying the standards of acceptable behavior and are expected to take appropriate and
-fair corrective action in response to any instances of unacceptable behavior.
+Project maintainers are responsible for clarifying and enforcing the standards of acceptable behavior. They are expected to take
+appropriate and fair corrective action in response to behavior they consider inappropriate, threatening, offensive, or harmful.
 
-Maintainers have the right and responsibility to remove, edit, or reject comments, commits, code, issues, and other contributions
-that are not aligned with this Code of Conduct, and to temporarily or permanently ban any contributor for behaviors deemed
-inappropriate, threatening, offensive, or harmful.
+Maintainers may remove, edit, or reject comments, commits, code, issues, and other contributions that are not aligned with this
+Code of Conduct. They may also temporarily or permanently restrict a contributor's participation.
 
 ---
 
 ## Scope
 
-This Code of Conduct applies within all project spaces — including the GitHub repository, issue tracker, pull requests, and our
-[Discord support server](https://discord.gg/GQyJkZDtdX) — as well as in public spaces when an individual is representing the
+This Code of Conduct applies within all project spaces, including the GitHub repository, issue tracker, pull requests, and the
+[Discord support server](https://discord.gg/wbhBExpMNj). It also applies in public spaces when an individual is representing the
 project or its community.
 
 ---
 
-## Enforcement
+## Reporting and Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by:
+To report abusive, harassing, or otherwise unacceptable behavior, contact a project maintainer privately through the
+[Discord support server](https://discord.gg/wbhBExpMNj). Do not post sensitive details in a public issue or pull request.
 
-- Opening a **private** GitHub issue
-- Contacting the maintainer directly via the [Support Server](https://discord.gg/GQyJkZDtdX)
+Please include enough information for the maintainers to understand and review the incident. Reports will be handled as
+confidentially as reasonably possible and shared only as needed to investigate and respond. Maintainers will review reports
+promptly and fairly.
 
-All complaints will be reviewed and investigated promptly and fairly. The project team is obligated to maintain confidentiality
-with regard to the reporter of an incident.
+Maintainers who do not follow or enforce this Code of Conduct in good faith may face temporary or permanent repercussions, as
+determined by other project maintainers.
 
-Maintainers who do not follow or enforce the Code of Conduct in good faith may face temporary or permanent repercussions as
-determined by other members of the project's leadership.
+### Enforcement guidelines
 
----
-
-## Enforcement Guidelines
-
-| Violation                                                 | Consequence                                |
-| --------------------------------------------------------- | ------------------------------------------ |
-| Minor — inappropriate language or unprofessional behavior | Private written warning with clarification |
-| Moderate — repeated violations or targeted harassment     | Temporary ban from community spaces        |
-| Severe — sustained harassment, threats, or doxxing        | Permanent ban from all project spaces      |
+| Violation                                                 | Consequence                               |
+| --------------------------------------------------------- | ----------------------------------------- |
+| Minor — inappropriate language or unprofessional behavior | Private warning and clarification         |
+| Repeated or targeted misconduct                           | Temporary restriction from project spaces |
+| Severe misconduct, threats, or sharing private data       | Permanent restriction from project spaces |
 
 ---
 
@@ -89,7 +81,7 @@ For answers to common questions about this code of conduct, see the [FAQ](https:
 
 <div align="center">
 
-[Add Bot](https://discord.com/oauth2/authorize?client_id=1501197759754272928) • [Support Server](https://discord.gg/GQyJkZDtdX) •
+[Add Bot](https://discord.com/oauth2/authorize?client_id=1501197759754272928) • [Support Server](https://discord.gg/wbhBExpMNj) •
 [GitHub](https://github.com/zijipia/Ziji-bot-discord)
 
 </div>
