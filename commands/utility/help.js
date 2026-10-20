@@ -63,7 +63,7 @@ function buildHelpMenu({ user, bot, lang }) {
 			.setLabel("Support Server")
 			.setStyle(ButtonStyle.Link)
 			.setEmoji(ZiIcons.fillter)
-			.setURL(config.botConfig?.SupportServer || "https://discord.gg/bkBejRNcR3"),
+			.setURL(config.botConfig?.SupportServer || "https://discord.gg/wUk3hzqa2f"),
 		new ButtonBuilder()
 			.setLabel("Invite Bot")
 			.setStyle(ButtonStyle.Link)

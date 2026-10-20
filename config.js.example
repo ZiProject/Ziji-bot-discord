@@ -75,7 +75,7 @@ module.exports = {
 		 * ID của server hỗ trợ
 		 * Support server ID
 		 */
-		SupportServer: "https://discord.gg/bkBejRNcR3",
+		SupportServer: "https://discord.gg/wUk3hzqa2f",
 
 		/**
 		 * Link mời bot
@@ -144,6 +144,12 @@ module.exports = {
 		 * Change voice channel status to song title (true | false)
 		 */
 		changeStatus: true,
+
+		/**
+		 * Tạm dừng khi kênh thoại trống (true | false)
+		 * Pause when voice channel is empty (true | false)
+		 */
+		pauseOnEmpty: true,
 	},
 
 

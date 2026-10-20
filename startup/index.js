@@ -63,8 +63,32 @@ class StartupManager {
 	}
 
 	initConfig() {
+		const fs = require("node:fs");
+		const path = require("node:path");
+		const rootDir = path.resolve(__dirname, "..");
+		const configPath = path.join(rootDir, "config.js");
+
+		if (!fs.existsSync(configPath)) {
+			const candidateDefaults = [
+				path.join(__dirname, "defaultconfig.js"),
+				path.join(rootDir, "startup", "defaultconfig.js"),
+				path.join(rootDir, "config.js.example"),
+			];
+			const sourceDefault = candidateDefaults.find((candidate) => fs.existsSync(candidate));
+			if (sourceDefault) {
+				try {
+					fs.copyFileSync(sourceDefault, configPath);
+					console.info(`No config.js found. Copied ${sourceDefault} to ${configPath}.`);
+				} catch (copyErr) {
+					console.error("Failed to copy defaultconfig.js to config.js:", copyErr);
+				}
+			}
+		}
+
 		try {
-			this.config = require("../config");
+			const resolved = require.resolve(configPath);
+			delete require.cache[resolved];
+			this.config = require(configPath);
 		} catch {
 			console.warn("No config file found, using default configuration.");
 			this.config = require("./defaultconfig");

@@ -91,7 +91,7 @@ module.exports.execute = async (client) => {
 		const config = {
 			header: {
 				alignment: "center",
-				content: client.user?.tag || "Bot Console",
+				content: `${client.user?.tag || "Bot Console"}\n${chalk.hex("#1744E8")(`Config: http://localhost:${process.env.SERVER_PORT || 2003}/config`)}`,
 			},
 			columns: [
 				{ width: 20 },
