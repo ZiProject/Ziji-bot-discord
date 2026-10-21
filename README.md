@@ -150,30 +150,32 @@ MONGO  = "mongodb+srv://user:pass@cluster.mongodb.net/ziji?retryWrites=true&w=ma
 # ...
 ```
 
-Rename `config.js.example` → `config.js`:
-
-```js
-module.exports = {
-	deploy: true,
-	defaultCooldownDuration: 5000,
-	ImageSearch: true,
-	// ...
-};
-```
-
 ### 4. Start the Bot
 
 ```bash
 node .          # standard
 npm run start   # via npm
-npm run dev     # development (nodemon)
+npm run dev     # development
 ```
 
-### 5. Run tests
+### 5. Configure bot config
 
-```bash
-npm test
-```
+Visit [localhost:{port}/config](http://localhost:2003/config) for edit config
+
+
+<table>
+<tr>
+<td width="50%">
+	<img width="425" height="116" alt="image" src="https://github.com/user-attachments/assets/9ec991a1-fa64-49f7-b90a-284d522c7621" />
+	<img width="1081" height="938" alt="image" src="https://github.com/user-attachments/assets/3cb54693-e654-4843-bdd3-510aca40087c" />
+</td>
+<td width="50%">	
+	<img width="1065" height="760" alt="image" src="https://github.com/user-attachments/assets/40442067-79b4-4875-8edf-bee807e4884c" />
+	<img width="1048" height="432" alt="image" src="https://github.com/user-attachments/assets/093b6bac-b57c-46b5-8818-56d12e42a18f" />
+</td>
+</tr>
+</table>
+
 
 ---
 
