@@ -162,7 +162,6 @@ npm run dev     # development
 
 Visit [localhost:{port}/config](http://localhost:2003/config) for edit config
 
-
 <table>
 <tr>
 <td width="50%">
@@ -175,7 +174,6 @@ Visit [localhost:{port}/config](http://localhost:2003/config) for edit config
 </td>
 </tr>
 </table>
-
 
 ---
 
