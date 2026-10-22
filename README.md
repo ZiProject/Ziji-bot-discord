@@ -29,6 +29,10 @@ player/per voice channel. Image search track support
 The web music player can switch between the existing Discord voice playback and direct browser playback using ZiPlayer's
 authenticated Opus web-audio stream.
 
+The authenticated stream API supports per-user playback at `POST /api/stream/play`, live state updates at `GET /api/stream/state`
+(Server-Sent Events), and playback controls at `POST /api/stream/control`. Browser clients can also receive the active Opus stream
+over `/ws/stream` after authenticating with their user JWT.
+
 📺 YouTube Review: Check out Zibot V10 in action — explore the music player, web interface, and Discord integration.
 <p align="center">
   <a href="https://www.youtube.com/watch?v=858Eq25HpXg">
@@ -140,32 +144,28 @@ git clone https://github.com/ZiProject/Ziji-bot-discord.git .
 npm install --force
 ```
 
-### 3. Configure Environment
+### 3. Start the Config Editor
 
-Rename `.env.example` → `.env` and fill in your values:
-
-```env
-TOKEN  = "Your Bot Token"       # required
-MONGO  = "mongodb+srv://user:pass@cluster.mongodb.net/ziji?retryWrites=true&w=majority&appName=ziji" # optional, include database name; appName is fallback
-# ...
-```
-
-### 4. Start the Bot
+Run the standalone local configuration editor:
 
 ```bash
-node .          # standard
-npm run start   # via npm
-npm run dev     # development
+node . --config
 ```
 
-### 5. Configure bot config
+Open [http://localhost:2003/config](http://localhost:2003/config) (or replace `2003` with your `SERVER_PORT`). This mode does not
+start normal bot services or log in automatically. In the **Environment (.env)** editor, enter your `TOKEN`, then choose **Save &
+test login**. The page reports login success or the Discord error; after success, the client is logged in and the page can use
+Discord data for user, guild, and channel lookups. Use **Save .env** to save environment settings without logging in.
 
-Visit [localhost:{port}/config](http://localhost:2003/config) for edit config
+The editor also lets you change and save `config.js`. Saved `.env` values are read on the next process start, so restart the bot
+after changing other environment settings
+
+For regular bot runs, the configuration page is also available at [http://localhost:2003/config](http://localhost:2003/config) (or
+the port set by `SERVER_PORT`). It is restricted to localhost.
 
 <table>
 <tr>
 <td width="50%">
-	<img width="425" height="116" alt="image" src="https://github.com/user-attachments/assets/9ec991a1-fa64-49f7-b90a-284d522c7621" />
 	<img width="1081" height="938" alt="image" src="https://github.com/user-attachments/assets/3cb54693-e654-4843-bdd3-510aca40087c" />
 </td>
 <td width="50%">	
@@ -174,6 +174,14 @@ Visit [localhost:{port}/config](http://localhost:2003/config) for edit config
 </td>
 </tr>
 </table>
+
+### 4. Start the Bot
+
+```bash
+node .          # standard
+npm run start   # via npm
+npm run dev     # development
+```
 
 ---
 

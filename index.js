@@ -31,6 +31,19 @@ const startup = new StartupManager(client);
 const logger = startup.getLogger();
 const config = startup.getConfig();
 
+if (process.argv.includes("--config")) {
+	process.on("unhandledRejection", () => {});
+	startup.initHooks();
+	client.login(process.env?.TOKEN ?? config?.botConfig?.TOKEN);
+
+	try {
+	} catch {}
+	require("./extensions/routes/configSetup.js").execute(client);
+	const port = process.env.SERVER_PORT || 2003;
+	console.info(`Config editor running at http://localhost:${port}/config`);
+	return;
+}
+
 const manager = new PlayerManager({
 	plugins: [
 		new TTSPlugin(),

@@ -67,6 +67,18 @@ class StartupManager {
 		const path = require("node:path");
 		const rootDir = path.resolve(__dirname, "..");
 		const configPath = path.join(rootDir, "config.js");
+		const envPath = path.join(rootDir, ".env");
+		const envExamplePath = path.join(rootDir, ".env.example");
+
+		if (!fs.existsSync(envPath) && fs.existsSync(envExamplePath)) {
+			try {
+				fs.copyFileSync(envExamplePath, envPath);
+				console.info(`No .env found. Copied ${envExamplePath} to ${envPath}.`);
+				require("dotenv").config({ path: envPath });
+			} catch (copyErr) {
+				console.error("Failed to copy .env.example to .env:", copyErr);
+			}
+		}
 
 		if (!fs.existsSync(configPath)) {
 			const candidateDefaults = [
@@ -133,6 +145,10 @@ class StartupManager {
 	}
 
 	initPlayerNet() {
+		if (process.argv.includes("--config")) {
+			useHooks.set("playerNetClient", [this.client]);
+			return;
+		}
 		if (!process.env.MULTI_PLAYER_TOKEN) {
 			useHooks.set("playerNetClient", [this.client]);
 			return;

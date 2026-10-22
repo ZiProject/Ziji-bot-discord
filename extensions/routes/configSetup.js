@@ -9,12 +9,13 @@ module.exports.data = {
 	name: "configSetupRoute",
 	description: "Web and API interface for localhost bot configuration setup",
 	version: "1.0.0",
-	enable: true,
+	enable: !!process.argv.includes("--config"),
 	priority: 8,
 };
 
 const getRootDir = () => path.resolve(__dirname, "../../");
 const getConfigPath = () => path.join(getRootDir(), "config.js");
+const getEnvPath = () => path.join(getRootDir(), ".env");
 
 const getDefaultConfigPath = () => {
 	const rootDir = getRootDir();
@@ -139,7 +140,11 @@ const updateClientPresence = (client, botConfig) => {
 		console.warn("Could not update Discord client presence:", err.message);
 	}
 };
-
+/**
+ *
+ * @param {import("discord.js").Client} client
+ * @returns
+ */
 module.exports.execute = (client) => {
 	const server = useHooks.get("server");
 	if (!server) return;
@@ -210,6 +215,56 @@ module.exports.execute = (client) => {
 			status: "OK",
 			config: currentConfig,
 		});
+	});
+
+	router.get("/api/config/env", async (context) => {
+		const envPath = getEnvPath();
+		const content = fs.existsSync(envPath) ? await fs.promises.readFile(envPath, "utf8") : "";
+		return context.json({ status: "OK", content });
+	});
+	router.post("/api/config/env", async (context) => {
+		const body = context.get("body") || (await context.req.json().catch(() => null));
+		if (!body || typeof body.content !== "string")
+			return context.json({ status: "ERROR", error: "Nội dung .env không hợp lệ." }, 400);
+		try {
+			await fs.promises.writeFile(getEnvPath(), body.content, "utf8");
+			return context.json({ status: "OK", message: "Đã lưu .env. Khởi động lại bot để áp dụng." });
+		} catch (error) {
+			return context.json({ status: "ERROR", error: `Không thể lưu .env: ${error.message}` }, 500);
+		}
+	});
+	router.post("/api/config/login", async (context) => {
+		const body = context.get("body") || (await context.req.json().catch(() => null));
+		if (!body || typeof body.content !== "string")
+			return context.json({ status: "ERROR", error: "Nội dung .env không hợp lệ." }, 400);
+		try {
+			await fs.promises.writeFile(getEnvPath(), body.content, "utf8");
+			const env = require("dotenv").parse(body.content);
+			const token = env.TOKEN?.trim();
+			if (!token)
+				return context.json({ status: "ERROR", error: "Không tìm thấy TOKEN trong .env. Hãy nhập bot token rồi thử lại." }, 400);
+
+			// if (client?.user) {
+			// 	// client.login;
+			// 	return context.json({
+			// 		status: "OK",
+			// 		message: `Client đã đăng nhập với bot ${client.user.tag}.`,
+			// 		bot: { id: client.user.id, tag: client.user.tag },
+			// 	});
+			// }
+			if (typeof client?.login !== "function")
+				return context.json({ status: "ERROR", error: "Discord client không khả dụng." }, 503);
+
+			await client.login(token);
+			return context.json({
+				status: "OK",
+				message: `Đăng nhập thành công${client.user?.tag ? ` với bot ${client.user.tag}` : ""}.`,
+				bot: client.user ? { id: client.user.id, tag: client.user.tag } : null,
+			});
+		} catch (error) {
+			console.error("Discord client login failed from config setup:", error);
+			return context.json({ status: "ERROR", error: `Đăng nhập Discord thất bại: ${error.message}` }, 401);
+		}
 	});
 
 	router.get("/api/config/lookups", async (context) => {
@@ -647,6 +702,10 @@ module.exports.execute = (client) => {
 				</button>
 			</div>
 		</header>
+		<section class="glass-panel rounded-2xl p-6 mb-6">
+			<div class="flex items-center justify-between gap-4 mb-3"><div><h2 class="text-xl font-semibold">Environment (.env)</h2><p class="text-sm text-slate-400">Chỉnh các secret và biến môi trường. Khởi động lại bot sau khi lưu.</p></div><div class="flex gap-2"><button type="button" onclick="saveEnv()" class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white">Lưu .env</button><button type="button" onclick="saveEnvAndLogin()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white">Lưu & đăng nhập thử</button></div></div>
+			<textarea id="envEditor" spellcheck="false" class="w-full min-h-64 rounded-xl bg-slate-950/70 border border-slate-700 p-4 font-mono text-sm text-slate-200"></textarea>
+		</section>
 
 		<!-- Main Container -->
 		<div class="glass-panel rounded-2xl p-6 md:p-8">
@@ -1371,6 +1430,25 @@ module.exports.execute = (client) => {
 			}
 		}
 
+		async function saveEnv() {
+			try {
+				const response = await fetch('/api/config/env', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: document.getElementById('envEditor').value }) });
+				const result = await response.json();
+				showToast(result.status === 'OK' ? result.message : (result.error || 'Không thể lưu .env'), result.status === 'OK');
+			} catch (error) { showToast('Lỗi lưu .env: ' + error.message, false); }
+		}
+
+		async function saveEnvAndLogin() {
+			const button = document.querySelector('button[onclick="saveEnvAndLogin()"]');
+			if (button) { button.disabled = true; button.textContent = 'Đang đăng nhập...'; }
+			try {
+				const response = await fetch('/api/config/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: document.getElementById('envEditor').value }) });
+				const result = await response.json();
+				showToast(result.status === 'OK' ? result.message : (result.error || 'Đăng nhập thất bại'), result.status === 'OK');
+			} catch (error) { showToast('Lỗi kết nối máy chủ: ' + error.message, false); }
+			finally { if (button) { button.disabled = false; button.textContent = 'Lưu & đăng nhập thử'; } }
+		}
+
 		async function resetToDefault() {
 			if (!confirm("Bạn có chắc chắn muốn khôi phục toàn bộ cấu hình về mặc định ban đầu không?")) return;
 			try {
@@ -1391,6 +1469,7 @@ module.exports.execute = (client) => {
 		}
 
 		window.addEventListener('DOMContentLoaded', () => {
+			fetch('/api/config/env').then(response => response.json()).then(result => { if (result.status === 'OK') document.getElementById('envEditor').value = result.content; });
 			renderSelections('users');
 			renderSelections('guilds');
 			renderSelections('channels');
