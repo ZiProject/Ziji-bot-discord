@@ -60,7 +60,10 @@ module.exports.execute = async (interaction, query, lang, options = {}) => {
 
 	await releaseWebVoiceConflicts(interaction);
 
-	if (validURL(query) || query?.includes("tts: ") || options.assistant) {
+	const isTTS =
+		typeof query === "string" && (query.trim().toLowerCase().startsWith("tts:") || query.trim().toLowerCase().startsWith("say "));
+
+	if (validURL(query) || isTTS || options.assistant) {
 		logger.debug("Handling play request");
 		await useHooks.get("functions").get("playerPlay")?.execute({ interaction, query, lang, options });
 		return;
