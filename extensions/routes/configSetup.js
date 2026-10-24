@@ -4,6 +4,8 @@ const { Hono } = require("hono");
 const { getConnInfo } = require("@hono/node-server/conninfo");
 const { useHooks } = require("zihooks");
 const { ActivityType } = require("discord.js");
+const envSetup = require("../../utils/envSetup");
+const { renderEnvSection, renderEnvScript, escapeHtml } = require("../../utils/envSetupUi");
 
 module.exports.data = {
 	name: "configSetupRoute",
@@ -71,6 +73,58 @@ const isLocalhostRequest = (context) => {
 };
 
 const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
+
+/**
+ * Names of every command, for the "Disabled commands" picker.
+ * In `--config` mode loadModules() never runs, so the `commands` hook is empty: read the files in /commands instead.
+ * Names are read statically (no command code is executed); require() is only a fallback.
+ */
+const readCommandNamesFromDisk = () => {
+	const names = new Set();
+	const walk = (dir) => {
+		let entries = [];
+		try {
+			entries = fs.readdirSync(dir, { withFileTypes: true });
+		} catch {
+			return;
+		}
+		for (const entry of entries) {
+			const fullPath = path.join(dir, entry.name);
+			if (entry.isDirectory()) walk(fullPath);
+			else if (entry.isFile() && entry.name.endsWith(".js")) {
+				let source = "";
+				try {
+					source = fs.readFileSync(fullPath, "utf8");
+				} catch {
+					continue;
+				}
+				const match = source.match(/(?:module\.exports\.data|data:?)\s*=?\s*\{[\s\S]*?\bname\s*:\s*(["'`])([^"'`$]+)\1/);
+				if (match) {
+					names.add(match[2]);
+					continue;
+				}
+				try {
+					const name = require(fullPath)?.data?.name;
+					if (typeof name === "string" && name) names.add(name);
+				} catch {}
+			}
+		}
+	};
+	walk(path.join(getRootDir(), "commands"));
+	return [...names];
+};
+
+const getCommandNames = (commands, extraNames = []) => {
+	const loaded =
+		commands && typeof commands.values === "function" ? [...commands.values()]
+		: Array.isArray(commands) ? commands
+		: [];
+	const names = new Set(loaded.map((command) => command?.data?.name).filter(Boolean));
+	if (!names.size) for (const name of readCommandNamesFromDisk()) names.add(name);
+	// Keep names that are already disabled in config.js so saving the form never drops them silently.
+	for (const name of extraNames) if (typeof name === "string" && name) names.add(name);
+	return [...names].sort((a, b) => a.localeCompare(b));
+};
 
 const parseFormNumber = (value, fallback) => {
 	if (value === undefined || value === "") return fallback;
@@ -217,53 +271,185 @@ module.exports.execute = (client) => {
 		});
 	});
 
-	router.get("/api/config/env", async (context) => {
-		const envPath = getEnvPath();
-		const content = fs.existsSync(envPath) ? await fs.promises.readFile(envPath, "utf8") : "";
-		return context.json({ status: "OK", content });
-	});
-	router.post("/api/config/env", async (context) => {
-		const body = context.get("body") || (await context.req.json().catch(() => null));
-		if (!body || typeof body.content !== "string")
-			return context.json({ status: "ERROR", error: "Nội dung .env không hợp lệ." }, 400);
+	const MAX_ENV_FILE_SIZE = 256 * 1024;
+
+	const readJsonBody = async (context) => {
+		const cached = context.get("body");
+		if (cached && typeof cached === "object") return cached;
+		return context.req.json().catch(() => null);
+	};
+
+	const isClientLoggedIn = () => !!client?.user && (typeof client.isReady === "function" ? client.isReady() : true);
+
+	const getBotInfo = () => {
+		if (!isClientLoggedIn()) return null;
+		const user = client.user;
+		return { id: user.id, tag: user.tag || user.username || user.displayName || user.id };
+	};
+
+	const noStore = (context) => context.header("Cache-Control", "no-store");
+
+	/** Returns the .env text, or null when the file does not exist yet. */
+	const readEnvFile = async () => {
 		try {
-			await fs.promises.writeFile(getEnvPath(), body.content, "utf8");
-			return context.json({ status: "OK", message: "Đã lưu .env. Khởi động lại bot để áp dụng." });
+			return await fs.promises.readFile(getEnvPath(), "utf8");
 		} catch (error) {
+			if (error.code === "ENOENT") return null;
+			throw error;
+		}
+	};
+
+	const hasEnvChanges = (body) =>
+		typeof body?.content === "string" ||
+		Object.keys(body?.values || {}).length > 0 ||
+		(Array.isArray(body?.remove) && body.remove.length > 0);
+
+	/**
+	 * Save either `{ values, remove }` (edited in place, comments are kept) or the legacy `{ content }`.
+	 * Throws an error with `status = 400` when the input is invalid.
+	 */
+	const saveEnvChanges = async (body) => {
+		let next;
+		if (typeof body.content === "string") {
+			if (body.content.length > MAX_ENV_FILE_SIZE) throw Object.assign(new Error(".env quá lớn."), { status: 400 });
+			next = body.content;
+		} else {
+			let current = await readEnvFile();
+			if (current === null) {
+				const examplePath = path.join(getRootDir(), ".env.example");
+				current = fs.existsSync(examplePath) ? await fs.promises.readFile(examplePath, "utf8") : "";
+			}
+			try {
+				next = envSetup.applyEnvChanges(current, { values: body.values, remove: body.remove });
+			} catch (error) {
+				throw Object.assign(new Error(error.message), { status: 400 });
+			}
+		}
+		await fs.promises.writeFile(getEnvPath(), next, { encoding: "utf8", mode: 0o600 });
+		return envSetup.parseEnv(next);
+	};
+
+	// API: login state (no secrets)
+	router.get("/api/config/status", (context) => {
+		noStore(context);
+		return context.json({ status: "OK", loggedIn: isClientLoggedIn(), bot: getBotInfo() });
+	});
+
+	// API: read .env (only requested by the page after the user chooses to reveal it)
+	router.get("/api/config/env", async (context) => {
+		noStore(context);
+		try {
+			const content = await readEnvFile();
+			return context.json({ status: "OK", exists: content !== null, values: envSetup.parseEnv(content || "") });
+		} catch (error) {
+			return context.json({ status: "ERROR", error: `Không thể đọc .env: ${error.message}` }, 500);
+		}
+	});
+
+	// API: save .env
+	router.post("/api/config/env", async (context) => {
+		noStore(context);
+		const body = await readJsonBody(context);
+		if (!body || typeof body !== "object") return context.json({ status: "ERROR", error: "Dữ liệu .env không hợp lệ." }, 400);
+		try {
+			const values = await saveEnvChanges(body);
+			return context.json({ status: "OK", message: "Đã lưu .env. Khởi động lại bot để áp dụng.", values });
+		} catch (error) {
+			if (error.status === 400) return context.json({ status: "ERROR", error: error.message }, 400);
 			return context.json({ status: "ERROR", error: `Không thể lưu .env: ${error.message}` }, 500);
 		}
 	});
-	router.post("/api/config/login", async (context) => {
-		const body = context.get("body") || (await context.req.json().catch(() => null));
-		if (!body || typeof body.content !== "string")
-			return context.json({ status: "ERROR", error: "Nội dung .env không hợp lệ." }, 400);
+
+	// API: test ONE value (token, MONGO, API key...) without saving it
+	router.post("/api/config/env/test", async (context) => {
+		noStore(context);
+		const body = await readJsonBody(context);
+		if (!body || typeof body.key !== "string" || typeof body.value !== "string") {
+			return context.json({ status: "ERROR", error: "Thiếu key hoặc value cần test." }, 400);
+		}
+		if (!envSetup.KNOWN_KEYS.has(body.key)) {
+			return context.json({ status: "ERROR", error: "Mục này không hỗ trợ test." }, 400);
+		}
+		const testContext = {};
+		if (typeof body.context?.TOKEN === "string") testContext.TOKEN = body.context.TOKEN;
 		try {
-			await fs.promises.writeFile(getEnvPath(), body.content, "utf8");
-			const env = require("dotenv").parse(body.content);
-			const token = env.TOKEN?.trim();
-			if (!token)
-				return context.json({ status: "ERROR", error: "Không tìm thấy TOKEN trong .env. Hãy nhập bot token rồi thử lại." }, 400);
+			const result = await envSetup.testEnvValue(body.key, body.value, { context: testContext, client });
+			if (!result) return context.json({ status: "ERROR", error: "Mục này không hỗ trợ test." }, 400);
+			return context.json({ status: "OK", result });
+		} catch (error) {
+			console.error(`Config setup: testing ${body.key} failed:`, error?.name || error);
+			return context.json({ status: "ERROR", error: "Không thể kiểm tra giá trị này." }, 500);
+		}
+	});
 
-			// if (client?.user) {
-			// 	// client.login;
-			// 	return context.json({
-			// 		status: "OK",
-			// 		message: `Client đã đăng nhập với bot ${client.user.tag}.`,
-			// 		bot: { id: client.user.id, tag: client.user.tag },
-			// 	});
-			// }
-			if (typeof client?.login !== "function")
-				return context.json({ status: "ERROR", error: "Discord client không khả dụng." }, 503);
+	// API: save .env (when there are changes) then log the bot in with TOKEN
+	let loginInFlight = false;
+	router.post("/api/config/login", async (context) => {
+		noStore(context);
+		const body = await readJsonBody(context);
+		if (!body || typeof body !== "object") return context.json({ status: "ERROR", error: "Dữ liệu không hợp lệ." }, 400);
 
-			await client.login(token);
+		let values;
+		try {
+			if (hasEnvChanges(body)) values = await saveEnvChanges(body);
+		} catch (error) {
+			if (error.status === 400) return context.json({ status: "ERROR", error: error.message }, 400);
+			return context.json({ status: "ERROR", error: `Không thể lưu .env: ${error.message}` }, 500);
+		}
+
+		try {
+			const envContent = await readEnvFile();
+			const token = envSetup.cleanDiscordToken(envSetup.parseEnv(envContent || "").TOKEN);
+			const saved = values !== undefined;
+			if (!token) {
+				return context.json(
+					{ status: "ERROR", error: "Không tìm thấy TOKEN trong .env. Hãy nhập bot token rồi thử lại.", saved, values },
+					400,
+				);
+			}
+
+			// Check the token over REST first so the error message is precise and no gateway session is wasted.
+			const check = await envSetup.testDiscordToken(token, { checkIntents: true });
+			if (!check.ok) return context.json({ status: "ERROR", error: check.message, saved, values }, 401);
+
+			if (isClientLoggedIn()) {
+				if (client.user.id === check.bot.id) {
+					return context.json({ status: "OK", message: "Bot đã đăng nhập sẵn.", bot: getBotInfo(), values });
+				}
+				return context.json(
+					{
+						status: "ERROR",
+						error: `Bot đang đăng nhập bằng tài khoản khác (${getBotInfo().tag}). TOKEN mới đã được lưu, hãy khởi động lại bot để dùng.`,
+						saved,
+						values,
+					},
+					409,
+				);
+			}
+			if (typeof client?.login !== "function") {
+				return context.json({ status: "ERROR", error: "Discord client không khả dụng.", saved, values }, 503);
+			}
+			if (loginInFlight) return context.json({ status: "ERROR", error: "Đang đăng nhập, vui lòng chờ.", saved, values }, 409);
+
+			loginInFlight = true;
+			try {
+				await client.login(token);
+			} finally {
+				loginInFlight = false;
+			}
+			process.env.TOKEN = token;
 			return context.json({
 				status: "OK",
-				message: `Đăng nhập thành công${client.user?.tag ? ` với bot ${client.user.tag}` : ""}.`,
-				bot: client.user ? { id: client.user.id, tag: client.user.tag } : null,
+				message: `Đăng nhập thành công${client.user?.tag ? ` với bot ${client.user.tag}` : ""}.${check.level === "warn" ? ` ${check.message}` : ""}`,
+				bot: getBotInfo() || { id: check.bot.id, tag: check.bot.tag },
+				values,
 			});
 		} catch (error) {
 			console.error("Discord client login failed from config setup:", error);
-			return context.json({ status: "ERROR", error: `Đăng nhập Discord thất bại: ${error.message}` }, 401);
+			return context.json(
+				{ status: "ERROR", error: `Đăng nhập Discord thất bại: ${error.message}`, saved: values !== undefined, values },
+				401,
+			);
 		}
 	});
 
@@ -574,19 +760,9 @@ module.exports.execute = (client) => {
 			)
 			.join("");
 		const disabledCommands = new Set(Array.isArray(config.disabledCommands) ? config.disabledCommands : []);
-		const commandOptions = [...commands]
-			.map((command) => command?.data?.name)
-			.filter(Boolean)
-			.sort((a, b) => a.localeCompare(b))
-			.map((name) => {
-				const escapedName = name
-					.replaceAll("&", "&amp;")
-					.replaceAll('"', "&quot;")
-					.replaceAll("<", "&lt;")
-					.replaceAll(">", "&gt;");
-				return `<option value="${escapedName}" ${disabledCommands.has(name) ? "selected" : ""}>${escapedName}</option>`;
-			})
-			.join("");
+		const commandNames = getCommandNames(commands, [...disabledCommands]);
+		const commandsData = escapeHtml(JSON.stringify(commandNames));
+		const disabledData = escapeHtml(JSON.stringify([...disabledCommands]));
 		const clientUser = client?.user || { displayName: "Ziji Bot", id: "N/A" };
 		const avatarUrl =
 			clientUser.displayAvatarURL ?
@@ -662,11 +838,19 @@ module.exports.execute = (client) => {
 			bottom: 2rem;
 			right: 2rem;
 			z-index: 100;
-			transform: translateY(120%);
-			transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+			max-width: calc(100vw - 4rem);
+			opacity: 0;
+			visibility: hidden;
+			pointer-events: none;
+			transform: translateY(150%);
+			transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, visibility 0s linear 0.3s;
 		}
 		.toast.show {
+			opacity: 1;
+			visibility: visible;
+			pointer-events: auto;
 			transform: translateY(0);
+			transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, visibility 0s;
 		}
 		pre, code, textarea.font-mono {
 			font-family: 'JetBrains Mono', monospace;
@@ -702,10 +886,7 @@ module.exports.execute = (client) => {
 				</button>
 			</div>
 		</header>
-		<section class="glass-panel rounded-2xl p-6 mb-6">
-			<div class="flex items-center justify-between gap-4 mb-3"><div><h2 class="text-xl font-semibold">Environment (.env)</h2><p class="text-sm text-slate-400">Chỉnh các secret và biến môi trường. Khởi động lại bot sau khi lưu.</p></div><div class="flex gap-2"><button type="button" onclick="saveEnv()" class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white">Lưu .env</button><button type="button" onclick="saveEnvAndLogin()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white">Lưu & đăng nhập thử</button></div></div>
-			<textarea id="envEditor" spellcheck="false" class="w-full min-h-64 rounded-xl bg-slate-950/70 border border-slate-700 p-4 font-mono text-sm text-slate-200"></textarea>
-		</section>
+		${renderEnvSection({ loggedIn: isClientLoggedIn(), botName: getBotInfo()?.tag || "" })}
 
 		<!-- Main Container -->
 		<div class="glass-panel rounded-2xl p-6 md:p-8">
@@ -793,8 +974,17 @@ module.exports.execute = (client) => {
 
 					<div>
 						<label class="block text-sm font-medium text-slate-300 mb-2">Disabled commands / Lệnh bị vô hiệu hóa / 無効にするコマンド</label>
-						<select id="disabledCommands" multiple size="6" class="glass-input w-full px-4 py-2.5 rounded-xl text-sm">${commandOptions}</select>
-						<p class="text-xs text-slate-400 mt-1.5">Select command names to disable. Hold Ctrl (Windows) or Command (Mac) to select multiple. / Chọn tên lệnh cần tắt. Giữ Ctrl (Windows) hoặc Command (Mac) để chọn nhiều lệnh. / 無効にするコマンドを選択してください。複数選択するには Ctrl (Windows) または Command (Mac) を押しながら選択します。</p>
+						<div id="disabledCommands" class="space-y-2" data-commands="${commandsData}" data-disabled="${disabledData}">
+							<div id="disabledCommandChips" class="flex flex-wrap gap-2 min-h-[2rem]"></div>
+							<div class="relative">
+								<input id="disabledCommandSearch" type="text" autocomplete="off" spellcheck="false" placeholder="Search command to disable... / Tìm lệnh cần tắt... / 無効にするコマンドを検索..." class="glass-input w-full px-4 py-2.5 rounded-xl text-sm" role="combobox" aria-expanded="false" aria-controls="disabledCommandList">
+								<div id="disabledCommandList" role="listbox" class="hidden absolute z-30 mt-1 w-full max-h-60 overflow-y-auto rounded-xl bg-slate-900 border border-slate-600 shadow-2xl p-1"></div>
+							</div>
+							<div class="flex items-center justify-between gap-3">
+								<p class="text-xs text-slate-400">Click a command to disable it, click × to enable it again. / Bấm vào lệnh để tắt, bấm × để bật lại. / コマンドをクリックして無効化、×で再び有効化します。</p>
+								<button type="button" id="disabledCommandClear" class="shrink-0 text-xs text-rose-300 hover:text-rose-200">Clear all / Xóa hết / すべて削除</button>
+							</div>
+						</div>
 					</div>
 				</div>
 
@@ -1072,9 +1262,9 @@ module.exports.execute = (client) => {
 	</div>
 
 	<!-- Toast Alert Notification -->
-	<div id="toast" class="toast flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border text-sm font-medium">
+	<div id="toast" class="toast flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border text-sm font-medium" role="status" aria-live="polite" aria-hidden="true">
 		<i id="toast-icon" class="text-lg"></i>
-		<span id="toast-msg">Thông báo</span>
+		<span id="toast-msg"></span>
 	</div>
 
 	<script>
@@ -1204,6 +1394,118 @@ module.exports.execute = (client) => {
 			}
 		}
 
+		let disabledCommandNames = [];
+		const disabledCommandRoot = document.getElementById('disabledCommands');
+		const allCommandNames = JSON.parse(disabledCommandRoot.dataset.commands || '[]');
+		disabledCommandNames = JSON.parse(disabledCommandRoot.dataset.disabled || '[]');
+
+		function renderDisabledCommands() {
+			const chips = document.getElementById('disabledCommandChips');
+			chips.replaceChildren();
+			if (!disabledCommandNames.length) {
+				const empty = document.createElement('span');
+				empty.className = 'text-xs text-slate-500 py-1.5';
+				empty.textContent = 'Chưa tắt lệnh nào / No disabled commands';
+				chips.appendChild(empty);
+			}
+			disabledCommandNames.forEach(name => {
+				const chip = document.createElement('span');
+				chip.className = 'inline-flex items-center gap-2 rounded-lg bg-slate-700 px-3 py-1.5 text-xs text-slate-100';
+				chip.append(document.createTextNode(name));
+				const remove = document.createElement('button');
+				remove.type = 'button';
+				remove.textContent = '×';
+				remove.className = 'text-slate-300 hover:text-rose-300';
+				remove.setAttribute('aria-label', 'Bật lại lệnh ' + name);
+				remove.addEventListener('click', () => {
+					disabledCommandNames = disabledCommandNames.filter(item => item !== name);
+					renderDisabledCommands();
+					syncAdvancedFormChanges({ target: disabledCommandRoot });
+				});
+				chip.appendChild(remove);
+				chips.appendChild(chip);
+			});
+			renderDisabledCommandList();
+		}
+
+		function renderDisabledCommandList() {
+			const list = document.getElementById('disabledCommandList');
+			const query = document.getElementById('disabledCommandSearch').value.trim().toLowerCase();
+			list.replaceChildren();
+			const matches = allCommandNames.filter(name => !disabledCommandNames.includes(name) && name.toLowerCase().includes(query));
+			if (!matches.length) {
+				const empty = document.createElement('div');
+				empty.className = 'px-3 py-2 text-xs text-slate-400';
+				empty.textContent = query ? 'Không có lệnh phù hợp / No matching command' : 'Đã chọn hết / All selected';
+				list.appendChild(empty);
+				return;
+			}
+			matches.forEach(name => {
+				const option = document.createElement('button');
+				option.type = 'button';
+				option.setAttribute('role', 'option');
+				option.dataset.name = name;
+				option.className = 'block w-full text-left px-3 py-1.5 rounded-lg text-sm text-slate-200 hover:bg-indigo-600/40 focus:bg-indigo-600/40 focus:outline-none';
+				option.textContent = name;
+				list.appendChild(option);
+			});
+		}
+
+		function addDisabledCommand(name) {
+			if (!name || disabledCommandNames.includes(name)) return;
+			disabledCommandNames.push(name);
+			disabledCommandNames.sort((a, b) => a.localeCompare(b));
+			document.getElementById('disabledCommandSearch').value = '';
+			renderDisabledCommands();
+			syncAdvancedFormChanges({ target: disabledCommandRoot });
+		}
+
+		function setDisabledCommandListOpen(open) {
+			document.getElementById('disabledCommandList').classList.toggle('hidden', !open);
+			document.getElementById('disabledCommandSearch').setAttribute('aria-expanded', open ? 'true' : 'false');
+		}
+
+		(function initDisabledCommands() {
+			const search = document.getElementById('disabledCommandSearch');
+			const list = document.getElementById('disabledCommandList');
+			search.addEventListener('focus', () => { renderDisabledCommandList(); setDisabledCommandListOpen(true); });
+			search.addEventListener('input', () => { renderDisabledCommandList(); setDisabledCommandListOpen(true); });
+			search.addEventListener('keydown', event => {
+				if (event.key === 'Enter') {
+					event.preventDefault();
+					const first = list.querySelector('[data-name]');
+					if (first) addDisabledCommand(first.dataset.name);
+				} else if (event.key === 'Escape') {
+					setDisabledCommandListOpen(false);
+				} else if (event.key === 'ArrowDown') {
+					event.preventDefault();
+					setDisabledCommandListOpen(true);
+					const first = list.querySelector('[data-name]');
+					if (first) first.focus();
+				}
+			});
+			list.addEventListener('click', event => {
+				const option = event.target.closest('[data-name]');
+				if (option) { addDisabledCommand(option.dataset.name); search.focus(); }
+			});
+			list.addEventListener('keydown', event => {
+				const current = document.activeElement;
+				if (event.key === 'ArrowDown' && current.nextElementSibling) { event.preventDefault(); current.nextElementSibling.focus(); }
+				else if (event.key === 'ArrowUp') { event.preventDefault(); (current.previousElementSibling || search).focus(); }
+				else if (event.key === 'Escape') { setDisabledCommandListOpen(false); search.focus(); }
+			});
+			document.addEventListener('click', event => {
+				if (!disabledCommandRoot.contains(event.target)) setDisabledCommandListOpen(false);
+			});
+			document.getElementById('disabledCommandClear').addEventListener('click', () => {
+				disabledCommandNames = [];
+				renderDisabledCommands();
+				syncAdvancedFormChanges({ target: disabledCommandRoot });
+			});
+			renderDisabledCommands();
+		})();
+
+		let toastTimer = null;
 		function showToast(msg, isSuccess = true) {
 			const toast = document.getElementById('toast');
 			const icon = document.getElementById('toast-icon');
@@ -1218,8 +1520,11 @@ module.exports.execute = (client) => {
 				icon.className = 'fa-solid fa-circle-exclamation text-rose-400';
 			}
 
-			setTimeout(() => {
+			toast.setAttribute('aria-hidden', 'false');
+			clearTimeout(toastTimer);
+			toastTimer = setTimeout(() => {
 				toast.classList.remove('show');
+				toast.setAttribute('aria-hidden', 'true');
 			}, 4000);
 		}
 
@@ -1242,7 +1547,7 @@ module.exports.execute = (client) => {
 			data.DefaultLang = document.getElementById('defaultLang').value;
 			data.OwnerID = selectedOwnerIds.map(item => item.id);
 			data.DevGuild = selectedGuildIds.map(item => item.id);
-			data.disabledCommands = Array.from(document.getElementById('disabledCommands').selectedOptions, option => option.value);
+			data.disabledCommands = disabledCommandNames.slice();
 
 			data.botConfig = data.botConfig || {};
 			data.botConfig.Status = document.getElementById('botStatus').value;
@@ -1327,10 +1632,8 @@ module.exports.execute = (client) => {
 					renderSelections('guilds');
 				}
 				if (parsed.disabledCommands !== undefined) {
-					const disabledCommands = new Set(Array.isArray(parsed.disabledCommands) ? parsed.disabledCommands : []);
-					Array.from(document.getElementById('disabledCommands').options).forEach(option => {
-						option.selected = disabledCommands.has(option.value);
-					});
+					disabledCommandNames = Array.from(new Set((Array.isArray(parsed.disabledCommands) ? parsed.disabledCommands : []).filter(name => typeof name === 'string' && name)));
+					renderDisabledCommands();
 				}
 
 				if (parsed.botConfig) {
@@ -1430,25 +1733,6 @@ module.exports.execute = (client) => {
 			}
 		}
 
-		async function saveEnv() {
-			try {
-				const response = await fetch('/api/config/env', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: document.getElementById('envEditor').value }) });
-				const result = await response.json();
-				showToast(result.status === 'OK' ? result.message : (result.error || 'Không thể lưu .env'), result.status === 'OK');
-			} catch (error) { showToast('Lỗi lưu .env: ' + error.message, false); }
-		}
-
-		async function saveEnvAndLogin() {
-			const button = document.querySelector('button[onclick="saveEnvAndLogin()"]');
-			if (button) { button.disabled = true; button.textContent = 'Đang đăng nhập...'; }
-			try {
-				const response = await fetch('/api/config/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: document.getElementById('envEditor').value }) });
-				const result = await response.json();
-				showToast(result.status === 'OK' ? result.message : (result.error || 'Đăng nhập thất bại'), result.status === 'OK');
-			} catch (error) { showToast('Lỗi kết nối máy chủ: ' + error.message, false); }
-			finally { if (button) { button.disabled = false; button.textContent = 'Lưu & đăng nhập thử'; } }
-		}
-
 		async function resetToDefault() {
 			if (!confirm("Bạn có chắc chắn muốn khôi phục toàn bộ cấu hình về mặc định ban đầu không?")) return;
 			try {
@@ -1469,7 +1753,6 @@ module.exports.execute = (client) => {
 		}
 
 		window.addEventListener('DOMContentLoaded', () => {
-			fetch('/api/config/env').then(response => response.json()).then(result => { if (result.status === 'OK') document.getElementById('envEditor').value = result.content; });
 			renderSelections('users');
 			renderSelections('guilds');
 			renderSelections('channels');
@@ -1483,6 +1766,7 @@ module.exports.execute = (client) => {
 			}
 		});
 	</script>
+	<script>${renderEnvScript({ loggedIn: isClientLoggedIn(), botId: getBotInfo()?.id || null, botName: getBotInfo()?.tag || "" })}</script>
 </body>
 </html>`;
 

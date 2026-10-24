@@ -41,3 +41,4 @@ jsons/
 package-lock.json
 cache
 transcripts
+/state
