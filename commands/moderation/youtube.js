@@ -223,12 +223,18 @@ module.exports.execute = async ({ interaction, lang }) => {
 	if (subcommand === "setup") {
 		const channelInput = interaction.options.getString("channel");
 		const discordChannel = interaction.options.getChannel("discord_channel");
-		if (discordChannel && !discordChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)) {
+		if (
+			discordChannel &&
+			!discordChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)
+		) {
 			return interaction.editReply({
 				content: lang.until.botNOPermission.replace("{Permission}", "View Channel"),
 			});
 		}
-		if (discordChannel && !discordChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.SendMessages)) {
+		if (
+			discordChannel &&
+			!discordChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.SendMessages)
+		) {
 			return interaction.editReply({
 				content: lang.until.botNOPermission.replace("{Permission}", "Send Messages"),
 			});

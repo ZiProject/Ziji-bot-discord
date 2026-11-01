@@ -78,11 +78,14 @@ module.exports.execute = async (oldState, newState, guildSetting) => {
 		if (!channel) return;
 
 		// Cập nhật database
-		joinToCreate.tempChannels = [...tempChannels, {
-			channelId: channel.id,
-			ownerId: newState.member.user.id,
-			locked: false,
-		}];
+		joinToCreate.tempChannels = [
+			...tempChannels,
+			{
+				channelId: channel.id,
+				ownerId: newState.member.user.id,
+				locked: false,
+			},
+		];
 		await persistJoinToCreate(joinToCreate);
 		await newState.member.voice.setChannel(channel).catch(() => {});
 

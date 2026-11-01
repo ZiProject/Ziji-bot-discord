@@ -87,7 +87,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 	let player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
 	if (!player && interaction.user?.id) {
 		const manager = getManager();
-		const managerPlayers = typeof manager?.getAll === "function" ? manager.getAll() : manager?.getall?.() ?? [];
+		const managerPlayers = typeof manager?.getAll === "function" ? manager.getAll() : (manager?.getall?.() ?? []);
 		player = managerPlayers.find(
 			(candidate) => candidate?.hasOutput && candidate?.userdata?.webAudioStream?.userId === interaction.user.id,
 		);
@@ -137,7 +137,9 @@ module.exports.execute = async ({ interaction, lang }) => {
 				if (!player?.bus || typeof player.bus.requestRpc !== "function") return false;
 				if (!player.playerId) return false;
 				try {
-					return Boolean(await player.bus.requestRpc(player.playerId, "forward.subscribe", { leader, options: { forwardMode: true } }));
+					return Boolean(
+						await player.bus.requestRpc(player.playerId, "forward.subscribe", { leader, options: { forwardMode: true } }),
+					);
 				} catch {
 					return false;
 				}
@@ -147,7 +149,7 @@ module.exports.execute = async ({ interaction, lang }) => {
 			const responseMessage =
 				suss ?
 					lang.music.broadcast_suss.replace("{guildID}", leaderGuild)
-				: 	lang.music.broadcast_err.replace("{guildID}", leaderGuild);
+				:	lang.music.broadcast_err.replace("{guildID}", leaderGuild);
 			return sendResponse(responseMessage);
 		}
 	} else {
