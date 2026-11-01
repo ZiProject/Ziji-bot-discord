@@ -78,6 +78,18 @@ module.exports.execute = async ({ interaction, lang }) => {
 
 				const channel = interaction.options.getChannel("channel");
 				const category = interaction.options.getChannel("category");
+				if (channel && !channel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)) {
+					return interaction.reply({
+						content: lang.until.botNOPermission.replace("{Permission}", "View Channel"),
+						ephemeral: true,
+					});
+				}
+				if (category && !category.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)) {
+					return interaction.reply({
+						content: lang.until.botNOPermission.replace("{Permission}", "View Channel in Category"),
+						ephemeral: true,
+					});
+				}
 				const guildId = interaction.guild.id;
 				let GuildSetting = await DataBase.ZiGuild.findOne({ guildId });
 				if (!GuildSetting) GuildSetting = new DataBase.ZiGuild({ guildId });

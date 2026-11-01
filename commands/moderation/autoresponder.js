@@ -70,6 +70,12 @@ module.exports.execute = async ({ interaction, lang }) => {
 	if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 		return interaction.reply({ content: lang.until.noPermission, ephemeral: true });
 	}
+	if (!interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.SendMessages)) {
+		return interaction.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "Send Messages"),
+			ephemeral: true,
+		});
+	}
 	const db = useHooks.get("db");
 	if (!db) return interaction.reply({ content: lang?.until?.noDB });
 	const autoRes = useHooks.get("responder");

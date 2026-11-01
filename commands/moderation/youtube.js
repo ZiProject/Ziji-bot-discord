@@ -209,10 +209,30 @@ module.exports.execute = async ({ interaction, lang }) => {
 			content: "❌ Bạn cần có quyền `Quản lý Máy chủ` để thực hiện thao tác này.",
 		});
 	}
+	if (!interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.SendMessages)) {
+		return interaction.editReply({
+			content: lang.until.botNOPermission.replace("{Permission}", "Send Messages"),
+		});
+	}
+	if (!interaction.channel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)) {
+		return interaction.editReply({
+			content: lang.until.botNOPermission.replace("{Permission}", "View Channel"),
+		});
+	}
 
 	if (subcommand === "setup") {
 		const channelInput = interaction.options.getString("channel");
 		const discordChannel = interaction.options.getChannel("discord_channel");
+		if (discordChannel && !discordChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)) {
+			return interaction.editReply({
+				content: lang.until.botNOPermission.replace("{Permission}", "View Channel"),
+			});
+		}
+		if (discordChannel && !discordChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.SendMessages)) {
+			return interaction.editReply({
+				content: lang.until.botNOPermission.replace("{Permission}", "Send Messages"),
+			});
+		}
 		const customMessage = interaction.options.getString("message") || "📢 **{author}** vừa đăng video mới: **{title}**\n{url}";
 
 		// Resolve YouTube channel ID

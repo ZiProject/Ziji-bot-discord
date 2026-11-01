@@ -33,6 +33,18 @@ const requireAdmin = (interaction, lang) => {
 
 module.exports.execute = async ({ interaction, lang }) => {
 	if (!requireAdmin(interaction, lang)) return;
+	if (!interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.SendMessages)) {
+		return interaction.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "Send Messages"),
+			ephemeral: true,
+		});
+	}
+	if (!interaction.channel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)) {
+		return interaction.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "View Channel"),
+			ephemeral: true,
+		});
+	}
 	const db = useHooks.get("db");
 	if (!db?.ZiGuildCommand)
 		return interaction.reply({ content: lang?.until?.noDB || "Database không khả dụng.", ephemeral: true });

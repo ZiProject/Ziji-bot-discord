@@ -133,6 +133,22 @@ module.exports.data = {
  * SLASH COMMAND
  */
 module.exports.execute = async ({ interaction, lang }) => {
+	if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+		return interaction.reply({ content: lang.until.noPermission, ephemeral: true });
+	}
+	if (!interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.SendMessages)) {
+		return interaction.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "Send Messages"),
+			ephemeral: true,
+		});
+	}
+	if (!interaction.channel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)) {
+		return interaction.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "View Channel"),
+			ephemeral: true,
+		});
+	}
+
 	const rawColor = interaction.options.getString("color");
 	const text = interaction.options.getString("text");
 	const title = interaction.options.getString("title");
@@ -143,6 +159,30 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const logChannel = interaction.options.getChannel("logchannel");
 	const category = interaction.options.getChannel("category");
 	const targetChannel = interaction.options.getChannel("channel") || interaction.channel;
+	if (logChannel && !logChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)) {
+		return interaction.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "View Channel"),
+			ephemeral: true,
+		});
+	}
+	if (logChannel && !logChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.SendMessages)) {
+		return interaction.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "Send Messages"),
+			ephemeral: true,
+		});
+	}
+	if (targetChannel && !targetChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)) {
+		return interaction.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "View Channel"),
+			ephemeral: true,
+		});
+	}
+	if (targetChannel && !targetChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.SendMessages)) {
+		return interaction.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "Send Messages"),
+			ephemeral: true,
+		});
+	}
 	const allowUserClose = interaction.options.getBoolean("allowuserclose") ?? true;
 	const color = resolveColor(rawColor);
 	if (!color)
@@ -186,6 +226,22 @@ module.exports.execute = async ({ interaction, lang }) => {
  * MESSAGE COMMAND
  */
 module.exports.run = async ({ message, args, lang }) => {
+	if (!message.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+		return message.reply({ content: lang.until.noPermission, ephemeral: true });
+	}
+	if (!message.guild.members.me.permissions.has(PermissionsBitField.Flags.SendMessages)) {
+		return message.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "Send Messages"),
+			ephemeral: true,
+		});
+	}
+	if (!message.channel.permissionsFor(message.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)) {
+		return message.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "View Channel"),
+			ephemeral: true,
+		});
+	}
+
 	const config = useHooks.get("config");
 	const flag = config.prefix || "z!";
 	const title = message.getFlag("title");

@@ -84,7 +84,14 @@ module.exports.execute = async ({ interaction, lang }) => {
 	const command = useHooks.get("functions").get("playerController");
 
 	const voiceChannel = interaction.member?.voice?.channel;
-	const player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
+	let player = getPlayer(`${interaction.guild.id}::${voiceChannel?.id}`);
+	if (!player && interaction.user?.id) {
+		const manager = getManager();
+		const managerPlayers = typeof manager?.getAll === "function" ? manager.getAll() : manager?.getall?.() ?? [];
+		player = managerPlayers.find(
+			(candidate) => candidate?.hasOutput && candidate?.userdata?.webAudioStream?.userId === interaction.user.id,
+		);
+	}
 
 	if (commandtype === "next") {
 		if (player.connection) {
@@ -126,15 +133,28 @@ module.exports.execute = async ({ interaction, lang }) => {
 			if (!leader?.connection) {
 				return sendResponse(lang.music.broadcast_err.replace("{guildID}", leaderGuild));
 			}
-			const suss = await player.subscribeTo(leader);
+			const subscribeForward = async () => {
+				if (!player?.bus || typeof player.bus.requestRpc !== "function") return false;
+				if (!player.playerId) return false;
+				try {
+					return Boolean(await player.bus.requestRpc(player.playerId, "forward.subscribe", { leader, options: { forwardMode: true } }));
+				} catch {
+					return false;
+				}
+			};
+			const suss = await subscribeForward();
 
 			const responseMessage =
 				suss ?
 					lang.music.broadcast_suss.replace("{guildID}", leaderGuild)
-				:	lang.music.broadcast_err.replace("{guildID}", leaderGuild);
+				: 	lang.music.broadcast_err.replace("{guildID}", leaderGuild);
 			return sendResponse(responseMessage);
 		}
 	} else {
+		if (player && player.hasOutput && player.userdata?.webAudioStream?.userId === interaction.user?.id) {
+			await player.play(query, { requestedBy: interaction.user });
+			return;
+		}
 		await command.execute(interaction, query, lang);
 	}
 	return;

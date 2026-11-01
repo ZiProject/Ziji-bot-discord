@@ -63,6 +63,18 @@ module.exports.startGiveaway = async ({ interaction, lang }) => {
 	if (!channel.isTextBased()) {
 		return interaction.reply({ content: lang?.Giveaways?.notTextChannel, ephemeral: true });
 	}
+	if (!channel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.ViewChannel)) {
+		return interaction.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "View Channel"),
+			ephemeral: true,
+		});
+	}
+	if (!channel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.SendMessages)) {
+		return interaction.reply({
+			content: lang.until.botNOPermission.replace("{Permission}", "Send Messages"),
+			ephemeral: true,
+		});
+	}
 
 	await Giveaways.start(channel, {
 		duration: ms(duration),

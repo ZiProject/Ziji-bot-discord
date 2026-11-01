@@ -30,14 +30,33 @@ let isCurrentlyHidden;
  * @param { import('discord.js').VoiceState } newState
  */
 module.exports.execute = async (oldState, newState, guildSetting) => {
+	const joinToCreate = guildSetting?.joinToCreate;
+	if (!joinToCreate?.enabled || !joinToCreate.voiceChannelId) return;
+
+	const persistJoinToCreate = async (nextJoinToCreate) => {
+		const db = useHooks.get("db");
+		if (!db?.ZiGuild || !newState?.guild?.id) return;
+
+		const guildDoc = await db.ZiGuild.findOne({ guildId: newState.guild.id });
+		if (!guildDoc) return;
+
+		guildDoc.joinToCreate = {
+			...guildDoc.joinToCreate,
+			...nextJoinToCreate,
+		};
+		if (typeof guildDoc.markModified === "function") guildDoc.markModified("joinToCreate");
+		await guildDoc.save().catch(() => {});
+	};
+
 	// Người dùng join vào kênh JTC
-	if (newState.channelId === guildSetting.joinToCreate.voiceChannelId) {
+	if (newState.channelId === joinToCreate.voiceChannelId) {
+		const tempChannels = Array.isArray(joinToCreate.tempChannels) ? joinToCreate.tempChannels : [];
 		const channel = await newState.guild.channels
 			.create({
 				name: `${newState.member.user.username}'s channel`,
 				type: ChannelType.GuildVoice,
-				parent: guildSetting.joinToCreate.categoryId || newState.member.voice.channel?.parentId,
-				userLimit: guildSetting.joinToCreate.defaultUserLimit || newState.member.voice.channel?.userLimit,
+				parent: joinToCreate.categoryId || newState.member.voice.channel?.parentId,
+				userLimit: joinToCreate.defaultUserLimit || newState.member.voice.channel?.userLimit,
 				permissionOverwrites: [
 					{
 						id: newState.member.id,
@@ -55,17 +74,17 @@ module.exports.execute = async (oldState, newState, guildSetting) => {
 					},
 				],
 			})
-			.catch(() => {
-				return;
-			});
+			.catch(() => null);
+		if (!channel) return;
+
 		// Cập nhật database
-		guildSetting.joinToCreate.tempChannels.push({
+		joinToCreate.tempChannels = [...tempChannels, {
 			channelId: channel.id,
 			ownerId: newState.member.user.id,
 			locked: false,
-		});
-		await guildSetting.save();
-		await newState.member.voice.setChannel(channel);
+		}];
+		await persistJoinToCreate(joinToCreate);
+		await newState.member.voice.setChannel(channel).catch(() => {});
 
 		const managerEmbed = new EmbedBuilder()
 			.setTitle("Quản lý phòng")
@@ -92,15 +111,14 @@ module.exports.execute = async (oldState, newState, guildSetting) => {
 
 	// Xóa kênh nếu trống
 	if (oldState.channelId) {
-		const tempChannel = guildSetting.joinToCreate.tempChannels.find((ch) => ch.channelId === oldState.channelId);
+		const tempChannels = Array.isArray(joinToCreate.tempChannels) ? joinToCreate.tempChannels : [];
+		const tempChannel = tempChannels.find((ch) => ch.channelId === oldState.channelId);
 		if (tempChannel) {
 			const channel = oldState.guild.channels.cache.get(oldState.channelId);
 			if (channel?.members.filter((member) => !member.user.bot).size === 0) {
 				await channel.delete().catch(() => {});
-				guildSetting.joinToCreate.tempChannels = guildSetting.joinToCreate.tempChannels.filter(
-					(ch) => ch.channelId !== oldState.channelId,
-				);
-				await guildSetting.save();
+				joinToCreate.tempChannels = tempChannels.filter((ch) => ch.channelId !== oldState.channelId);
+				await persistJoinToCreate(joinToCreate);
 			}
 		}
 	}
