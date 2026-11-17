@@ -52,6 +52,7 @@
 		"discord.js": "^14.27.0",
 		"dotenv": "^17.0.0",
 		"ffmpeg-static": "^5.2.0",
+		"googlevideo": "^5.0.1",
 		"hono": "^4.13.12",
 		"jsonwebtoken": "^9.0.3",
 		"kuroshiro": "^1.2.0",
