@@ -47,6 +47,12 @@ module.exports.execute = async () => {
 						count: Number.isSafeInteger(guild.counting.count) ? guild.counting.count : 0,
 						lastPlayer: guild.counting.lastPlayer ?? null,
 						lastMessageId: guild.counting.lastMessageId ?? null,
+						milestoneSent: Number(guild.counting.milestoneSent) || 0,
+						stats: {
+							record: Number(guild.counting.stats?.record) || 0,
+							totalCounts: Number(guild.counting.stats?.totalCounts) || 0,
+							completedRuns: Number(guild.counting.stats?.completedRuns) || 0,
+						},
 					});
 				}
 			}
