@@ -2,6 +2,7 @@
 
 const { Events } = require("discord.js");
 const { useHooks } = require("zihooks");
+const { createImageStudioAttachment } = require("../../utility/imageStudio");
 
 module.exports = {
 	name: Events.MessageCreate,
@@ -9,8 +10,6 @@ module.exports = {
 	enable: true,
 };
 
-// Serialize messages per guild so two near-simultaneous posts cannot both
-// advance the same counter from the same previous value.
 const guildQueues = new Map();
 
 async function withGuildLock(guildId, task) {
@@ -30,12 +29,19 @@ async function getConfig(guildId, db) {
 	if (cached !== undefined) return cached;
 
 	const guild = await db.ZiGuild.findOne({ guildId });
+	const saved = guild?.counting ?? {};
 	const config = {
-		enabled: guild?.counting?.enabled ?? false,
-		channel: guild?.counting?.channel ?? null,
-		count: Number.isSafeInteger(guild?.counting?.count) ? guild.counting.count : 0,
-		lastPlayer: guild?.counting?.lastPlayer ?? null,
-		lastMessageId: guild?.counting?.lastMessageId ?? null,
+		enabled: saved.enabled ?? false,
+		channel: saved.channel ?? null,
+		count: Number.isSafeInteger(saved.count) ? saved.count : 0,
+		lastPlayer: saved.lastPlayer ?? null,
+		lastMessageId: saved.lastMessageId ?? null,
+		milestoneSent: Number(saved.milestoneSent) || 0,
+		stats: {
+			record: Number(saved.stats?.record) || 0,
+			totalCounts: Number(saved.stats?.totalCounts) || 0,
+			completedRuns: Number(saved.stats?.completedRuns) || 0,
+		},
 	};
 	temp?.set(`counting_${guildId}`, config);
 	return config;
@@ -51,10 +57,52 @@ async function persistConfig(db, guildId, config) {
 	return true;
 }
 
+async function sendMilestoneImage(message, config, milestone) {
+	try {
+		const attachment = await createImageStudioAttachment(
+			{
+				type: "leaderboard",
+				data: {
+					guildName: message.guild.name,
+					guildIcon:
+						message.guild.iconURL({ size: 1024, extension: "png" }) ||
+						message.client.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
+					season: `COUNTING MILESTONE • #${milestone}`,
+					layout: "tier-division",
+					items: [
+						{
+							rank: 1,
+							username: message.guild.name,
+							handle: `@${message.guild.memberCount} members • ${config.stats.record} record`,
+							avatar:
+								message.guild.iconURL({ size: 1024, extension: "png" }) ||
+								message.client.user.displayAvatarURL({ size: 1024, forceStatic: true, extension: "png" }),
+							level: config.stats.record,
+							xp: config.stats.totalCounts,
+						},
+					],
+				},
+			},
+			`counting-milestone-${milestone}.png`,
+		);
+		await message.channel.send({
+			content: `🏆 **${message.guild.name}** vừa đạt mốc **${milestone}**! Thành tích cao nhất: **${config.stats.record}** • Tổng lượt đếm: **${config.stats.totalCounts}**.`,
+			files: [attachment],
+		});
+	} catch (error) {
+		useHooks.get("logger")?.error?.("[counting] Failed to render milestone image", error);
+		await message.channel
+			.send(`🏆 **${message.guild.name}** vừa đạt mốc **${milestone}**! (Không thể tạo ảnh thành tích lần này.)`)
+			.catch(() => {});
+	}
+}
+
 async function failTurn(message, config, db, guildId, reason) {
+	if (config.count > 0) config.stats.completedRuns++;
 	config.count = 0;
 	config.lastPlayer = null;
 	config.lastMessageId = null;
+	config.milestoneSent = 0;
 	try {
 		await persistConfig(db, guildId, config);
 	} catch (error) {
@@ -76,8 +124,7 @@ module.exports.execute = async (message) => {
 	const db = useHooks.get("db");
 	if (!db?.ZiGuild) return;
 
-	const configData = useHooks.get("config");
-	const prefix = configData?.prefix ?? "z!";
+	const prefix = useHooks.get("config")?.prefix ?? "z!";
 	const raw = message.content.trim();
 	if (!raw || raw.startsWith("/") || raw.startsWith(prefix)) return;
 
@@ -109,6 +156,11 @@ module.exports.execute = async (message) => {
 		config.count = value;
 		config.lastPlayer = message.author.id;
 		config.lastMessageId = message.id;
+		config.stats.totalCounts++;
+		config.stats.record = Math.max(config.stats.record, value);
+		const milestone = value % 10 === 0 && config.milestoneSent < value ? value : null;
+		if (milestone) config.milestoneSent = milestone;
+
 		try {
 			await persistConfig(db, guildId, config);
 		} catch (error) {
@@ -117,5 +169,6 @@ module.exports.execute = async (message) => {
 		}
 
 		await message.react("✅").catch(() => {});
+		if (milestone) await sendMilestoneImage(message, config, milestone);
 	});
 };
