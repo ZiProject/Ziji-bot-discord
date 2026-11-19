@@ -61,10 +61,12 @@ async function failTurn(message, config, db, guildId, reason) {
 		useHooks.get("logger")?.error?.("[counting] Failed to reset counter", error);
 	}
 	await message.react("❌").catch(() => {});
-	const notice = await message.reply({
-		content: `💥 ${reason}\nBộ đếm đã trở về **0**. Người chơi tiếp theo hãy gửi **1** nhé!`,
-		allowedMentions: { repliedUser: false },
-	}).catch(() => null);
+	const notice = await message
+		.reply({
+			content: `💥 ${reason}\nBộ đếm đã trở về **0**. Người chơi tiếp theo hãy gửi **1** nhé!`,
+			allowedMentions: { repliedUser: false },
+		})
+		.catch(() => null);
 	if (notice) setTimeout(() => notice.delete().catch(() => {}), 8000);
 }
 

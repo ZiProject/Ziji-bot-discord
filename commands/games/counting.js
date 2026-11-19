@@ -14,13 +14,15 @@ module.exports.data = {
 			name: "set-channel",
 			description: "Thiết lập kênh chơi đếm số",
 			type: 1,
-			options: [{
-				name: "channel",
-				description: "Kênh văn bản dùng để đếm số",
-				type: 7,
-				channel_types: [0],
-				required: true,
-			}],
+			options: [
+				{
+					name: "channel",
+					description: "Kênh văn bản dùng để đếm số",
+					type: 7,
+					channel_types: [0],
+					required: true,
+				},
+			],
 		},
 		{ name: "start", description: "Bắt đầu hoặc chơi lại từ số 1", type: 1 },
 		{ name: "reset", description: "Đặt số đếm về 0 nhưng giữ nguyên kênh", type: 1 },
@@ -64,11 +66,13 @@ module.exports.execute = async ({ interaction }) => {
 
 		const me = interaction.guild.members.me;
 		const permissions = me?.permissionsIn(channel);
-		if (!permissions?.has([
-			PermissionsBitField.Flags.ViewChannel,
-			PermissionsBitField.Flags.SendMessages,
-			PermissionsBitField.Flags.ReadMessageHistory,
-		])) {
+		if (
+			!permissions?.has([
+				PermissionsBitField.Flags.ViewChannel,
+				PermissionsBitField.Flags.SendMessages,
+				PermissionsBitField.Flags.ReadMessageHistory,
+			])
+		) {
 			return interaction.editReply({ content: "❌ Tôi cần quyền xem kênh, gửi tin nhắn và đọc lịch sử tin nhắn." });
 		}
 
@@ -133,15 +137,17 @@ module.exports.execute = async ({ interaction }) => {
 	const embed = new EmbedBuilder()
 		.setColor(0x3498db)
 		.setTitle("🔢 Đếm Số — Bắt Đầu!")
-		.setDescription([
-			"**Luật chơi:**",
-			"• Mọi người lần lượt gửi số tiếp theo, bắt đầu từ **1**.",
-			"• Mỗi lượt chỉ được gửi đúng **một số nguyên dương**.",
-			"• Không được đếm hai lượt liên tiếp.",
-			"• Sai số hoặc sai lượt sẽ khiến bộ đếm trở về **0**.",
-			"",
-			"🎯 Cùng nhau đạt con số cao nhất nhé!",
-		].join("\n"))
+		.setDescription(
+			[
+				"**Luật chơi:**",
+				"• Mọi người lần lượt gửi số tiếp theo, bắt đầu từ **1**.",
+				"• Mỗi lượt chỉ được gửi đúng **một số nguyên dương**.",
+				"• Không được đếm hai lượt liên tiếp.",
+				"• Sai số hoặc sai lượt sẽ khiến bộ đếm trở về **0**.",
+				"",
+				"🎯 Cùng nhau đạt con số cao nhất nhé!",
+			].join("\n"),
+		)
 		.setFooter({ text: "Phiên mới đã sẵn sàng • Số tiếp theo: 1" })
 		.setTimestamp();
 

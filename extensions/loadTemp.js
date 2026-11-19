@@ -52,10 +52,7 @@ module.exports.execute = async () => {
 			}
 
 			if (db.ZiUser) {
-				const afkUsers = await db.ZiUser.find(
-					{ afk: true },
-					{ userID: 1, afk: 1, afkReason: 1, afkTime: 1 },
-				).lean();
+				const afkUsers = await db.ZiUser.find({ afk: true }, { userID: 1, afk: 1, afkReason: 1, afkTime: 1 }).lean();
 
 				for (const user of afkUsers) {
 					if (user.userID) {
