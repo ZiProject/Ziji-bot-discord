@@ -128,9 +128,21 @@ const MODEL_CONFIGS = {
 	},
 	ZiGuild: {
 		delegate: "ziGuild",
-		fields: ["id", "guildId", "voice", "joinToCreate", "autoRole", "music_channel", "updatedAt", "noitu", "ticket", "youtube"],
+		fields: [
+			"id",
+			"guildId",
+			"voice",
+			"joinToCreate",
+			"autoRole",
+			"music_channel",
+			"updatedAt",
+			"noitu",
+			"counting",
+			"ticket",
+			"youtube",
+		],
 		indexedFields: ["id", "guildId"],
-		jsonFields: ["voice", "joinToCreate", "autoRole", "noitu", "ticket", "youtube"],
+		jsonFields: ["voice", "joinToCreate", "autoRole", "noitu", "counting", "ticket", "youtube"],
 		dateFields: ["updatedAt"],
 		defaults: {
 			voice: { logMode: false },
@@ -149,6 +161,13 @@ const MODEL_CONFIGS = {
 				channel: null,
 				lastPlayer: null,
 				lastWord: null,
+			},
+			counting: {
+				enabled: false,
+				channel: null,
+				count: 0,
+				lastPlayer: null,
+				lastMessageId: null,
 			},
 			ticket: {
 				categoryId: null,
@@ -366,6 +385,7 @@ const SQLITE_ADDITIONAL_COLUMNS = {
 	],
 	ziguilds: [
 		["noitu", "TEXT"],
+		["counting", "TEXT"],
 		["ticket", "TEXT"],
 		["youtube", "TEXT"],
 	],

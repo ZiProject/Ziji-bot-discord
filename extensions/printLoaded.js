@@ -53,7 +53,7 @@ module.exports.execute = async (client) => {
 		);
 
 		const tableData = [
-			[chalk.hex("#E5C3FF")("name"), "OK", "full", "Disable", chalk.hex("#FF5733")("NG")],
+			[chalk.hex("#E5C3FF")("name"), "OK", "ALL", "Disabled", chalk.hex("#FF5733")("NG")],
 			[chalk.hex("#E5C3FF")("events"), "-", eventsOKSum, "-", chalk.hex("#FF5733")(eventsNGSum)],
 			[
 				chalk.hex("#E5C3FF")("commands"),
@@ -91,7 +91,7 @@ module.exports.execute = async (client) => {
 		const config = {
 			header: {
 				alignment: "center",
-				content: `${client.user?.tag || "Bot Console"}\n${chalk.hex("#1744E8")(`Config: http://localhost:${process.env.SERVER_PORT || 2003}/config`)}`,
+				content: `${client.user?.tag || "Bot Console"}`,
 			},
 			columns: [
 				{ width: 20 },

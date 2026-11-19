@@ -97,6 +97,7 @@ model ZiGuild {
   music_channel String?
   updatedAt     DateTime?
   noitu         String?
+  counting      String?
   ticket        String?
   youtube       String?
 
