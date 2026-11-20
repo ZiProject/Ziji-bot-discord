@@ -464,10 +464,15 @@ test("ZiPlayer stream state publishes initial and updated state as authenticated
 });
 
 test("ZiPlayer stream output switches between browser and the user's Discord voice channel", async (t) => {
-	const app = createWebApp();
+	const originalPort = process.env.SERVER_PORT;
 	const originalJwtSecret = process.env.JWT_SECRET;
 	const managerKey = Symbol.for("ziplayer.PlayerManager.instance");
 	const originalManager = globalThis[managerKey];
+	const hookKeys = ["logger", "server", "streamWss", "httpServer", "functions", "voiceStates"];
+	const originalHooks = new Map(hookKeys.map((key) => [key, useHooks.get(key)]));
+	process.env.SERVER_PORT = "0";
+	const web = StartupManager.prototype.initWeb.call({ logger: { debug() {}, info() {} } });
+	const app = createWebApp();
 	process.env.JWT_SECRET = "stream-output-test-secret";
 	const playerId = "web-stream-1234567890";
 	const channel = {
@@ -483,15 +488,21 @@ test("ZiPlayer stream output switches between browser and the user's Discord voi
 	let connection = null;
 	let connectedWith = null;
 	let disconnectCount = 0;
+	let webAudioConnection = null;
 	const player = {
+		id: playerId,
 		userdata: { webAudioStream: { userId: "1234567890" } },
 		get connection() {
 			return connection;
 		},
 		connect: async (target, options) => {
-			connectedWith = { target, options };
-			connection = {};
-			return connection;
+			if (target === channel) {
+				connectedWith = { target, options };
+				connection = {};
+				return connection;
+			}
+			webAudioConnection = target;
+			return { disconnect: async () => true };
 		},
 		disconnect: async () => {
 			disconnectCount++;
@@ -501,17 +512,30 @@ test("ZiPlayer stream output switches between browser and the user's Discord voi
 	globalThis[managerKey] = { getPlayer: (id) => (id === playerId ? player : null) };
 	const functions = new Collection([["playerCreate", { getBot: async () => bot }]]);
 	useHooks.set("server", app);
+	useHooks.set("logger", { error() {}, warn() {} });
 	useHooks.set("functions", functions);
 	useHooks.set("voiceStates", new Map([["1234567890", { guildId: "guild-id", channelId: channel.id, channel }]]));
-	useHooks.set("streamWss", new EventEmitter());
+	useHooks.set("streamWss", web.streamWss);
+	useHooks.set("httpServer", web.httpServer);
 	require("../extensions/routes/stream.js").execute();
-	t.after(() => {
+	t.after(async () => {
+		for (const webSocketServer of [web.wss, web.streamWss]) {
+			for (const socket of webSocketServer.clients) socket.terminate();
+			await new Promise((resolve) => webSocketServer.close(resolve));
+		}
+		if (web.httpServer.listening) await new Promise((resolve) => web.httpServer.close(resolve));
+		if (connection) await player.disconnect();
+		webAudioConnection?.destroy?.();
+		if (originalPort === undefined) delete process.env.SERVER_PORT;
+		else process.env.SERVER_PORT = originalPort;
 		if (originalJwtSecret === undefined) delete process.env.JWT_SECRET;
 		else process.env.JWT_SECRET = originalJwtSecret;
 		if (originalManager === undefined) delete globalThis[managerKey];
 		else globalThis[managerKey] = originalManager;
+		for (const [key, value] of originalHooks) useHooks.set(key, value);
 	});
 
+	if (!web.httpServer.listening) await new Promise((resolve) => web.httpServer.once("listening", resolve));
 	const token = require("jsonwebtoken").sign({ id: "1234567890" }, process.env.JWT_SECRET, { algorithm: "HS256" });
 	const request = (mode) =>
 		app.request("/api/stream/output", {
@@ -533,9 +557,12 @@ test("ZiPlayer stream output switches between browser and the user's Discord voi
 
 	const webResponse = await request("web");
 	assert.strictEqual(webResponse.status, 200);
-	assert.deepStrictEqual(await webResponse.json(), { sessionId: playerId, mode: "web" });
+	assert.deepStrictEqual(await webResponse.json(), { sessionId: playerId, mode: "web", playerId });
 	assert.strictEqual(disconnectCount, 1);
 	assert.strictEqual(player.userdata.voiceChannel, undefined);
+	const voiceAgainResponse = await request("voice");
+	assert.strictEqual(voiceAgainResponse.status, 200);
+	await player.disconnect();
 });
 
 test("ZiPlayer WebSocket listener authenticates with the existing JWT", async (t) => {

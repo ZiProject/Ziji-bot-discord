@@ -311,10 +311,18 @@ test("Config setup form exposes the default config fields", async () => {
 	for (const field of expectedFields) {
 		assert.ok(html.includes(`id="${field}"`), `Form should expose ${field}`);
 	}
-	assert.ok(html.includes('<option value="play"'), "Command options should come from the commands hook");
+	assert.match(
+		html,
+		/<div id="disabledCommands"[^>]*data-commands="[^"]*&quot;play&quot;[^"]*"/,
+		"Command options should come from the commands hook",
+	);
 	assert.match(html, /<option value="en" selected>English \(en\)<\/option>/);
 	assert.match(html, /<option value="ja"\s*>日本語 \(ja\)<\/option>/);
-	assert.match(html, /<option value="play" selected>play<\/option>/, "Disabled commands should match canonical command names");
+	assert.match(
+		html,
+		/<div id="disabledCommands"[^>]*data-disabled="[^"]*&quot;play&quot;[^"]*"/,
+		"Disabled commands should match canonical command names",
+	);
 	assert.ok(html.includes("Disabled commands / Lệnh bị vô hiệu hóa / 無効にするコマンド"));
 	assert.ok(!html.includes('id="autoLeaveEmptyVoice"'), "Deprecated auto-leave form field should be removed");
 	assert.ok(!html.includes('"playerConfig":'), "Setup JSON should not contain the deprecated second player config");

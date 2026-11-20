@@ -81,7 +81,7 @@ test("client ready falls back to LocalDB when Prisma providers fail", async () =
 	try {
 		// Deliberately make both Prisma providers unusable so the third fallback is deterministic.
 		process.env.MONGO = "not-a-mongodb-uri";
-		process.env.SQLITE_DATABASE_URL = "file:/dev/null";
+		process.env.SQLITE_DATABASE_URL = "not-a-sqlite-url";
 		useHooks.set("config", { deploy: false, botConfig: {} });
 		useHooks.set("logger", { error: () => {}, info: () => {}, warn: () => {}, debug: () => {} });
 		useHooks.set("db", null);

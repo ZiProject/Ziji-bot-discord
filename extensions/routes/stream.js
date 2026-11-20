@@ -785,7 +785,12 @@ function createRangeStream(sourceStream, start, end) {
 	const rangeFilter = new Transform({
 		transform(chunk, encoding, callback) {
 			if (bytesSent >= maxBytes) {
-				sourceStream.destroy();
+				if (typeof sourceStream.destroyStream === "function") {
+					try {
+						void sourceStream.destroyStream();
+					} catch {}
+				}
+				if (!sourceStream.destroyed) sourceStream.destroy();
 				this.push(null);
 				return callback();
 			}
@@ -809,14 +814,42 @@ function createRangeStream(sourceStream, start, end) {
 			this.push(chunk);
 
 			if (bytesSent >= maxBytes) {
-				sourceStream.destroy();
+				if (typeof sourceStream.destroyStream === "function") {
+					try {
+						void sourceStream.destroyStream();
+					} catch {}
+				}
+				if (!sourceStream.destroyed) sourceStream.destroy();
 				this.push(null);
 			}
 			callback();
 		},
 	});
 
-	sourceStream.on("error", (err) => rangeFilter.destroy(err));
+	if (typeof sourceStream.destroyStream === "function") {
+		rangeFilter.destroyStream = sourceStream.destroyStream;
+	}
+
+	rangeFilter.once("close", () => {
+		if (typeof sourceStream.destroyStream === "function") {
+			try {
+				void sourceStream.destroyStream();
+			} catch {}
+		}
+		if (!sourceStream.destroyed) sourceStream.destroy();
+	});
+	rangeFilter.once("error", (err) => {
+		if (typeof sourceStream.destroyStream === "function") {
+			try {
+				void sourceStream.destroyStream();
+			} catch {}
+		}
+		if (!sourceStream.destroyed) sourceStream.destroy(err);
+	});
+	sourceStream.once("error", (err) => {
+		if (!rangeFilter.destroyed) rangeFilter.destroy(err);
+	});
+
 	return sourceStream.pipe(rangeFilter);
 }
 
@@ -826,10 +859,54 @@ function streamRoute(method, defaultContentType, logLabel, errorMessage) {
 		if (parsed.response) return parsed.response;
 
 		const controller = new AbortController();
-		const requestSignal = context.req.raw.signal;
-		const abort = () => controller.abort();
-		const cleanup = () => requestSignal.removeEventListener("abort", abort);
-		requestSignal.addEventListener("abort", abort, { once: true });
+		const requestSignal = context.req.raw?.signal;
+		let stream = null;
+		let responseStream = null;
+		let cleanedUp = false;
+
+		const destroyAllStreams = (err) => {
+			if (cleanedUp) return;
+			cleanedUp = true;
+			controller.abort();
+			cleanupListeners();
+			if (responseStream && !responseStream.destroyed) {
+				try {
+					if (typeof responseStream.destroyStream === "function") {
+						void responseStream.destroyStream();
+					}
+					responseStream.destroy(err);
+				} catch {}
+			}
+			if (stream && !stream.destroyed) {
+				try {
+					if (typeof stream.destroyStream === "function") {
+						void stream.destroyStream();
+					}
+					stream.destroy(err);
+				} catch {}
+			}
+		};
+
+		const onAbort = () => destroyAllStreams();
+		const outgoing = context.env?.outgoing;
+		const incoming = context.env?.incoming;
+		const onSocketClose = () => {
+			if (outgoing && !outgoing.writableEnded) {
+				destroyAllStreams();
+			}
+		};
+
+		const cleanupListeners = () => {
+			requestSignal?.removeEventListener?.("abort", onAbort);
+			controller.signal?.removeEventListener?.("abort", onAbort);
+			outgoing?.removeListener?.("close", onSocketClose);
+			incoming?.removeListener?.("close", onSocketClose);
+		};
+
+		requestSignal?.addEventListener?.("abort", onAbort, { once: true });
+		controller.signal?.addEventListener?.("abort", onAbort, { once: true });
+		outgoing?.once?.("close", onSocketClose);
+		incoming?.once?.("close", onSocketClose);
 
 		try {
 			const manager = getManager();
@@ -840,19 +917,17 @@ function streamRoute(method, defaultContentType, logLabel, errorMessage) {
 					crossfade: { enabled: false },
 				});
 			}
-			const stream = await player[method](parsed.trackData, { signal: controller.signal });
-			if (controller.signal.aborted) {
-				stream.destroy();
-				cleanup();
+
+			if (controller.signal.aborted || requestSignal?.aborted) {
+				destroyAllStreams();
 				return;
 			}
 
-			stream.once("end", cleanup);
-			stream.once("error", cleanup);
-			stream.once("close", () => {
-				if (!stream.readableEnded) controller.abort();
-				cleanup();
-			});
+			stream = await player[method](parsed.trackData, { signal: controller.signal });
+			if (controller.signal.aborted || requestSignal?.aborted) {
+				destroyAllStreams();
+				return;
+			}
 
 			const contentType = stream.metadata?.mime || defaultContentType;
 			const totalLength = stream.metadata?.contentLength ? Number(stream.metadata.contentLength) : undefined;
@@ -860,8 +935,7 @@ function streamRoute(method, defaultContentType, logLabel, errorMessage) {
 			const range = parseRange(rangeHeader, totalLength);
 
 			if (range?.unsatisfiable) {
-				stream.destroy();
-				cleanup();
+				destroyAllStreams();
 				return context.text("Requested range not satisfiable", 416, {
 					...proxyCorsHeaders,
 					"Content-Range": `bytes */${range.total}`,
@@ -874,6 +948,9 @@ function streamRoute(method, defaultContentType, logLabel, errorMessage) {
 				"Accept-Ranges": "bytes",
 				"Cache-Control": "public, max-age=3600",
 			};
+
+			let statusCode = 200;
+			responseStream = stream;
 
 			if (range && (range.start > 0 || range.end !== undefined || totalLength)) {
 				const start = range.start;
@@ -891,21 +968,25 @@ function streamRoute(method, defaultContentType, logLabel, errorMessage) {
 					headers["Content-Length"] = String(totalLength - start);
 				}
 
-				let responseStream = stream;
 				if (start > 0 || (end !== undefined && totalLength && end < totalLength - 1)) {
 					responseStream = createRangeStream(stream, start, end);
 				}
-
-				return context.body(Readable.toWeb(responseStream), 206, headers);
-			}
-
-			if (totalLength) {
+				statusCode = 206;
+			} else if (totalLength) {
 				headers["Content-Length"] = String(totalLength);
 			}
 
-			return context.body(Readable.toWeb(stream), 200, headers);
+			const onStreamEnd = () => {
+				cleanupListeners();
+			};
+			responseStream.once("end", onStreamEnd);
+			responseStream.once("close", onStreamEnd);
+			responseStream.once("error", (err) => destroyAllStreams(err));
+
+			const webStream = Readable.toWeb(responseStream);
+			return context.body(webStream, statusCode, headers);
 		} catch (error) {
-			cleanup();
+			destroyAllStreams(error);
 			if (controller.signal.aborted || requestSignal?.aborted) return;
 			logger()?.error(`[Stream] ${logLabel} error:`, error);
 			return context.json({ error: errorMessage }, 500, proxyCorsHeaders);
@@ -1044,7 +1125,7 @@ router.post("/output", authenticate, async (context) => {
 		}
 
 		const playerCreate = useHooks.get("functions")?.get("playerCreate");
-		if (typeof playerCreate?.getBot !== "function" || typeof playerCreate?.createPlayer !== "function") {
+		if (typeof playerCreate?.getBot !== "function") {
 			return context.json({ error: "Voice connection service is unavailable" }, 503);
 		}
 		const bot = await playerCreate.getBot({ guildId: voiceState.guildId, voiceChannelId: voiceState.channelId });
@@ -1056,6 +1137,27 @@ router.post("/output", authenticate, async (context) => {
 		const permissions = voiceChannel.permissionsFor(bot.user);
 		if (!permissions?.has("Connect") || !permissions.has("Speak")) {
 			return context.json({ error: "The bot needs Connect and Speak permissions in your voice channel" }, 403);
+		}
+
+		if (typeof playerCreate.createPlayer !== "function") {
+			if (typeof player.connect !== "function") {
+				return context.json({ error: "Voice connection service is unavailable" }, 503);
+			}
+			await player.connect(voiceChannel, { group: bot.user.id });
+			if (!player.connection) {
+				return context.json({ error: "The bot could not join your voice channel" }, 502);
+			}
+			player.userdata ??= {};
+			player.userdata.voiceChannel = voiceChannel;
+			player.userdata.channel = voiceChannel;
+			player.userdata.client = bot;
+			selectedPlayers.set(userId, player.id);
+			await detachWebAudio(userId);
+			return context.json({
+				sessionId,
+				mode: "voice",
+				channel: { id: voiceChannel.id, name: voiceChannel.name },
+			});
 		}
 
 		const user = await useHooks
