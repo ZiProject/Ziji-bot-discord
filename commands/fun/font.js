@@ -83,13 +83,21 @@ function smallCaps(text) {
   return Array.from(text, (character) => replacements[character.toLowerCase()] ?? character).join("");
 }
 
+function customAlphabet(text, replacements) {
+  return Array.from(text, (character) => {
+    const replacement = replacements[character.toLowerCase()];
+    if (!replacement) return character;
+    return character === character.toUpperCase() ? replacement.toUpperCase() : replacement;
+  }).join("");
+}
+
 function stylize(text) {
   return [
     ["Original", text],
     ...Object.keys(ranges).map((style) => [style, mapAlphabet(text, style)]),
     ["Fullwidth", fullwidth(text)],
     ["Circled", circled(text)],
-    ["Small caps", smallCaps(text)],
+    ["Small caps", smallCaps(text)],\n    ["Phonetic", customAlphabet(text, { z: "ʑ", i: "ɨ", j: "ɬ" })],\n    ["Yi decorative", customAlphabet(text, { z: "ꁴ", i: "ꀤ", j: "ꀭ" })],
   ];
 }
 
