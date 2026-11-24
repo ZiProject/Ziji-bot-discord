@@ -82,6 +82,9 @@
 		},
 		"discord-giveaways": {
 			"serialize-javascript": "^7.0.5"
+		},
+		"prism-media": {
+			"opusscript": "^0.1.1"
 		}
 	},
 	"allowScripts": {
